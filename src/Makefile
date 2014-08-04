@@ -21,9 +21,9 @@ EXECUTABLE=coco
 SERVER=merlin
 SERVER_LOCATION=~/coco
 CMDLINE=-h
-SOURCES=main.c cgp.c cgp_dump.c image.c fitness.c
-OFILES=main.o cgp.o cgp_dump.o image.o fitness.o
-LIBS=-lm
+SOURCES=main.c cgp.c cgp_dump.c cgp_load.c image.c fitness.c vault.c
+OFILES= main.o cgp.o cgp_dump.o cgp_load.o image.o fitness.o vault.o
+LIBS=-lm -lc
 
 all: $(EXECUTABLE)
 

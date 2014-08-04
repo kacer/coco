@@ -104,6 +104,7 @@ typedef _cgp_chr* cgp_chr;
  */
 typedef struct {
     int size;
+    int generation;
     cgp_fitness_t best_fitness;
     int best_chr_index;
     cgp_chr *chromosomes;
@@ -275,6 +276,34 @@ void cgp_dump_chr_readable(cgp_chr chr, FILE *fp);
  * @param fp
 */
 void cgp_dump_chr_asciiart(cgp_chr chr, FILE *fp);
+
+
+/**
+ * Loads chromosome from given file stored in CGP-viewer compatible format
+ * @param chr
+ * @param fp
+ * @return 0 on success, -1 on file format error, -2 on incompatible CGP config
+ */
+int cgp_load_chr_compat(cgp_chr chr, FILE *fp);
+
+
+/**
+ * Dumps whole population to given file pointer with chromosomes in
+ * CGP-viewer compatible format
+ * @param pop
+ * @param fp
+ */
+void cgp_dump_pop_compat(cgp_pop pop, FILE *fp);
+
+
+/**
+ * Loads whole population from given file with chromosomes stored in
+ * CGP-viewer compatible format
+ * @param pop
+ * @param fp
+ * @return 0 on success, -1 on file format error, -2 on incompatible CGP config
+ */
+int cgp_load_pop_compat(cgp_pop *pop_ptr, FILE *fp);
 
 
 /**

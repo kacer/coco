@@ -55,7 +55,7 @@ void cgp_dump_chr_outputs(cgp_chr chr, FILE *fp)
         if (i > 0) fprintf(fp, ", ");
         fprintf(fp, "%u", chr->outputs[i]);
     }
-    fprintf(fp, ")");
+    fprintf(fp, ")\n");
 }
 
 
@@ -250,5 +250,23 @@ void cgp_dump_chr_asciiart(cgp_chr chr, FILE *fp)
         fprintf(fp, "----------------");
         if (x == CGP_COLS - 1) fprintf(fp, "'\n");
         else fprintf(fp, "--");
+    }
+}
+
+
+/**
+ * Dumps whole population to given file pointer with chromosomes in
+ * CGP-viewer compatible format
+ * @param pop
+ * @param fp
+ */
+void cgp_dump_pop_compat(cgp_pop pop, FILE *fp)
+{
+    fprintf(fp, "Generation: %d\n", pop->generation);
+    fprintf(fp, "Best chromosome: %d\n", pop->best_chr_index);
+    fprintf(fp, "Chromosomes: %d\n", pop->size);
+
+    for (int i = 0; i < pop->size; i++) {
+        cgp_dump_chr_compat(pop->chromosomes[i], fp);
     }
 }

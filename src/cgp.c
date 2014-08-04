@@ -317,6 +317,7 @@ cgp_pop cgp_create_pop(int size)
     if (new_pop == NULL) return NULL;
 
     new_pop->size = size;
+    new_pop->generation = 0;
     new_pop->best_chr_index = -1;
     new_pop->chromosomes = (cgp_chr*) malloc(sizeof(cgp_chr) * size);
     if (new_pop->chromosomes == NULL) {
@@ -399,4 +400,5 @@ void cgp_next_generation(cgp_pop pop, int mutation_rate)
     }
 
     cgp_evaluate_pop(pop);
+    pop->generation++;
 }

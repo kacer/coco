@@ -35,3 +35,6 @@ src/*.bmp
 
 # Archives
 *.tar.gz
+
+# Junk
+src/vault/*
