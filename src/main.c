@@ -32,6 +32,7 @@
 #define CGP_POP_SIZE 8
 #define CGP_GENERATIONS 30000
 
+#define PRINT_INTERVAL 10
 #define VAULT_INTERVAL 200
 
 
@@ -61,12 +62,12 @@ void print_results(cgp_pop population, img_image noisy)
     printf(".--------------.\n"
            "| Best circuit |\n"
            "'--------------'\n");
-    cgp_dump_chr_compat(population->chromosomes[population->best_chr_index], stdout);
+    cgp_dump_chr_asciiart(population->chromosomes[population->best_chr_index], stdout);
     printf("\n");
 
     char filename[25 + 8 + 1];
     snprintf(filename, 25 + 8 + 1, "results/img_filtered_%08d.bmp", population->generation);
-    img_image filtered = fitness_filter_image(population->chromosomes[population->best_chr_index], noisy);
+    img_image filtered = fitness_filter_image(population->chromosomes[population->best_chr_index]);
     img_save_bmp(filtered, filename);
     img_destroy(filtered);
 }
@@ -85,7 +86,7 @@ int main(int argc, char const *argv[])
         return 1;
     }
 
-    img_image noisy = img_load("images/lena_gray_256_25_uniform.png");
+    img_image noisy = img_load("images/lena_gray_256_saltpepper_15.png");
     if (!noisy) {
         fprintf(stderr, "Failed to load noisy image.\n");
         return 1;
@@ -134,17 +135,20 @@ int main(int argc, char const *argv[])
     // evolve
 
     int interrupted_generation = -1;
-    for (;;) {
-        printf("Generation %4d: best fitness %.20g (index %d)\n", population->generation, population->best_fitness, population->best_chr_index);
+    while (population->generation < CGP_GENERATIONS) {
+        if ((population->generation % PRINT_INTERVAL) == 0) {
+            printf("Generation %4d: best fitness %.20g (index %d)\n", population->generation, population->best_fitness, population->best_chr_index);
+        }
         cgp_next_generation(population, CGP_MUTATION_RATE);
 
         if (interrupted) {
-            if (interrupted_generation >= 0 && interrupted_generation > population->generation - 5) {
+            if (interrupted_generation >= 0 && interrupted_generation > population->generation - 10) {
                 goto cleanup;
             }
             print_results(population, noisy);
 
             if (cpu_limit_reached) {
+                vault_store(vault, population);
                 fprintf(stderr, "Exit caused by SIGXCPU signal.\n");
                 retval = 10;
                 goto cleanup;

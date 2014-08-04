@@ -21,6 +21,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef CGP_USE_PTHREAD
+    #include <pthread.h>
+#endif
+
 #include "cgp.h"
 #include "random.h"
 
@@ -32,6 +36,7 @@ typedef struct {
     int size;
     int *values;
 } int_array;
+
 
 int_array allowed_vals[CGP_COLS];
 cgp_fitness_func fitness_function;
@@ -353,7 +358,7 @@ void cgp_destroy_pop(cgp_pop pop)
  * Calculate fitness of whole population, using `cgp_evaluate_chr`
  * @param chr
  */
-void cgp_evaluate_pop(cgp_pop pop)
+void _cgp_evaluate_pop_simple(cgp_pop pop)
 {
     cgp_fitness_t best_fitness;
     int best_index;
@@ -382,6 +387,68 @@ void cgp_evaluate_pop(cgp_pop pop)
     pop->best_fitness = best_fitness;
     pop->best_chr_index = best_index;
 }
+
+
+#ifdef CGP_USE_PTHREAD
+
+
+/**
+ * _cgp_evaluate_pop_pthread helper - thread source code
+ * @param chromosome to evaluate
+ */
+void* _cgp_evaluate_pop_pthread_worker(void *chromosome)
+{
+    cgp_evaluate_chr((cgp_chr)chromosome);
+    return NULL;
+}
+
+
+/**
+ * Calculate fitness of whole population, using `cgp_evaluate_chr`
+ * @param chr
+ */
+void _cgp_evaluate_pop_pthread(cgp_pop pop)
+{
+    cgp_fitness_t best_fitness;
+    int best_index;
+
+    // reevaluate population
+
+    pthread_t threads[pop->size];
+    for (int i = 0; i < pop->size; i++) {
+        pthread_create(&threads[i], NULL, _cgp_evaluate_pop_pthread_worker, (void*)pop->chromosomes[i]);
+    }
+    for (int i = 0; i < pop->size; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    // find best fitness
+    for (int i = 0; i < pop->size; i++) {
+        cgp_fitness_t f = pop->chromosomes[i]->fitness;
+        if (i == 0 || cgp_is_better_or_same(f, best_fitness)) {
+            best_fitness = f;
+            best_index = i;
+        }
+    }
+
+    // if best index hasn't changed, try to find different one with the same fitness
+    if (best_index == pop->best_chr_index) {
+        for (int i = 0; i < pop->size; i++) {
+            cgp_fitness_t f = pop->chromosomes[i]->fitness;
+            if (i != best_index && f == best_fitness) {
+                best_index = i;
+                break;
+            }
+        }
+    }
+
+    // set new best values
+    pop->best_fitness = best_fitness;
+    pop->best_chr_index = best_index;
+}
+
+
+#endif /* CGP_USE_PTHREAD */
 
 
 /**

@@ -25,6 +25,7 @@
 
 #include "cgp_config.h"
 
+
 #define CGP_FUNC_INPUTS 2
 #define CGP_NODES (CGP_COLS * CGP_ROWS)
 #define CGP_CHR_OUTPUTS_INDEX ((CGP_FUNC_INPUTS + 1) * CGP_NODES)
@@ -224,7 +225,38 @@ void cgp_destroy_pop(cgp_pop pop);
  * Calculate fitness of whole population, using `cgp_evaluate_chr`
  * @param chr
  */
-void cgp_evaluate_pop(cgp_pop pop);
+static inline void cgp_evaluate_pop(cgp_pop pop);
+
+
+/**
+ * Calculate fitness of whole population, using `cgp_evaluate_chr`
+ * in single thread
+ * @param chr
+ */
+void _cgp_evaluate_pop_simple(cgp_pop pop);
+
+
+/**
+ * Calculate fitness of whole population, using `cgp_evaluate_chr`
+ * using one thread per chromosome
+ * @param chr
+ */
+void _cgp_evaluate_pop_pthread(cgp_pop pop);
+
+
+#ifdef CGP_USE_PTHREAD
+
+    static inline void cgp_evaluate_pop(cgp_pop pop) {
+        _cgp_evaluate_pop_pthread(pop);
+    }
+
+#else
+
+    static inline void cgp_evaluate_pop(cgp_pop pop) {
+        _cgp_evaluate_pop_simple(pop);
+    }
+
+#endif
 
 
 /**

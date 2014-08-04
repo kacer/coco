@@ -16,14 +16,14 @@
 #   \___)     (___/
 
 CC=gcc
-CFLAGS=-g -Wall -std=c99 -DDEBUG
+CFLAGS=-g -Wall -std=c99 -DDEBUG -DCGP_USE_PTHREAD -DFITNESS_USE_PTHREAD
 EXECUTABLE=coco
 SERVER=merlin
 SERVER_LOCATION=~/coco
 CMDLINE=
 SOURCES=main.c cgp.c cgp_dump.c cgp_load.c image.c fitness.c vault.c
 OFILES= main.o cgp.o cgp_dump.o cgp_load.o image.o fitness.o vault.o
-LIBS=-lm -lc
+LIBS=-lm -lc -lpthread
 
 all: $(EXECUTABLE)
 
@@ -53,8 +53,8 @@ download:
 start:
 	ssh $(SERVER) "$(SERVER_LOCATION)/$(EXECUTABLE) $(CMDLINE)"
 
-%.o: %.cpp
-	$(CC) $(CFLAGS) -c $<
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 depend: .depend
 
