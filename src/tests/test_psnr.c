@@ -40,7 +40,7 @@ int main(int argc, char const *argv[])
     };
 
     int retval = 0;
-    double expected_psnr = (255 * 255) / (9.0 * (81 + 4 + 4));
+    double expected_psnr = (255 * 255 * 9.0) / (81 + 4 + 4);
     double obtained_psnr = fitness_psnr(&original, &filtered);
 
     if (expected_psnr != obtained_psnr) {

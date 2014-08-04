@@ -109,7 +109,7 @@ cgp_fitness_t fitness_psnr(img_image original, img_image filtered)
     assert(original->height == filtered->height);
     assert(original->comp == filtered->comp);
 
-    double coef = (255 * 255) / ((double)original->width * original->height);
+    double coef = 255 * 255 * (double)original->width * original->height;
     double sum = 0;
 
     for (int x = 0; x < original->width; x++) {

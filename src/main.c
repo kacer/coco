@@ -28,7 +28,7 @@
 #include "vault.h"
 
 
-#define CGP_MUTATION_RATE 5  /* number of max. changed genes */
+#define CGP_MUTATION_RATE 5   /* number of max. changed genes */
 #define CGP_POP_SIZE 8
 #define CGP_GENERATIONS 30000
 
@@ -93,6 +93,8 @@ int main(int argc, char const *argv[])
 
     img_save_bmp(original, "results/img_original.bmp");
     img_save_bmp(noisy, "results/img_noisy.bmp");
+
+    printf("Mutation rate: %d genes max\n", CGP_MUTATION_RATE);
     printf("Initial PSNR value:           %.20g\n", fitness_psnr(original, noisy));
 
 

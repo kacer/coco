@@ -20,7 +20,7 @@ CFLAGS=-g -Wall -std=c99 -DDEBUG
 EXECUTABLE=coco
 SERVER=merlin
 SERVER_LOCATION=~/coco
-CMDLINE=-h
+CMDLINE=
 SOURCES=main.c cgp.c cgp_dump.c cgp_load.c image.c fitness.c vault.c
 OFILES= main.o cgp.o cgp_dump.o cgp_load.o image.o fitness.o vault.o
 LIBS=-lm -lc
@@ -46,9 +46,9 @@ upload: tar
 	ssh $(SERVER) "cd $(SERVER_LOCATION) && tar -xzf xwigla00.tar.gz && make"
 
 download:
-	ssh $(SERVER) "cd $(SERVER_LOCATION) && tar -czf results.tar.gz *.bmp"
+	ssh $(SERVER) "cd $(SERVER_LOCATION) && tar -czf results.tar.gz results/*.bmp"
 	scp $(SERVER):$(SERVER_LOCATION)/results.tar.gz .
-	tar -C results -xzf results.tar.gz
+	tar -xzf results.tar.gz
 
 start:
 	ssh $(SERVER) "$(SERVER_LOCATION)/$(EXECUTABLE) $(CMDLINE)"
