@@ -57,6 +57,11 @@ static inline bool cgp_is_better_or_same(cgp_fitness_t what, cgp_fitness_t compa
 
 
 
+/**
+ * Initialize CGP internals
+ * @param Fitness function to use
+ * @param Type of solved problem
+ */
 void cgp_init(cgp_fitness_func fitness, cgp_problem_type type)
 {
     // remember fitness function and problem type
@@ -103,6 +108,9 @@ void cgp_init(cgp_fitness_func fitness, cgp_problem_type type)
 }
 
 
+/**
+ * Deinitialize CGP internals
+ */
 void cgp_deinit()
 {
     for (int x = 0; x < CGP_COLS; x++) {
@@ -111,6 +119,10 @@ void cgp_deinit()
 }
 
 
+/**
+ * Create a new chromosome
+ * @return
+ */
 cgp_chr cgp_create_chr()
 {
     cgp_chr new_chr = (cgp_chr) malloc(sizeof(_cgp_chr));
@@ -124,27 +136,44 @@ cgp_chr cgp_create_chr()
 }
 
 
+/**
+ * Clear memory associated with given chromosome
+ * @param chr
+ */
 void cgp_destroy_chr(cgp_chr chr)
 {
     free(chr);
 }
 
 
-cgp_fitness_t cgp_evaluate_chr(cgp_chr chr)
+/**
+ * Replace chromosome genes with genes from other chromomose
+ * @param  chr
+ * @param  replacement
+ * @return
+ */
+void cgp_replace_chr(cgp_chr chr, cgp_chr replacement)
 {
-    if (!chr->has_fitness) {
-        return cgp_reevaluate_chr(chr);
-    } else {
-        return chr->fitness;
-    }
+    memcpy(chr->nodes, replacement->nodes, sizeof(_cgp_node) * CGP_NODES);
+    memcpy(chr->outputs, replacement->outputs, sizeof(int) * CGP_OUTPUTS);
+    chr->fitness = replacement->fitness;
+    chr->has_fitness = replacement->has_fitness;
 }
 
 
-cgp_fitness_t cgp_reevaluate_chr(cgp_chr chr)
+/**
+ * Mutate given chromosome
+ * @param chr
+ * @param max_changed_genes
+ */
+void cgp_mutate_chr(cgp_chr chr, int max_changed_genes)
 {
-    chr->fitness = (*fitness_function)(chr);
-    chr->has_fitness = true;
-    return chr->fitness;
+    int genes_to_change = rand_range(0, max_changed_genes);
+    for (int i = 0; i < genes_to_change; i++) {
+        int gene = rand_range(0, CGP_CHR_LENGTH - 1);
+        cgp_randomize_gene(chr, gene);
+    }
+    chr->has_fitness = false;
 }
 
 
@@ -154,6 +183,10 @@ cgp_fitness_t cgp_reevaluate_chr(cgp_chr chr)
 #define MIN(A, B) ((A < B) ? A : B)
 
 
+/**
+ * Calculate output of given chromosome and inputs
+ * @param chr
+ */
 void cgp_get_output(cgp_chr chr, cgp_value_t *inputs, cgp_value_t *outputs)
 {
     cgp_value_t inner_outputs[CGP_INPUTS + CGP_NODES];
@@ -205,33 +238,30 @@ void cgp_get_output(cgp_chr chr, cgp_value_t *inputs, cgp_value_t *outputs)
 
 
 /**
- * Replace chromosome genes with genes from other chromomose
- * @param  chr
- * @param  replacement
- * @return
+ * Calculate fitness of given chromosome, but only if its `has_fitness`
+ * attribute is set to `false`
+ * @param chr
  */
-void cgp_replace_chr(cgp_chr chr, cgp_chr replacement)
+cgp_fitness_t cgp_evaluate_chr(cgp_chr chr)
 {
-    memcpy(chr->nodes, replacement->nodes, sizeof(_cgp_node) * CGP_NODES);
-    memcpy(chr->outputs, replacement->outputs, sizeof(int) * CGP_OUTPUTS);
-    chr->fitness = replacement->fitness;
-    chr->has_fitness = replacement->has_fitness;
+    if (!chr->has_fitness) {
+        return cgp_reevaluate_chr(chr);
+    } else {
+        return chr->fitness;
+    }
 }
 
 
 /**
- * Mutate given chromosome
+ * Calculate fitness of given chromosome, regardless of its `has_fitness`
+ * value
  * @param chr
- * @param max_changed_genes
  */
-void cgp_mutate_chr(cgp_chr chr, int max_changed_genes)
+cgp_fitness_t cgp_reevaluate_chr(cgp_chr chr)
 {
-    int genes_to_change = rand_range(0, max_changed_genes);
-    for (int i = 0; i < genes_to_change; i++) {
-        int gene = rand_range(0, CGP_CHR_LENGTH - 1);
-        cgp_randomize_gene(chr, gene);
-    }
-    chr->has_fitness = false;
+    chr->fitness = (*fitness_function)(chr);
+    chr->has_fitness = true;
+    return chr->fitness;
 }
 
 

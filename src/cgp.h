@@ -78,12 +78,18 @@ static inline char* cgp_func_name(_cgp_func f) {
 }
 
 
+/**
+ * One CGP node (function block)
+ */
 typedef struct {
     int inputs[CGP_FUNC_INPUTS];
     _cgp_func function;
 } _cgp_node;
 
 
+/**
+ * Chromosome
+ */
 typedef struct {
     bool has_fitness;
     cgp_fitness_t fitness;
@@ -93,6 +99,9 @@ typedef struct {
 typedef _cgp_chr* cgp_chr;
 
 
+/**
+ * Population
+ */
 typedef struct {
     int size;
     cgp_fitness_t best_fitness;
@@ -102,6 +111,9 @@ typedef struct {
 typedef _cgp_pop* cgp_pop;
 
 
+/**
+ * Dump formats
+ */
 typedef enum {
     asciiart,
     compat,
@@ -109,6 +121,9 @@ typedef enum {
 } cgp_dump_format;
 
 
+/**
+ * CGP problem type
+ */
 typedef enum {
     minimize,
     maximize,
@@ -123,6 +138,8 @@ typedef cgp_fitness_t (*cgp_fitness_func)(cgp_chr chromosome);
 
 /**
  * Initialize CGP internals
+ * @param Fitness function to use
+ * @param Type of solved problem
  */
 void cgp_init(cgp_fitness_func fitness, cgp_problem_type type);
 
@@ -134,22 +151,7 @@ void cgp_deinit();
 
 
 /**
- * Create a new CGP population with given size
- * @param  size
- * @return
- */
-cgp_pop cgp_create_pop(int size);
-
-
-/**
- * Clear memory associated with given population (including its chromosomes)
- * @param pop
- */
-void cgp_destroy_pop(cgp_pop pop);
-
-
-/**
- * Create a new chromosome, according to specification
+ * Create a new chromosome
  * @return
  */
 cgp_chr cgp_create_chr();
@@ -180,13 +182,6 @@ void cgp_mutate_chr(cgp_chr chr, int max_changed_genes);
 
 
 /**
- * Randomize given chromosome (e.g. replace with new random individual)
- * @param chr
- */
-void cgp_randomize_chr(cgp_chr chr);
-
-
-/**
  * Calculate output of given chromosome and inputs
  * @param chr
  */
@@ -207,6 +202,21 @@ cgp_fitness_t cgp_evaluate_chr(cgp_chr chr);
  * @param chr
  */
 cgp_fitness_t cgp_reevaluate_chr(cgp_chr chr);
+
+
+/**
+ * Create a new CGP population with given size
+ * @param  size
+ * @return
+ */
+cgp_pop cgp_create_pop(int size);
+
+
+/**
+ * Clear memory associated with given population (including its chromosomes)
+ * @param pop
+ */
+void cgp_destroy_pop(cgp_pop pop);
 
 
 /**
