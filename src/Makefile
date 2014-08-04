@@ -1,12 +1,29 @@
+# Colearning in Coevolutionary Algorithms
+# Bc. Michal Wiglasz <xwigla00@stud.fit.vutbr.cz>
+#
+# Master Thesis
+# 2014/2015
+#
+# Supervisor: Ing. Michaela Šikulová <isikulova@fit.vutbr.cz>
+#
+# Faculty of Information Technologies
+# Brno University of Technology
+# http://www.fit.vutbr.cz/
+#
+# Started on 28/07/2014.
+#      _       _
+#   __(.)=   =(.)__
+#   \___)     (___/
+
 CC=gcc
-CFLAGS=-g -Wall -std=c11 -DDEBUG
+CFLAGS=-g -Wall -std=c99 -DDEBUG
 EXECUTABLE=coco
 SERVER=merlin
 SERVER_LOCATION=~/coco
 CMDLINE=-h
-SOURCES=main.c cgp.c cgp_dump.c
-OFILES=main.o cgp.o cgp_dump.o
-LIBS=
+SOURCES=main.c cgp.c cgp_dump.c image.c fitness.c
+OFILES=main.o cgp.o cgp_dump.o image.o fitness.o
+LIBS=-lm
 
 all: $(EXECUTABLE)
 
@@ -19,17 +36,19 @@ $(EXECUTABLE): $(OFILES)
 .PHONY: clean zip tar upload start depend
 
 clean:
-	rm -f $(EXECUTABLE) *.o xwigla00.zip xwigla00.tar
-
-zip:
-	zip -j xwigla00.zip *.c *.h *.py Makefile  #doc/doc.pdf
+	rm -f $(EXECUTABLE) *.o xwigla00.zip xwigla00.tar.gz
 
 tar:
-	tar cvzf xwigla00.tar.gz *.cpp *.h *.py Makefile #-C doc/ doc.pdf
+	tar czf xwigla00.tar.gz *.c *.h Makefile tests/* stb/* images/* #-C doc/ doc.pdf
 
 upload: tar
 	scp xwigla00.tar.gz $(SERVER):$(SERVER_LOCATION)
-	ssh $(SERVER) "cd $(SERVER_LOCATION) && tar -xvzf xwigla00.tar.gz && make"
+	ssh $(SERVER) "cd $(SERVER_LOCATION) && tar -xzf xwigla00.tar.gz && make"
+
+download:
+	ssh $(SERVER) "cd $(SERVER_LOCATION) && tar -czf results.tar.gz *.bmp"
+	scp $(SERVER):$(SERVER_LOCATION)/results.tar.gz .
+	tar -C results -xzf results.tar.gz
 
 start:
 	ssh $(SERVER) "$(SERVER_LOCATION)/$(EXECUTABLE) $(CMDLINE)"

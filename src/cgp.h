@@ -23,13 +23,15 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#include "types.h"
 #include "cgp_config.h"
 
 #define CGP_FUNC_INPUTS 2
 #define CGP_NODES (CGP_COLS * CGP_ROWS)
 #define CGP_CHR_OUTPUTS_INDEX ((CGP_FUNC_INPUTS + 1) * CGP_NODES)
 #define CGP_CHR_LENGTH (CGP_CHR_OUTPUTS_INDEX + CGP_OUTPUTS)
+
+typedef unsigned char cgp_value_t;
+typedef double cgp_fitness_t;
 
 #define CGP_FUNC_COUNT 16
 typedef enum
@@ -53,45 +55,48 @@ typedef enum
 } _cgp_func;
 
 
-static char *func_names[] = {
-    " FF ",     // 255
-    "  a ",     // a
-    "FF-a",     // 255 - a
-    " or ",     // a or b
-    "~1|2",     // (not a) or b
-    " and",     // a and b
-    "nand",     // not (a and b)
-    " xor",     // a xor b
-    "a>>1",     // a >> 1
-    "a>>2",     // a >> 2
-    "swap",     // a <-> b
-    " +  ",     // a + b
-    " +S ",     // a +S b
-    " avg",     // (a + b) >> 1
-    " max",     // max(a, b)
-    " min",     // min(a, b)
-};
+static inline char* cgp_func_name(_cgp_func f) {
+    char *func_names[] = {
+        " FF ",     // 255
+        "  a ",     // a
+        "FF-a",     // 255 - a
+        " or ",     // a or b
+        "~1|2",     // (not a) or b
+        " and",     // a and b
+        "nand",     // not (a and b)
+        " xor",     // a xor b
+        "a>>1",     // a >> 1
+        "a>>2",     // a >> 2
+        "swap",     // a <-> b
+        " +  ",     // a + b
+        " +S ",     // a +S b
+        " avg",     // (a + b) >> 1
+        " max",     // max(a, b)
+        " min",     // min(a, b)
+    };
+    return func_names[f];
+}
 
 
 typedef struct {
-    uint inputs[CGP_FUNC_INPUTS];
+    int inputs[CGP_FUNC_INPUTS];
     _cgp_func function;
 } _cgp_node;
 
 
 typedef struct {
     bool has_fitness;
-    uint fitness;
+    cgp_fitness_t fitness;
     _cgp_node nodes[CGP_COLS * CGP_ROWS];
-    uint outputs[CGP_OUTPUTS];
+    int outputs[CGP_OUTPUTS];
 } _cgp_chr;
 typedef _cgp_chr* cgp_chr;
 
 
 typedef struct {
-    uint size;
-    uint best_fitness;
-    uint best_chr_index;
+    int size;
+    cgp_fitness_t best_fitness;
+    int best_chr_index;
     cgp_chr *chromosomes;
 } _cgp_pop;
 typedef _cgp_pop* cgp_pop;
@@ -104,10 +109,22 @@ typedef enum {
 } cgp_dump_format;
 
 
+typedef enum {
+    minimize,
+    maximize,
+} cgp_problem_type;
+
+
+/**
+ * Fitness function
+ */
+typedef cgp_fitness_t (*cgp_fitness_func)(cgp_chr chromosome);
+
+
 /**
  * Initialize CGP internals
  */
-void cgp_init();
+void cgp_init(cgp_fitness_func fitness, cgp_problem_type type);
 
 
 /**
@@ -121,7 +138,7 @@ void cgp_deinit();
  * @param  size
  * @return
  */
-cgp_pop cgp_create_pop(uint size);
+cgp_pop cgp_create_pop(int size);
 
 
 /**
@@ -129,7 +146,6 @@ cgp_pop cgp_create_pop(uint size);
  * @param pop
  */
 void cgp_destroy_pop(cgp_pop pop);
-
 
 
 /**
@@ -147,18 +163,20 @@ void cgp_destroy_chr(cgp_chr chr);
 
 
 /**
- * Create and return a copy of given chromosome
+ * Replace chromosome genes with genes from other chromomose
  * @param  chr
+ * @param  replacement
  * @return
  */
-cgp_chr cgp_clone_chr(cgp_chr chr);
+void cgp_replace_chr(cgp_chr chr, cgp_chr replacement);
 
 
 /**
  * Mutate given chromosome
  * @param chr
+ * @param max_changed_genes
  */
-void cgp_mutate_chr(cgp_chr chr);
+void cgp_mutate_chr(cgp_chr chr, int max_changed_genes);
 
 
 /**
@@ -169,11 +187,18 @@ void cgp_randomize_chr(cgp_chr chr);
 
 
 /**
+ * Calculate output of given chromosome and inputs
+ * @param chr
+ */
+void cgp_get_output(cgp_chr chr, cgp_value_t *inputs, cgp_value_t *outputs);
+
+
+/**
  * Calculate fitness of given chromosome, but only if its `has_fitness`
  * attribute is set to `false`
  * @param chr
  */
-void cgp_evaluate_chr(cgp_chr chr);
+cgp_fitness_t cgp_evaluate_chr(cgp_chr chr);
 
 
 /**
@@ -181,7 +206,22 @@ void cgp_evaluate_chr(cgp_chr chr);
  * value
  * @param chr
  */
-void cgp_reevaluate_chr(cgp_chr chr);
+cgp_fitness_t cgp_reevaluate_chr(cgp_chr chr);
+
+
+/**
+ * Calculate fitness of whole population, using `cgp_evaluate_chr`
+ * @param chr
+ */
+void cgp_evaluate_pop(cgp_pop pop);
+
+
+/**
+ * Advance population to next generation
+ * @param pop
+ * @param mutation_rate
+ */
+void cgp_next_generation(cgp_pop pop, int mutation_rate);
 
 
 /**
@@ -227,14 +267,13 @@ void cgp_dump_chr_readable(cgp_chr chr, FILE *fp);
 void cgp_dump_chr_asciiart(cgp_chr chr, FILE *fp);
 
 
-
 /**
  * Returns index of node in given column and row
  * @param  col
  * @param  row
  * @return
  */
-static inline uint cgp_node_index(uint col, uint row)
+static inline int cgp_node_index(int col, int row)
 {
     return CGP_ROWS * col + row;
 }
@@ -245,7 +284,7 @@ static inline uint cgp_node_index(uint col, uint row)
  * @param  index
  * @return
  */
-static inline uint cgp_node_col(uint index)
+static inline int cgp_node_col(int index)
 {
     return index / CGP_ROWS;
 }
@@ -256,7 +295,7 @@ static inline uint cgp_node_col(uint index)
  * @param  index
  * @return
  */
-static inline uint cgp_node_row(uint index)
+static inline int cgp_node_row(int index)
 {
     return index % CGP_ROWS;
 }

@@ -20,10 +20,9 @@
 
 #pragma once
 
+// hard configuration - affects compilation (array sizes etc.)
 #define CGP_COLS 8
 #define CGP_ROWS 4
 #define CGP_INPUTS 9
 #define CGP_OUTPUTS 1
 #define CGP_LBACK 1
-#define CGP_MUTATION_RATE 5
-#define CGP_POP_SIZE 8

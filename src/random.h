@@ -21,16 +21,22 @@
 #pragma once
 
 #include <stdlib.h>
+#include <stdbool.h>
+#include <stdio.h>
 #include <time.h>
 
-#include "types.h"
 
 static inline void rand_init()
 {
     srand(time(0));
 }
 
-static inline uint rnd()
+static inline void rand_init_seed(unsigned int seed)
+{
+    srand(seed);
+}
+
+static inline unsigned int rnd()
 {
     return rand();
 }
@@ -42,7 +48,7 @@ static inline uint rnd()
  * @param  high
  * @return
  */
-static inline uint rand_range(uint low, uint high)
+static inline int rand_range(int low, int high)
 {
     return rand() % (high - low + 1) + low;
 }
@@ -54,9 +60,9 @@ static inline uint rand_range(uint low, uint high)
  * @param  choices
  * @return
  */
-static inline int rand_schoice(uint length, int choices[])
+static inline int rand_schoice(int length, int choices[])
 {
-    uint index = rand_range(0, length - 1);
+    unsigned int index = rand_range(0, length - 1);
     return choices[index];
 }
 
@@ -68,21 +74,8 @@ static inline int rand_schoice(uint length, int choices[])
  * @param  choices
  * @return
  */
-static inline uint rand_uchoice(uint length, uint choices[])
+static inline unsigned int rand_uchoice(unsigned int length, unsigned int choices[])
 {
-    uint index = rand_range(0, length - 1);
+    unsigned int index = rand_range(0, length - 1);
     return choices[index];
-}
-
-
-
-/**
- * Returns randomly chosen number from the list of unsigned integers
- * @param  length
- * @param  choices
- * @return
- */
-static inline uint rand_uachoice(uint_array *array)
-{
-    return rand_uchoice(array->size, array->values);
 }

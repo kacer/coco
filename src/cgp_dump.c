@@ -60,13 +60,36 @@ void cgp_dump_chr_outputs(cgp_chr chr, FILE *fp)
 
 
 /**
+ * Dumps basic info in human-friendly format
+ * @param chr
+ * @param fp
+ */
+void cgp_dump_chr_header(cgp_chr chr, FILE *fp)
+{
+    fprintf(fp,
+        "Inputs: %u\n"
+        "Outputs: %u\n"
+        "Size: %u x %u\n"
+        "Blocks: %u-ary, %u output(s), %u functions\n",
+        CGP_INPUTS, CGP_OUTPUTS, CGP_COLS, CGP_ROWS, CGP_FUNC_INPUTS,
+        1, CGP_FUNC_COUNT);
+
+    if (chr->has_fitness) {
+        fprintf(fp, "Fitness: %lf\n", chr->fitness);
+    } else {
+        fprintf(fp, "Fitness: <none>\n");
+    }
+}
+
+
+/**
  * Dumps chromosome to given file in CGP-viewer compatible format
  * @param chr
  * @param fp
  */
 void cgp_dump_chr_compat(cgp_chr chr, FILE *fp)
 {
-    printf("{%u, %u, %u, %u, %u, %u, %u}",
+    fprintf(fp, "{%u, %u, %u, %u, %u, %u, %u}",
         CGP_INPUTS, CGP_OUTPUTS, CGP_COLS, CGP_ROWS, CGP_FUNC_INPUTS,
         1, CGP_FUNC_COUNT);
 
@@ -87,13 +110,11 @@ void cgp_dump_chr_compat(cgp_chr chr, FILE *fp)
  */
 void cgp_dump_chr_readable(cgp_chr chr, FILE *fp)
 {
-    printf("Inputs: %u\nOutputs: %u\nSize: %u x %u\nBlocks: %u-ary, %u output(s), %u functions\n",
-        CGP_INPUTS, CGP_OUTPUTS, CGP_COLS, CGP_ROWS, CGP_FUNC_INPUTS,
-        1, CGP_FUNC_COUNT);
+    cgp_dump_chr_header(chr, fp);
 
-    for (uint y = 0; y < CGP_ROWS; y++) {
-        for (uint x = 0; x < CGP_COLS; x++) {
-            uint i = cgp_node_index(x, y);
+    for (int y = 0; y < CGP_ROWS; y++) {
+        for (int x = 0; x < CGP_COLS; x++) {
+            int i = cgp_node_index(x, y);
             _cgp_node *n = &(chr->nodes[i]);
 
             fprintf(fp, "([%2u] %2u, %2u, %2u)  ",
@@ -118,7 +139,7 @@ void cgp_dump_chr_readable(cgp_chr chr, FILE *fp)
  * @param chr
  * @param fp
  */
-void cgp_dump_chr_asciiart_input(uint*in_counter, cgp_chr chr, FILE *fp)
+void cgp_dump_chr_asciiart_input(int *in_counter, cgp_chr chr, FILE *fp)
 {
     if (*in_counter < CGP_INPUTS) fprintf(fp, "[%2u]>| ", (*in_counter)++);
     else fprintf(fp, "     | ");
@@ -131,7 +152,7 @@ void cgp_dump_chr_asciiart_input(uint*in_counter, cgp_chr chr, FILE *fp)
  * @param chr
  * @param fp
  */
-void cgp_dump_chr_asciiart_output(uint*out_counter, cgp_chr chr, FILE *fp)
+void cgp_dump_chr_asciiart_output(int *out_counter, cgp_chr chr, FILE *fp)
 {
     if (*out_counter < CGP_OUTPUTS) fprintf(fp, ">[%2u]", chr->outputs[(*out_counter)++]);
 }
@@ -156,28 +177,26 @@ void cgp_dump_chr_asciiart_output(uint*out_counter, cgp_chr chr, FILE *fp)
 */
 void cgp_dump_chr_asciiart(cgp_chr chr, FILE *fp)
 {
-    printf("Inputs: %u\nOutputs: %u\nSize: %u x %u\nBlocks: %u-ary, %u output(s), %u functions\n",
-        CGP_INPUTS, CGP_OUTPUTS, CGP_COLS, CGP_ROWS, CGP_FUNC_INPUTS,
-        1, CGP_FUNC_COUNT);
+    int in_counter = 0;
+    int out_counter = 0;
 
-    uint in_counter = 0;
-    uint out_counter = 0;
+    cgp_dump_chr_header(chr, fp);
 
     /* top of the circuit */
     fprintf(fp, "     .--");
-    for (uint x = 0; x < CGP_COLS; x++) {
+    for (int x = 0; x < CGP_COLS; x++) {
         fprintf(fp, "----------------");
         if (x == CGP_COLS - 1) fprintf(fp, ".\n");
         else fprintf(fp, "--");
     }
 
-    for (uint y = 0; y < CGP_ROWS; y++) {
+    for (int y = 0; y < CGP_ROWS; y++) {
         if (y != 0) cgp_dump_chr_asciiart_input(&in_counter, chr, fp);
         else fprintf(fp, "     | ");
 
         /* top of the blocks */
         fprintf(fp, " ");
-        for (uint x = 0; x < CGP_COLS; x++) {
+        for (int x = 0; x < CGP_COLS; x++) {
             fprintf(fp, "    .----.      ");
             if (x == CGP_COLS - 1) fprintf(fp, "|");
             else fprintf(fp, "  ");
@@ -188,8 +207,8 @@ void cgp_dump_chr_asciiart(cgp_chr chr, FILE *fp)
         cgp_dump_chr_asciiart_input(&in_counter, chr, fp);
 
         /* first line of blocks */
-        for (uint x = 0; x < CGP_COLS; x++) {
-            uint i = cgp_node_index(x, y);
+        for (int x = 0; x < CGP_COLS; x++) {
+            int i = cgp_node_index(x, y);
             _cgp_node *n = &(chr->nodes[i]);
             fprintf(fp, "[%2u]>|    |>[%2u]", n->inputs[0], CGP_INPUTS + i);
             if (x == CGP_COLS - 1) fprintf(fp, " |");
@@ -201,10 +220,10 @@ void cgp_dump_chr_asciiart(cgp_chr chr, FILE *fp)
         cgp_dump_chr_asciiart_input(&in_counter, chr, fp);
 
         /* second line of blocks */
-        for (uint x = 0; x < CGP_COLS; x++) {
-            uint i = cgp_node_index(x, y);
+        for (int x = 0; x < CGP_COLS; x++) {
+            int i = cgp_node_index(x, y);
             _cgp_node *n = &(chr->nodes[i]);
-            fprintf(fp, "[%2u]>|%s|     ", n->inputs[1], func_names[n->function]);
+            fprintf(fp, "[%2u]>|%s|     ", n->inputs[1], cgp_func_name(n->function));
             if (x == CGP_COLS - 1) fprintf(fp, " |");
             else fprintf(fp, "  ");
         }
@@ -215,7 +234,7 @@ void cgp_dump_chr_asciiart(cgp_chr chr, FILE *fp)
 
         /* bottom of the blocks */
         fprintf(fp, " ");
-        for (uint x = 0; x < CGP_COLS; x++) {
+        for (int x = 0; x < CGP_COLS; x++) {
             fprintf(fp, "    '----'      ");
             if (x == CGP_COLS - 1) fprintf(fp, "|");
             else fprintf(fp, "  ");
@@ -227,7 +246,7 @@ void cgp_dump_chr_asciiart(cgp_chr chr, FILE *fp)
 
     /* bottom of the circuit */
     fprintf(fp, "     '--");
-    for (uint x = 0; x < CGP_COLS; x++) {
+    for (int x = 0; x < CGP_COLS; x++) {
         fprintf(fp, "----------------");
         if (x == CGP_COLS - 1) fprintf(fp, "'\n");
         else fprintf(fp, "--");
