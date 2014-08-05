@@ -21,6 +21,7 @@
 #include <signal.h>
 
 #include "windows.h"
+#include "cgp.h"
 
 
 // SIDWINCH handler
@@ -56,23 +57,23 @@ bool _nc_slowlog_first = true;
 
 #define APP_TITLE "Colearning in Coevolutionary Algorithms, Bc. Michal Wiglasz, xwigla00@stud.fit.vutbr.cz"
 
-#define PROGRESS_HEIGHT 8
-#define PROGRESS_WIDTH (COLS / 2)
-#define PROGRESS_TOP 2
-#define PROGRESS_LEFT 0
-#define PROGRESS_TITLE "Live progress"
-
-#define SLOWLOG_HEIGHT PROGRESS_HEIGHT
-#define SLOWLOG_WIDTH PROGRESS_WIDTH
-#define SLOWLOG_TOP PROGRESS_TOP
-#define SLOWLOG_LEFT (COLS - PROGRESS_WIDTH + PROGRESS_LEFT)
-#define SLOWLOG_TITLE "Slow log"
-
-#define CIRCUIT_HEIGHT (LINES - PROGRESS_HEIGHT - PROGRESS_TOP - 1)
+#define CIRCUIT_HEIGHT (cgp_dump_chr_asciiart_height() + 2)
 #define CIRCUIT_WIDTH COLS
-#define CIRCUIT_TOP (PROGRESS_TOP + PROGRESS_HEIGHT + 1)
+#define CIRCUIT_TOP (LINES - CIRCUIT_HEIGHT)
 #define CIRCUIT_LEFT 0
 #define CIRCUIT_TITLE "Best circuit found"
+
+#define PROGRESS_TOP 2
+#define PROGRESS_LEFT 0
+#define PROGRESS_HEIGHT (CIRCUIT_TOP - PROGRESS_TOP - 1)
+#define PROGRESS_WIDTH (COLS / 2)
+#define PROGRESS_TITLE "Live progress"
+
+#define SLOWLOG_TOP PROGRESS_TOP
+#define SLOWLOG_LEFT (COLS - PROGRESS_WIDTH + PROGRESS_LEFT)
+#define SLOWLOG_HEIGHT PROGRESS_HEIGHT
+#define SLOWLOG_WIDTH PROGRESS_WIDTH
+#define SLOWLOG_TITLE "Slow log"
 
 
 void windows_init()

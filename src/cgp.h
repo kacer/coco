@@ -316,7 +316,8 @@ static inline int cgp_dump_chr_asciiart_width() {
 
 
 static inline int cgp_dump_chr_asciiart_height() {
-    return 1 + CGP_ROWS * 4 + 1;
+    // header + border + nodes + border
+    return 5 + 1 + (CGP_ROWS * 4) + 1;
 }
 
 
