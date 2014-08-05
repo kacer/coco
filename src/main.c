@@ -27,12 +27,16 @@
 #include "fitness.h"
 #include "vault.h"
 
+#ifdef NCURSES
+    #include "windows.h"
+#endif
+
 
 #define CGP_MUTATION_RATE 5   /* number of max. changed genes */
 #define CGP_POP_SIZE 8
-#define CGP_GENERATIONS 30000
+#define CGP_GENERATIONS 50000
 
-#define PRINT_INTERVAL 10
+#define PRINT_INTERVAL 1
 #define VAULT_INTERVAL 200
 
 
@@ -50,26 +54,87 @@ volatile sig_atomic_t cpu_limit_reached = 0;
 void sigxcpu_handler(int _)
 {
     signal(SIGXCPU, sigxcpu_handler);
-    interrupted = 1;
     cpu_limit_reached = 1;
 }
 
 
-void print_results(cgp_pop population, img_image noisy)
+void save_image(cgp_pop population, img_image noisy)
 {
-    printf("Generation %4d: best fitness %.20g (index %d)\n", population->generation, population->best_fitness, population->best_chr_index);
-
-    printf(".--------------.\n"
-           "| Best circuit |\n"
-           "'--------------'\n");
-    cgp_dump_chr_asciiart(population->chromosomes[population->best_chr_index], stdout);
-    printf("\n");
-
     char filename[25 + 8 + 1];
     snprintf(filename, 25 + 8 + 1, "results/img_filtered_%08d.bmp", population->generation);
     img_image filtered = fitness_filter_image(population->chromosomes[population->best_chr_index]);
     img_save_bmp(filtered, filename);
     img_destroy(filtered);
+}
+
+
+#ifdef NCURSES
+
+
+    #define SLOWLOG _NC_SLOWLOG
+
+
+    void print_progress(cgp_pop population)
+    {
+        _NC_PROGRESS("Generation %4d: best fitness %.20g",
+            population->generation, population->best_fitness);
+
+        if (population->best_chr_index >= 0) {
+            char* buffer = NULL;
+            size_t bufferSize = 0;
+            FILE* memory = open_memstream(&buffer, &bufferSize);
+
+            cgp_dump_chr_asciiart(population->chromosomes[population->best_chr_index], memory);
+            fclose(memory);
+
+            werase(circuit_window);
+            wprintw(circuit_window, "%s", buffer);
+            wrefresh(circuit_window);
+
+            free(buffer);
+        }
+    }
+
+
+    void print_results(cgp_pop population)
+    {
+        print_progress(population);
+    }
+
+
+#else
+
+
+    #define SLOWLOG(...) { printf(__VA_ARGS__); printf("\n"); }
+
+
+    void print_progress(cgp_pop population)
+    {
+        printf("Generation %4d: best fitness %.20g\n",
+            population->generation, population->best_fitness);
+    }
+
+
+    void print_results(cgp_pop population)
+    {
+        print_progress(population);
+
+        printf(".--------------.\n"
+               "| Best circuit |\n"
+               "'--------------'\n");
+        cgp_dump_chr_asciiart(population->chromosomes[population->best_chr_index], stdout);
+        printf("\n");
+    }
+
+
+#endif /* NCURSES */
+
+
+#define SAVE_IMAGE_AND_STATE() { \
+    print_results(population); \
+    save_image(population, noisy); \
+    vault_store(vault, population); \
+    SLOWLOG("Current output image and state stored."); \
 }
 
 
@@ -95,9 +160,6 @@ int main(int argc, char const *argv[])
     img_save_bmp(original, "results/img_original.bmp");
     img_save_bmp(noisy, "results/img_noisy.bmp");
 
-    printf("Mutation rate: %d genes max\n", CGP_MUTATION_RATE);
-    printf("Initial PSNR value:           %.20g\n", fitness_psnr(original, noisy));
-
 
     // setup vault storage
 
@@ -113,12 +175,19 @@ int main(int argc, char const *argv[])
     cgp_init(&fitness_eval_cgp, maximize);
     vault_init(vault);
 
+#ifdef NCURSES
+    windows_init();
+#endif
+
+    SLOWLOG("Mutation rate: %d genes max", CGP_MUTATION_RATE);
+    SLOWLOG("Initial PSNR value:           %.20g", fitness_psnr(original, noisy));
+
 
     // try to restart from vault OR create the initial population
 
     cgp_pop population;
     if (vault_retrieve(vault, &population) == 0) {
-        printf("Population retrieved from vault.\n");
+        SLOWLOG("Population retrieved from vault.");
 
     } else {
         population = cgp_create_pop(CGP_POP_SIZE);
@@ -134,39 +203,76 @@ int main(int argc, char const *argv[])
 
     // evolve
 
+#ifdef NCURSES
+    cgp_fitness_t last_best = 0;
+#else
     int interrupted_generation = -1;
+#endif
+
     while (population->generation < CGP_GENERATIONS) {
         if ((population->generation % PRINT_INTERVAL) == 0) {
-            printf("Generation %4d: best fitness %.20g (index %d)\n", population->generation, population->best_fitness, population->best_chr_index);
+            print_progress(population);
         }
         cgp_next_generation(population, CGP_MUTATION_RATE);
+
+        if (cpu_limit_reached) {
+            print_results(population);
+            SAVE_IMAGE_AND_STATE();
+            retval = 10;
+            goto cleanup;
+        }
+
+        if ((population->generation % VAULT_INTERVAL) == 0) {
+            vault_store(vault, population);
+        }
+
+#ifdef NCURSES
+        if (population->best_fitness > last_best) {
+            last_best = population->best_fitness;
+            SLOWLOG("Generation %4d: best fitness %.20g",
+                population->generation, population->best_fitness);
+        }
+
+        switch (windows_check_events()) {
+            case save_state:
+                SAVE_IMAGE_AND_STATE();
+                break;
+
+            case quit:
+                SAVE_IMAGE_AND_STATE();
+                goto cleanup;
+
+            default:
+                break;
+        }
+
+#else
 
         if (interrupted) {
             if (interrupted_generation >= 0 && interrupted_generation > population->generation - 10) {
                 goto cleanup;
             }
-            print_results(population, noisy);
 
-            if (cpu_limit_reached) {
-                vault_store(vault, population);
-                fprintf(stderr, "Exit caused by SIGXCPU signal.\n");
-                retval = 10;
-                goto cleanup;
-            }
+            print_results(population);
+            SAVE_IMAGE_AND_STATE();
 
             interrupted = 0;
             interrupted_generation = population->generation;
-            vault_store(vault, population);
-
-        } else if ((population->generation % VAULT_INTERVAL) == 0) {
-            vault_store(vault, population);
         }
-    }
-    print_results(population, noisy);
+
+#endif
+
+    } // while loop
+    print_results(population);
+    save_image(population, noisy);
 
 
     // cleanup everything
 cleanup:
+#ifdef NCURSES
+    windows_destroy();
+#endif
+
     cgp_destroy_pop(population);
     cgp_deinit();
     fitness_deinit();

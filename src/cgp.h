@@ -310,6 +310,16 @@ void cgp_dump_chr_readable(cgp_chr chr, FILE *fp);
 void cgp_dump_chr_asciiart(cgp_chr chr, FILE *fp);
 
 
+static inline int cgp_dump_chr_asciiart_width() {
+    return 5 + CGP_COLS * 18 + 5;
+}
+
+
+static inline int cgp_dump_chr_asciiart_height() {
+    return 1 + CGP_ROWS * 4 + 1;
+}
+
+
 /**
  * Loads chromosome from given file stored in CGP-viewer compatible format
  * @param chr
