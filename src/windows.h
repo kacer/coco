@@ -39,6 +39,7 @@ extern bool _nc_slowlog_first;
 
 typedef enum {
     none,
+    unknown,
     save_state,
     quit,
     pause,

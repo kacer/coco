@@ -76,8 +76,16 @@ void save_image(cgp_pop population, img_image noisy)
 
     void print_progress(cgp_pop population)
     {
+        static cgp_fitness_t last_best = 0;
+
         _NC_PROGRESS("Generation %4d: best fitness %.20g",
             population->generation, population->best_fitness);
+
+        if (population->best_fitness > last_best) {
+            last_best = population->best_fitness;
+            SLOWLOG("Generation %4d: best fitness %.20g",
+                population->generation, population->best_fitness);
+        }
 
         if (population->best_chr_index >= 0) {
             char* buffer = NULL;
@@ -203,11 +211,7 @@ int main(int argc, char const *argv[])
 
     // evolve
 
-#ifdef NCURSES
-    cgp_fitness_t last_best = 0;
-#else
     int interrupted_generation = -1;
-#endif
 
     while (population->generation < CGP_GENERATIONS) {
         if ((population->generation % PRINT_INTERVAL) == 0) {
@@ -227,40 +231,34 @@ int main(int argc, char const *argv[])
         }
 
 #ifdef NCURSES
-        if (population->best_fitness > last_best) {
-            last_best = population->best_fitness;
-            SLOWLOG("Generation %4d: best fitness %.20g",
-                population->generation, population->best_fitness);
-        }
+        windows_event ev;
+        while ((ev = windows_check_events()) != none) {
+            switch (ev) {
+                case save_state:
+                    SAVE_IMAGE_AND_STATE();
+                    break;
 
-        switch (windows_check_events()) {
-            case save_state:
-                SAVE_IMAGE_AND_STATE();
-                break;
+                case quit:
+                    SAVE_IMAGE_AND_STATE();
+                    goto cleanup;
 
-            case quit:
-                SAVE_IMAGE_AND_STATE();
-                goto cleanup;
-
-            default:
-                break;
-        }
-
-#else
-
-        if (interrupted) {
-            if (interrupted_generation >= 0 && interrupted_generation > population->generation - 10) {
-                goto cleanup;
+                default:
+                    break;
             }
+        }
+#endif
 
-            print_results(population);
-            SAVE_IMAGE_AND_STATE();
-
-            interrupted = 0;
-            interrupted_generation = population->generation;
+    if (interrupted) {
+        if (interrupted_generation >= 0 && interrupted_generation > population->generation - 10) {
+            goto cleanup;
         }
 
-#endif
+        print_results(population);
+        SAVE_IMAGE_AND_STATE();
+
+        interrupted = 0;
+        interrupted_generation = population->generation;
+    }
 
     } // while loop
     print_results(population);

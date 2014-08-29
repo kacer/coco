@@ -19,6 +19,7 @@
 
 
 #include <signal.h>
+#include <sys/ioctl.h>
 
 #include "windows.h"
 #include "cgp.h"
@@ -33,16 +34,31 @@
 // }
 
 
+int cols = -1;
+int lines = -1;
+
+static inline int get_cols() {
+    return (cols >= 0)? cols : COLS;
+}
+
+static inline int get_lines() {
+    return (lines >= 0)? lines : LINES;
+}
+
+
 void _init_subwindow(WINDOW **win, WINDOW **brd, char* title, int height, int width, int starty, int startx);
+WINDOW *_init_statusline(char* text, int starty, chtype color);
 WINDOW *_win_new(int height, int width, int starty, int startx, bool border);
 void _win_destroy(WINDOW *local_win);
 void _win_print_title(WINDOW *win, char *title);
+void on_resize();
 
 WINDOW *border_progress_window;
 WINDOW *border_slowlog_window;
 WINDOW *border_circuit_window;
 
 WINDOW *title_window;
+WINDOW *statusbar_window;
 WINDOW *progress_window;
 WINDOW *circuit_window;
 WINDOW *slowlog_window;
@@ -54,23 +70,25 @@ bool _nc_slowlog_first = true;
 
 #define COLOR_APP_TITLE 1
 #define COLOR_WIN_TITLE 2
+#define COLOR_STATUSBAR COLOR_APP_TITLE
 
 #define APP_TITLE "Colearning in Coevolutionary Algorithms, Bc. Michal Wiglasz, xwigla00@stud.fit.vutbr.cz"
+#define STATUSBAR_TEXT "Hotkeys: s = store current state, q = quit"
 
 #define CIRCUIT_HEIGHT (cgp_dump_chr_asciiart_height() + 2)
-#define CIRCUIT_WIDTH COLS
-#define CIRCUIT_TOP (LINES - CIRCUIT_HEIGHT)
+#define CIRCUIT_WIDTH get_cols()
+#define CIRCUIT_TOP (get_lines() - CIRCUIT_HEIGHT - 2)
 #define CIRCUIT_LEFT 0
 #define CIRCUIT_TITLE "Best circuit found"
 
 #define PROGRESS_TOP 2
 #define PROGRESS_LEFT 0
 #define PROGRESS_HEIGHT (CIRCUIT_TOP - PROGRESS_TOP - 1)
-#define PROGRESS_WIDTH (COLS / 2)
+#define PROGRESS_WIDTH (get_cols() / 2)
 #define PROGRESS_TITLE "Live progress"
 
 #define SLOWLOG_TOP PROGRESS_TOP
-#define SLOWLOG_LEFT (COLS - PROGRESS_WIDTH + PROGRESS_LEFT)
+#define SLOWLOG_LEFT (get_cols() - PROGRESS_WIDTH + PROGRESS_LEFT)
 #define SLOWLOG_HEIGHT PROGRESS_HEIGHT
 #define SLOWLOG_WIDTH PROGRESS_WIDTH
 #define SLOWLOG_TITLE "Slow log"
@@ -92,13 +110,11 @@ void windows_init()
 
     // app title
 
-    title_window = _win_new(1, COLS, 0, 0, false);
-    wbkgd(title_window, COLOR_PAIR(COLOR_APP_TITLE));
-    whline(title_window, 0, COLS);
-    mvwprintw(title_window, 0, 1, " ");
-    wprintw(title_window, APP_TITLE);
-    wprintw(title_window, " ");
-    wrefresh(title_window);
+    title_window = _init_statusline(APP_TITLE, 0, COLOR_PAIR(COLOR_APP_TITLE));
+
+
+    // status bar
+    statusbar_window = _init_statusline(STATUSBAR_TEXT, get_lines() - 1, COLOR_PAIR(COLOR_STATUSBAR));
 
 
     // subwindows
@@ -126,6 +142,7 @@ void windows_destroy()
     delwin(border_slowlog_window);
     delwin(border_circuit_window);
     delwin(title_window);
+    delwin(statusbar_window);
     delwin(progress_window);
     delwin(circuit_window);
     delwin(slowlog_window);
@@ -142,8 +159,43 @@ windows_event windows_check_events()
         case 's': return save_state;
         case 'q': return quit;
         case 'p': return pause;
-        default: return none;
+        //case 'r': on_resize(); return unknown;
+        default: return unknown;
     }
+}
+
+
+void on_resize()
+{
+    struct winsize size = {};
+    ioctl(0, TIOCGWINSZ, &size);
+    if (size.ws_row && size.ws_col) {
+        lines = size.ws_row;
+        cols = size.ws_col;
+        resizeterm(size.ws_row, size.ws_col);
+        clearok(stdscr, TRUE);
+    }
+
+    touchwin(border_progress_window);
+    touchwin(border_slowlog_window);
+    touchwin(border_circuit_window);
+    touchwin(title_window);
+    touchwin(statusbar_window);
+    touchwin(progress_window);
+    touchwin(circuit_window);
+    touchwin(slowlog_window);
+
+    wrefresh(border_progress_window);
+    wrefresh(border_slowlog_window);
+    wrefresh(border_circuit_window);
+    wrefresh(title_window);
+    wrefresh(statusbar_window);
+    wrefresh(progress_window);
+    wrefresh(circuit_window);
+    wrefresh(slowlog_window);
+
+    touchwin(stdscr);
+    refresh();
 }
 
 
@@ -163,6 +215,19 @@ void _init_subwindow(WINDOW **win, WINDOW **brd, char* title, int height, int wi
     *brd = _win_new(height, width, starty, startx, true);
     *win = _win_new(height - 2, width - 2, starty + 1, startx + 1, false);
     _win_print_title(*brd, title);
+}
+
+
+WINDOW *_init_statusline(char* text, int starty, chtype color)
+{
+    WINDOW *win = _win_new(1, COLS, starty, 0, false);
+    wbkgd(win, color);
+    whline(win, 0, COLS);
+    mvwprintw(win, 0, 1, " ");
+    wprintw(win, text);
+    wprintw(win, " ");
+    wrefresh(win);
+    return win;
 }
 
 
