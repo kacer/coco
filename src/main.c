@@ -19,6 +19,7 @@
 
 
 #include <stdio.h>
+#include <stdbool.h>
 #include <signal.h>
 
 #include "cgp.h"
@@ -38,6 +39,14 @@
 
 #define PRINT_INTERVAL 1
 #define VAULT_INTERVAL 200
+
+
+// whether to use ncurses mode or not
+bool using_ncurses = false;
+
+// outputting
+void print_progress(cgp_pop population);
+void print_results(cgp_pop population);
 
 
 // SIGINT handler
@@ -68,13 +77,41 @@ void save_image(cgp_pop population, img_image noisy)
 }
 
 
+/* standard console outputing */
+
+#define _SLOWLOG(...) { printf(__VA_ARGS__); printf("\n"); }
+
+
+void _print_progress(cgp_pop population)
+{
+    printf("Generation %4d: best fitness %.20g\n",
+        population->generation, population->best_fitness);
+}
+
+
+void _print_results(cgp_pop population)
+{
+    _print_progress(population);
+
+    printf(".--------------.\n"
+           "| Best circuit |\n"
+           "'--------------'\n");
+    cgp_dump_chr_asciiart(population->chromosomes[population->best_chr_index], stdout);
+    printf("\n");
+}
+
+
+/* (optional) ncurses outputing */
+
 #ifdef NCURSES
 
+    #define SLOWLOG(...) do { \
+        if (using_ncurses) { _NC_SLOWLOG(__VA_ARGS__); } \
+        else { _SLOWLOG(__VA_ARGS__); } \
+    } while(false);
 
-    #define SLOWLOG _NC_SLOWLOG
 
-
-    void print_progress(cgp_pop population)
+    void _nc_print_progress(cgp_pop population)
     {
         static cgp_fitness_t last_best = 0;
 
@@ -103,37 +140,28 @@ void save_image(cgp_pop population, img_image noisy)
         }
     }
 
-
-    void print_results(cgp_pop population)
+    void _nc_print_results(cgp_pop population)
     {
-        print_progress(population);
+        _nc_print_progress(population);
     }
-
-
-#else
-
-
-    #define SLOWLOG(...) { printf(__VA_ARGS__); printf("\n"); }
-
 
     void print_progress(cgp_pop population)
     {
-        printf("Generation %4d: best fitness %.20g\n",
-            population->generation, population->best_fitness);
+        if (using_ncurses) _nc_print_progress(population);
+        else _print_progress(population);
     }
-
 
     void print_results(cgp_pop population)
     {
-        print_progress(population);
-
-        printf(".--------------.\n"
-               "| Best circuit |\n"
-               "'--------------'\n");
-        cgp_dump_chr_asciiart(population->chromosomes[population->best_chr_index], stdout);
-        printf("\n");
+        if (using_ncurses) _nc_print_results(population);
+        else _print_results(population);
     }
 
+#else
+
+    #define SLOWLOG _SLOWLOG
+    #define print_progress _print_progress
+    #define print_results _print_results
 
 #endif /* NCURSES */
 
@@ -184,7 +212,7 @@ int main(int argc, char const *argv[])
     vault_init(vault);
 
 #ifdef NCURSES
-    windows_init();
+    if (using_ncurses) windows_init();
 #endif
 
     SLOWLOG("Mutation rate: %d genes max", CGP_MUTATION_RATE);
@@ -231,19 +259,21 @@ int main(int argc, char const *argv[])
         }
 
 #ifdef NCURSES
-        windows_event ev;
-        while ((ev = windows_check_events()) != none) {
-            switch (ev) {
-                case save_state:
-                    SAVE_IMAGE_AND_STATE();
-                    break;
+        if (using_ncurses) {
+            windows_event ev;
+            while ((ev = windows_check_events()) != none) {
+                switch (ev) {
+                    case save_state:
+                        SAVE_IMAGE_AND_STATE();
+                        break;
 
-                case quit:
-                    SAVE_IMAGE_AND_STATE();
-                    goto cleanup;
+                    case quit:
+                        SAVE_IMAGE_AND_STATE();
+                        goto cleanup;
 
-                default:
-                    break;
+                    default:
+                        break;
+                }
             }
         }
 #endif
@@ -268,7 +298,7 @@ int main(int argc, char const *argv[])
     // cleanup everything
 cleanup:
 #ifdef NCURSES
-    windows_destroy();
+    if (using_ncurses) windows_destroy();
 #endif
 
     cgp_destroy_pop(population);

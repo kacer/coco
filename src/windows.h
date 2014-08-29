@@ -46,19 +46,19 @@ typedef enum {
 } windows_event;
 
 
-#define _NC_PROGRESS(...) { \
+#define _NC_PROGRESS(...) do { \
     if (!_nc_progress_first) wprintw(progress_window, "\n"); \
     else _nc_progress_first = false; \
     wprintw(progress_window, __VA_ARGS__); \
     wrefresh(progress_window); \
-}
+} while(0);
 
-#define _NC_SLOWLOG(...) { \
+#define _NC_SLOWLOG(...) do { \
     if (!_nc_slowlog_first) wprintw(slowlog_window, "\n"); \
     else _nc_slowlog_first = false; \
     wprintw(slowlog_window, __VA_ARGS__); \
     wrefresh(slowlog_window); \
-}
+} while(0);
 
 
 void windows_init();
