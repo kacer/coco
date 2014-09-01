@@ -37,7 +37,7 @@ typedef struct {
  * Initialize vault storage
  * @param storage
  */
-int vault_init(vault_storage storage);
+int vault_init(vault_storage *storage);
 
 
 /**
@@ -45,7 +45,7 @@ int vault_init(vault_storage storage);
  * @param storage
  * @param population
  */
-int vault_store(vault_storage storage, cgp_pop population);
+int vault_store(vault_storage *storage, cgp_pop population);
 
 
 /**
@@ -53,7 +53,7 @@ int vault_store(vault_storage storage, cgp_pop population);
  * @param storage
  * @param population
  */
-int vault_retrieve(vault_storage storage, cgp_pop *pop_ptr);
+int vault_retrieve(vault_storage *storage, cgp_pop *pop_ptr);
 
 
 /**

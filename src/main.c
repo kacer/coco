@@ -18,8 +18,12 @@
  */
 
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
+#include <getopt.h>
+#include <ctype.h>
 #include <signal.h>
 
 #include "cgp.h"
@@ -31,6 +35,35 @@
 #ifdef NCURSES
     #include "windows.h"
 #endif
+
+
+char* HELP_MESSAGE =
+    "Colearning in Coevolutionary Algorithms\n"
+    "Bc. Michal Wiglasz <xwigla00@stud.fit.vutbr.cz>\n"
+    "\n"
+    "Master Thesis\n"
+    "2014/2015\n"
+    "\n"
+    "Supervisor: Ing. Michaela Šikulová <isikulova@fit.vutbr.cz>\n"
+    "\n"
+    "Faculty of Information Technologies\n"
+    "Brno University of Technology\n"
+    "http://www.fit.vutbr.cz/\n"
+    "     _       _\n"
+    "  __(.)=   =(.)__\n"
+    "  \\___)     (___/\n"
+    "\n"
+    "Usage:"
+    "    ./coco -i original.png -n noisy.png [-v vault] [-g]\n"
+    "Command line options:\n"
+    "    -h      Show this help and exit\n"
+    "    -i      Original image filename\n"
+    "    -n      Noisy image filename\n"
+    "    -v      Vault directory (default is \"vault\"\n"
+#ifdef NCURSES
+    "    -g      Use graphic interface\n"
+#endif
+;
 
 
 #define CGP_MUTATION_RATE 5   /* number of max. changed genes */
@@ -169,47 +202,87 @@ void _print_results(cgp_pop population)
 #define SAVE_IMAGE_AND_STATE() { \
     print_results(population); \
     save_image(population, noisy); \
-    vault_store(vault, population); \
+    vault_store(&vault, population); \
     SLOWLOG("Current output image and state stored."); \
 }
 
 
-int main(int argc, char const *argv[])
+int main(int argc, char *argv[])
 {
     // application return code
     int retval = 0;
 
-    // load source images
+    // images
+    img_image original = NULL;
+    img_image noisy = NULL;
+    vault_storage vault = { .directory = "vault" };
 
-    img_image original = img_load("images/lena_gray_256.png");
+    opterr = 0;
+    int opt;
+    while ((opt = getopt(argc, argv, "i:n:v:hg")) != -1) {
+        switch (opt) {
+            case 'i':
+                original = img_load(optarg);
+                break;
+
+            case 'n':
+                noisy = img_load(optarg);
+                break;
+
+            case 'v':
+                vault.directory = (char*) malloc(sizeof(char) * (strlen(optarg) + 1));
+                strcpy(vault.directory, optarg);
+                break;
+
+            case 'h':
+                fprintf(stderr, "%s", HELP_MESSAGE);
+                return 1;
+
+            case 'g':
+#ifdef NCURSES
+                using_ncurses = true;
+                break;
+#else
+                fprintf(stderr,
+                    "Graphic interface is not available.\n"
+                    "Compile with -DNCURSES to enable.\n"
+                );
+                return 1;
+#endif
+
+            case '?':
+                if (optopt == 'i' || optopt == 'n' || optopt == 'v') {
+                    fprintf(stderr, "Option -%c requires an argument.\n", optopt);
+                } else if (isprint(optopt)) {
+                    fprintf (stderr, "Unknown option `-%c'.\n", optopt);
+                } else {
+                    fprintf (stderr, "Unknown option character `\\x%x'.\n", optopt);
+                }
+
+                fprintf(stderr, "Use -h for help.\n");
+                return 1;
+        }
+    }
+
     if (!original) {
-        fprintf(stderr, "Failed to load original image.\n");
+        fprintf(stderr, "Failed to load original image or no filename given.\n");
         return 1;
     }
 
-    img_image noisy = img_load("images/lena_gray_256_saltpepper_15.png");
     if (!noisy) {
-        fprintf(stderr, "Failed to load noisy image.\n");
+        fprintf(stderr, "Failed to load noisy image or no filename given.\n");
         return 1;
     }
 
     img_save_bmp(original, "results/img_original.bmp");
     img_save_bmp(noisy, "results/img_noisy.bmp");
 
-
-    // setup vault storage
-
-    vault_storage vault = {
-        .directory = "vault",
-    };
-
-
     // initialize everything
 
     rand_init();
     fitness_init(original, noisy);
     cgp_init(&fitness_eval_cgp, maximize);
-    vault_init(vault);
+    vault_init(&vault);
 
 #ifdef NCURSES
     if (using_ncurses) windows_init();
@@ -222,7 +295,7 @@ int main(int argc, char const *argv[])
     // try to restart from vault OR create the initial population
 
     cgp_pop population;
-    if (vault_retrieve(vault, &population) == 0) {
+    if (vault_retrieve(&vault, &population) == 0) {
         SLOWLOG("Population retrieved from vault.");
 
     } else {
@@ -255,7 +328,7 @@ int main(int argc, char const *argv[])
         }
 
         if ((population->generation % VAULT_INTERVAL) == 0) {
-            vault_store(vault, population);
+            vault_store(&vault, population);
         }
 
 #ifdef NCURSES
