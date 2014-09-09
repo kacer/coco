@@ -43,4 +43,4 @@ int cgp_load_chr_compat(ga_chr_t chr, FILE *fp);
  * @param fp
  * @return 0 on success, -1 on file format error, -2 on incompatible CGP config
  */
-int cgp_load_pop_compat(ga_pop_t *pop_ptr, int mutation_rate, ga_fitness_func_t fitness_func, FILE *fp);
+int cgp_load_pop_compat(ga_pop_t *pop_ptr, FILE *fp);

@@ -68,9 +68,9 @@ const char* HELP_MESSAGE =
 
 #define CGP_MUTATION_RATE 5   /* number of max. changed genes */
 #define CGP_POP_SIZE 8
-#define CGP_GENERATIONS 5000
+#define CGP_GENERATIONS 50000
 
-#define PRINT_INTERVAL 100
+#define PRINT_INTERVAL 20
 #define VAULT_INTERVAL 200
 
 
@@ -298,9 +298,13 @@ int main(int argc, char *argv[])
         SLOWLOG("Population retrieved from vault.");
 
     } else {
-        population = cgp_init_pop(CGP_MUTATION_RATE, CGP_POP_SIZE, fitness_eval_cgp);
-        ga_evaluate_pop(population);
+        population = cgp_init_pop(CGP_POP_SIZE);
     }
+
+    cgp_set_mutation_rate(CGP_MUTATION_RATE);
+    cgp_set_fitness_func(population, fitness_eval_cgp);
+    ga_evaluate_pop(population);
+    print_progress(population);
 
 
     // install signal handlers

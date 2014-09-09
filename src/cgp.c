@@ -20,6 +20,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "cgp.h"
 #include "random.h"
@@ -107,16 +108,13 @@ void cgp_deinit()
  * @param  population size
  * @return
  */
-ga_pop_t cgp_init_pop(int mutation_rate, int pop_size, ga_fitness_func_t fitness_func)
+ga_pop_t cgp_init_pop(int pop_size)
 {
-    /* global settings */
-    _mutation_rate = mutation_rate;
-
     /* prepare methods vector */
     ga_func_vect_t methods = {
         .init = cgp_init_chr,
         .deinit = cgp_deinit_chr,
-        .fitness = fitness_func,
+        .fitness = NULL,  // must be set later!
         .offspring = cgp_offspring,
 
         .mutate = cgp_mutate_chr,
@@ -134,6 +132,18 @@ ga_pop_t cgp_init_pop(int mutation_rate, int pop_size, ga_fitness_func_t fitness
 void cgp_set_mutation_rate(int mutation_rate)
 {
     _mutation_rate = mutation_rate;
+}
+
+
+/**
+ * Sets fitness function
+ * @param mutation_rate
+ */
+void cgp_set_fitness_func(ga_pop_t pop, ga_fitness_func_t fitness_func)
+{
+    assert(fitness_func != NULL);
+    pop->methods.fitness = fitness_func;
+    assert(pop->methods.fitness != NULL);
 }
 
 

@@ -148,6 +148,12 @@ ga_pop_t ga_create_pop(int size, ga_problem_type_t type, ga_func_vect_t methods)
 
 
 /**
+ * Sets method vector
+ */
+void ga_set_methods(ga_pop_t pop, ga_func_vect_t methods);
+
+
+/**
 * Clear memory associated with given population (including its chromosomes)
 * @param pop
 */

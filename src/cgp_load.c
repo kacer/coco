@@ -84,7 +84,7 @@ int cgp_load_chr_compat(ga_chr_t chr, FILE *fp)
  * @param fp
  * @return 0 on success, -1 on file format error, -2 on incompatible CGP config
  */
-int cgp_load_pop_compat(ga_pop_t *pop_ptr, int mutation_rate, ga_fitness_func_t fitness_func, FILE *fp)
+int cgp_load_pop_compat(ga_pop_t *pop_ptr, FILE *fp)
 {
     int generation;
     int size;
@@ -98,7 +98,7 @@ int cgp_load_pop_compat(ga_pop_t *pop_ptr, int mutation_rate, ga_fitness_func_t 
         return -1;
     }
 
-    ga_pop_t population = cgp_init_pop(mutation_rate, size, fitness_func);
+    ga_pop_t population = cgp_init_pop(size);
     population->generation = generation;
     population->best_chr_index = best_index;
 
@@ -109,7 +109,6 @@ int cgp_load_pop_compat(ga_pop_t *pop_ptr, int mutation_rate, ga_fitness_func_t 
         }
     }
 
-    ga_evaluate_pop(population);
     *pop_ptr = population;
     return 0;
 }

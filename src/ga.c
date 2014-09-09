@@ -18,8 +18,6 @@
  */
 
 
-#define GA_USE_PTHREAD
-
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -43,11 +41,9 @@
  */
 ga_pop_t ga_create_pop(int size, ga_problem_type_t type, ga_func_vect_t methods)
 {
+    /* only init/deinit are required for initialization */
     assert(methods.init != NULL);
     assert(methods.deinit != NULL);
-    assert(methods.fitness != NULL);
-    assert(methods.offspring != NULL);
-    assert(methods.crossover != NULL || methods.mutate != NULL);
 
     ga_pop_t new_pop = (ga_pop_t) malloc(sizeof(struct ga_pop));
     if (new_pop == NULL) {
@@ -70,17 +66,32 @@ ga_pop_t ga_create_pop(int size, ga_problem_type_t type, ga_func_vect_t methods)
 
     /* initialize chromosomes */
     for (int i = 0; i < size; i++) {
-        new_pop->chromosomes[i] = (ga_chr_t) malloc(sizeof(struct ga_chr));
-        int retval = new_pop->methods.init(new_pop->chromosomes[i]);
-        if (retval != 0) {
+        ga_chr_t new_chr = (ga_chr_t) malloc(sizeof(struct ga_chr));
+        if (new_chr == NULL || new_pop->methods.init(new_chr) != 0) {
            for (int x = i - 1; x >= 0; x--) {
-               new_pop->methods.deinit(new_pop->chromosomes[i]);
+               new_pop->methods.deinit(new_chr);
            }
            return NULL;
         }
+        new_chr->has_fitness = false;
+        new_pop->chromosomes[i] = new_chr;
     }
 
     return new_pop;
+}
+
+
+/**
+ * Sets method vector
+ */
+void ga_set_methods(ga_pop_t pop, ga_func_vect_t methods)
+{
+    assert(methods.init != NULL);
+    assert(methods.deinit != NULL);
+    assert(methods.fitness != NULL);
+    assert(methods.offspring != NULL);
+    assert(methods.crossover != NULL || methods.mutate != NULL);
+    pop->methods = methods;
 }
 
 
@@ -141,6 +152,7 @@ ga_fitness_t ga_evaluate_chr(ga_pop_t pop, ga_chr_t chr)
  */
 ga_fitness_t ga_reevaluate_chr(ga_pop_t pop, ga_chr_t chr)
 {
+    assert(pop->methods.fitness != NULL);
     chr->fitness = pop->methods.fitness(chr);
     chr->has_fitness = true;
     return chr->fitness;

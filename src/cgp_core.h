@@ -83,6 +83,20 @@ void cgp_init();
 
 
 /**
+ * Sets mutation rate
+ * @param mutation_rate
+ */
+void cgp_set_mutation_rate(int mutation_rate);
+
+
+/**
+ * Sets fitness function
+ * @param mutation_rate
+ */
+void cgp_set_fitness_func(ga_pop_t pop, ga_fitness_func_t fitness_func);
+
+
+/**
  * Deinitialize CGP internals
  */
 void cgp_deinit();
@@ -91,11 +105,9 @@ void cgp_deinit();
 /**
  * Create a new CGP population with given size
  * @param  mutation rate (in number of genes)
- * @param  population size
- * @param  fitness function
  * @return
  */
-ga_pop_t cgp_init_pop(int mutation_rate, int pop_size, ga_fitness_func_t fitness_func);
+ga_pop_t cgp_init_pop(int pop_size);
 
 
 /**
@@ -184,11 +196,3 @@ static inline int cgp_node_row(int index)
 {
     return index % CGP_ROWS;
 }
-
-
-
-/**
- * Sets mutation rate
- * @param mutation_rate
- */
-void cgp_set_mutation_rate(int mutation_rate);

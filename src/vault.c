@@ -98,8 +98,6 @@ int _get_src_filename(char *buffer, int buffer_size, char *directory, char *file
  */
 int vault_retrieve(vault_storage *storage, ga_pop_t *cgp_pop_ptr)
 {
-    return VAULT_EMPTY;
-
     // find last existing file
 
     struct dirent **entries;
@@ -123,13 +121,10 @@ int vault_retrieve(vault_storage *storage, ga_pop_t *cgp_pop_ptr)
 
 int vault_read(char *fullname, ga_pop_t *cgp_pop_ptr)
 {
-    /*
     FILE *fp = fopen(fullname, "r");
     if (!fp) return VAULT_ERROR;
 
     int retval = cgp_load_pop_compat(cgp_pop_ptr, fp);
     fclose(fp);
     return retval;
-    */
-   return VAULT_ERROR;
 }
