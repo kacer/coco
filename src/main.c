@@ -330,7 +330,7 @@ int main(int argc, char *argv[])
         }
 
         if ((population->generation % VAULT_INTERVAL) == 0) {
-            //vault_store(&vault, population);
+            vault_store(&vault, population);
             save_image(population, noisy);
         }
 
