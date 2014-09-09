@@ -37,7 +37,7 @@
 #endif
 
 
-char* HELP_MESSAGE =
+const char* HELP_MESSAGE =
     "Colearning in Coevolutionary Algorithms\n"
     "Bc. Michal Wiglasz <xwigla00@stud.fit.vutbr.cz>\n"
     "\n"
@@ -68,9 +68,9 @@ char* HELP_MESSAGE =
 
 #define CGP_MUTATION_RATE 5   /* number of max. changed genes */
 #define CGP_POP_SIZE 8
-#define CGP_GENERATIONS 50000
+#define CGP_GENERATIONS 5000
 
-#define PRINT_INTERVAL 1
+#define PRINT_INTERVAL 100
 #define VAULT_INTERVAL 200
 
 
@@ -78,8 +78,8 @@ char* HELP_MESSAGE =
 bool using_ncurses = false;
 
 // outputting
-void print_progress(cgp_pop population);
-void print_results(cgp_pop population);
+void print_progress(ga_pop_t population);
+void print_results(ga_pop_t population);
 
 
 // SIGINT handler
@@ -100,7 +100,7 @@ void sigxcpu_handler(int _)
 }
 
 
-void save_image(cgp_pop population, img_image noisy)
+void save_image(ga_pop_t population, img_image noisy)
 {
     char filename[25 + 8 + 1];
     snprintf(filename, 25 + 8 + 1, "results/img_filtered_%08d.bmp", population->generation);
@@ -115,14 +115,14 @@ void save_image(cgp_pop population, img_image noisy)
 #define _SLOWLOG(...) { printf(__VA_ARGS__); printf("\n"); }
 
 
-void _print_progress(cgp_pop population)
+void _print_progress(ga_pop_t population)
 {
     printf("Generation %4d: best fitness %.20g\n",
         population->generation, population->best_fitness);
 }
 
 
-void _print_results(cgp_pop population)
+void _print_results(ga_pop_t population)
 {
     _print_progress(population);
 
@@ -144,9 +144,9 @@ void _print_results(cgp_pop population)
     } while(false);
 
 
-    void _nc_print_progress(cgp_pop population)
+    void _nc_print_progress(ga_pop_t population)
     {
-        static cgp_fitness_t last_best = 0;
+        static ga_fitness_t last_best = 0;
 
         _NC_PROGRESS("Generation %4d: best fitness %.20g",
             population->generation, population->best_fitness);
@@ -173,18 +173,18 @@ void _print_results(cgp_pop population)
         }
     }
 
-    void _nc_print_results(cgp_pop population)
+    void _nc_print_results(ga_pop_t population)
     {
         _nc_print_progress(population);
     }
 
-    void print_progress(cgp_pop population)
+    void print_progress(ga_pop_t population)
     {
         if (using_ncurses) _nc_print_progress(population);
         else _print_progress(population);
     }
 
-    void print_results(cgp_pop population)
+    void print_results(ga_pop_t population)
     {
         if (using_ncurses) _nc_print_results(population);
         else _print_results(population);
@@ -278,10 +278,9 @@ int main(int argc, char *argv[])
     img_save_bmp(noisy, "results/img_noisy.bmp");
 
     // initialize everything
-
+    cgp_init();
     rand_init();
     fitness_init(original, noisy);
-    cgp_init(&fitness_eval_cgp, maximize);
     vault_init(&vault);
 
 #ifdef NCURSES
@@ -294,13 +293,13 @@ int main(int argc, char *argv[])
 
     // try to restart from vault OR create the initial population
 
-    cgp_pop population;
+    ga_pop_t population;
     if (vault_retrieve(&vault, &population) == 0) {
         SLOWLOG("Population retrieved from vault.");
 
     } else {
-        population = cgp_create_pop(CGP_POP_SIZE);
-        cgp_evaluate_pop(population);
+        population = cgp_init_pop(CGP_MUTATION_RATE, CGP_POP_SIZE, fitness_eval_cgp);
+        ga_evaluate_pop(population);
     }
 
 
@@ -311,14 +310,13 @@ int main(int argc, char *argv[])
 
 
     // evolve
-
-    int interrupted_generation = -1;
+    long interrupted_generation = -1;
 
     while (population->generation < CGP_GENERATIONS) {
         if ((population->generation % PRINT_INTERVAL) == 0) {
             print_progress(population);
         }
-        cgp_next_generation(population, CGP_MUTATION_RATE);
+        ga_next_generation(population);
 
         if (cpu_limit_reached) {
             print_results(population);
@@ -328,7 +326,8 @@ int main(int argc, char *argv[])
         }
 
         if ((population->generation % VAULT_INTERVAL) == 0) {
-            vault_store(&vault, population);
+            //vault_store(&vault, population);
+            save_image(population, noisy);
         }
 
 #ifdef NCURSES
@@ -352,7 +351,8 @@ int main(int argc, char *argv[])
 #endif
 
     if (interrupted) {
-        if (interrupted_generation >= 0 && interrupted_generation > population->generation - 10) {
+
+        if (interrupted_generation >= 0 && interrupted_generation > population->generation - 1000) {
             goto cleanup;
         }
 
@@ -364,6 +364,7 @@ int main(int argc, char *argv[])
     }
 
     } // while loop
+
     print_results(population);
     save_image(population, noisy);
 
@@ -374,7 +375,7 @@ cleanup:
     if (using_ncurses) windows_destroy();
 #endif
 
-    cgp_destroy_pop(population);
+    ga_destroy_pop(population);
     cgp_deinit();
     fitness_deinit();
 

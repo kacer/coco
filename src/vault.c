@@ -59,17 +59,17 @@ int _get_dest_filename(char *buffer, int buffer_size, char *directory, int gener
  * @param storage
  * @param population
  */
-int vault_store(vault_storage *storage, cgp_pop population)
+int vault_store(vault_storage *storage, ga_pop_t cgp_population)
 {
     char fullname[MAX_FILENAME_LENGTH];
-    if (_get_dest_filename(fullname, MAX_FILENAME_LENGTH, storage->directory, population->generation) < 0) {
+    if (_get_dest_filename(fullname, MAX_FILENAME_LENGTH, storage->directory, cgp_population->generation) < 0) {
         return VAULT_ERROR;
     }
 
     FILE *fp = fopen(fullname, "w");
     if (!fp) return VAULT_ERROR;
 
-    cgp_dump_pop_compat(population, fp);
+    cgp_dump_pop_compat(cgp_population, fp);
     fclose(fp);
     return 0;
 }
@@ -96,8 +96,10 @@ int _get_src_filename(char *buffer, int buffer_size, char *directory, char *file
  * @param storage
  * @param population
  */
-int vault_retrieve(vault_storage *storage, cgp_pop *pop_ptr)
+int vault_retrieve(vault_storage *storage, ga_pop_t *cgp_pop_ptr)
 {
+    return VAULT_EMPTY;
+
     // find last existing file
 
     struct dirent **entries;
@@ -115,16 +117,19 @@ int vault_retrieve(vault_storage *storage, cgp_pop *pop_ptr)
         return VAULT_ERROR;
     }
 
-    return vault_read(fullname, pop_ptr);
+    return vault_read(fullname, cgp_pop_ptr);
 }
 
 
-int vault_read(char *fullname, cgp_pop *pop_ptr)
+int vault_read(char *fullname, ga_pop_t *cgp_pop_ptr)
 {
+    /*
     FILE *fp = fopen(fullname, "r");
     if (!fp) return VAULT_ERROR;
 
-    int retval = cgp_load_pop_compat(pop_ptr, fp);
+    int retval = cgp_load_pop_compat(cgp_pop_ptr, fp);
     fclose(fp);
     return retval;
+    */
+   return VAULT_ERROR;
 }

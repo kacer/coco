@@ -21,14 +21,37 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include "cgp.h"
+#include "cgp_dump.h"
+
+
+static inline const char* cgp_func_name(cgp_func_t f) {
+    const char *func_names[] = {
+        " FF ",     // 255
+        "  a ",     // a
+        "FF-a",     // 255 - a
+        " or ",     // a or b
+        "~1|2",     // (not a) or b
+        " and",     // a and b
+        "nand",     // not (a and b)
+        " xor",     // a xor b
+        "a>>1",     // a >> 1
+        "a>>2",     // a >> 2
+        "swap",     // a <-> b
+        " +  ",     // a + b
+        " +S ",     // a +S b
+        " avg",     // (a + b) >> 1
+        " max",     // max(a, b)
+        " min",     // min(a, b)
+    };
+    return func_names[f];
+}
 
 
 /**
  * Dumps chromosome to given file pointer
  * @param fp
  */
-void cgp_dump_chr(cgp_chr chr, FILE *fp, cgp_dump_format fmt)
+void cgp_dump_chr(ga_chr_t chr, FILE *fp, cgp_dump_format fmt)
 {
     if (fmt == readable) {
         cgp_dump_chr_readable(chr, fp);
@@ -48,12 +71,14 @@ void cgp_dump_chr(cgp_chr chr, FILE *fp, cgp_dump_format fmt)
  * @param chr
  * @param fp
  */
-void cgp_dump_chr_outputs(cgp_chr chr, FILE *fp)
+void cgp_dump_chr_outputs(ga_chr_t chr, FILE *fp)
 {
+    cgp_genome_t genome = (cgp_genome_t) chr->genome;
+
     fprintf(fp, "(");
     for (int i = 0; i < CGP_OUTPUTS; i++) {
         if (i > 0) fprintf(fp, ", ");
-        fprintf(fp, "%u", chr->outputs[i]);
+        fprintf(fp, "%u", genome->outputs[i]);
     }
     fprintf(fp, ")\n");
 }
@@ -64,7 +89,7 @@ void cgp_dump_chr_outputs(cgp_chr chr, FILE *fp)
  * @param chr
  * @param fp
  */
-void cgp_dump_chr_header(cgp_chr chr, FILE *fp)
+void cgp_dump_chr_header(ga_chr_t chr, FILE *fp)
 {
     fprintf(fp,
         "Inputs: %u\n"
@@ -87,14 +112,16 @@ void cgp_dump_chr_header(cgp_chr chr, FILE *fp)
  * @param chr
  * @param fp
  */
-void cgp_dump_chr_compat(cgp_chr chr, FILE *fp)
+void cgp_dump_chr_compat(ga_chr_t chr, FILE *fp)
 {
+    cgp_genome_t genome = (cgp_genome_t) chr->genome;
+
     fprintf(fp, "{%u, %u, %u, %u, %u, %u, %u}",
         CGP_INPUTS, CGP_OUTPUTS, CGP_COLS, CGP_ROWS, CGP_FUNC_INPUTS,
         1, CGP_FUNC_COUNT);
 
     for (int i = 0; i < CGP_NODES; i++) {
-        _cgp_node *n = &(chr->nodes[i]);
+        cgp_node_t *n = &(genome->nodes[i]);
         fprintf(fp, "([%u] %u, %u, %u)",
             CGP_INPUTS + i, n->inputs[0], n->inputs[1], n->function);
     }
@@ -108,20 +135,22 @@ void cgp_dump_chr_compat(cgp_chr chr, FILE *fp)
  * @param chr
  * @param fp
  */
-void cgp_dump_chr_readable(cgp_chr chr, FILE *fp)
+void cgp_dump_chr_readable(ga_chr_t chr, FILE *fp)
 {
+    cgp_genome_t genome = (cgp_genome_t) chr->genome;
+
     cgp_dump_chr_header(chr, fp);
 
     for (int y = 0; y < CGP_ROWS; y++) {
         for (int x = 0; x < CGP_COLS; x++) {
             int i = cgp_node_index(x, y);
-            _cgp_node *n = &(chr->nodes[i]);
+            cgp_node_t *n = &(genome->nodes[i]);
 
             fprintf(fp, "([%2u] %2u, %2u, %2u)  ",
                 CGP_INPUTS + i, n->inputs[0], n->inputs[1], n->function);
         }
         if (CGP_OUTPUTS <= CGP_ROWS && y < CGP_OUTPUTS) {
-            fprintf(fp, "  (%2u)", chr->outputs[y]);
+            fprintf(fp, "  (%2u)", genome->outputs[y]);
         }
         fprintf(fp, "\n");
     }
@@ -139,7 +168,7 @@ void cgp_dump_chr_readable(cgp_chr chr, FILE *fp)
  * @param chr
  * @param fp
  */
-void cgp_dump_chr_asciiart_input(int *in_counter, cgp_chr chr, FILE *fp)
+void cgp_dump_chr_asciiart_input(int *in_counter, ga_chr_t chr, FILE *fp)
 {
     if (*in_counter < CGP_INPUTS) fprintf(fp, "[%2u]>| ", (*in_counter)++);
     else fprintf(fp, "     | ");
@@ -152,9 +181,10 @@ void cgp_dump_chr_asciiart_input(int *in_counter, cgp_chr chr, FILE *fp)
  * @param chr
  * @param fp
  */
-void cgp_dump_chr_asciiart_output(int *out_counter, cgp_chr chr, FILE *fp)
+void cgp_dump_chr_asciiart_output(int *out_counter, ga_chr_t chr, FILE *fp)
 {
-    if (*out_counter < CGP_OUTPUTS) fprintf(fp, ">[%2u]", chr->outputs[(*out_counter)++]);
+    cgp_genome_t genome = (cgp_genome_t) chr->genome;
+    if (*out_counter < CGP_OUTPUTS) fprintf(fp, ">[%2u]", genome->outputs[(*out_counter)++]);
 }
 
 
@@ -175,10 +205,11 @@ void cgp_dump_chr_asciiart_output(int *out_counter, cgp_chr chr, FILE *fp)
  * @param chr
  * @param fp
 */
-void cgp_dump_chr_asciiart(cgp_chr chr, FILE *fp)
+void cgp_dump_chr_asciiart(ga_chr_t chr, FILE *fp)
 {
     int in_counter = 0;
     int out_counter = 0;
+    cgp_genome_t genome = (cgp_genome_t) chr->genome;
 
     cgp_dump_chr_header(chr, fp);
 
@@ -209,7 +240,7 @@ void cgp_dump_chr_asciiart(cgp_chr chr, FILE *fp)
         /* first line of blocks */
         for (int x = 0; x < CGP_COLS; x++) {
             int i = cgp_node_index(x, y);
-            _cgp_node *n = &(chr->nodes[i]);
+            cgp_node_t *n = &(genome->nodes[i]);
             fprintf(fp, "[%2u]>|    |>[%2u]", n->inputs[0], CGP_INPUTS + i);
             if (x == CGP_COLS - 1) fprintf(fp, " |");
             else fprintf(fp, "  ");
@@ -222,7 +253,7 @@ void cgp_dump_chr_asciiart(cgp_chr chr, FILE *fp)
         /* second line of blocks */
         for (int x = 0; x < CGP_COLS; x++) {
             int i = cgp_node_index(x, y);
-            _cgp_node *n = &(chr->nodes[i]);
+            cgp_node_t *n = &(genome->nodes[i]);
             fprintf(fp, "[%2u]>|%s|     ", n->inputs[1], cgp_func_name(n->function));
             if (x == CGP_COLS - 1) fprintf(fp, " |");
             else fprintf(fp, "  ");
@@ -260,7 +291,7 @@ void cgp_dump_chr_asciiart(cgp_chr chr, FILE *fp)
  * @param pop
  * @param fp
  */
-void cgp_dump_pop_compat(cgp_pop pop, FILE *fp)
+void cgp_dump_pop_compat(ga_pop_t pop, FILE *fp)
 {
     fprintf(fp, "Generation: %d\n", pop->generation);
     fprintf(fp, "Best chromosome: %d\n", pop->best_chr_index);

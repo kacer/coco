@@ -16,13 +16,13 @@
 #   \___)     (___/
 
 CC=gcc
-CFLAGS=-g -Wall -std=gnu99 -DDEBUG -DCGP_USE_PTHREAD -DxFITNESS_USE_PTHREAD -DNCURSES -D_XOPEN_SOURCE=700
+CFLAGS=-g -Wall -std=gnu99 -DDEBUG -DxCGP_USE_PTHREAD -DxFITNESS_USE_PTHREAD -DNCURSES -D_XOPEN_SOURCE=700
 EXECUTABLE=coco
 SERVER=merlin
 SERVER_LOCATION=~/coco
 CMDLINE=
-SOURCES=main.c cgp.c cgp_dump.c cgp_load.c image.c fitness.c vault.c windows.c
-OFILES= main.o cgp.o cgp_dump.o cgp_load.o image.o fitness.o vault.o windows.o
+SOURCES=main.c ga.c cgp.c cgp_dump.c cgp_load.c image.c fitness.c vault.c windows.c
+OFILES= main.o ga.o cgp.o cgp_dump.o cgp_load.o image.o fitness.o vault.o windows.o
 LIBS=-lm -lc -lpthread -lncurses
 
 all: $(EXECUTABLE)
@@ -36,7 +36,7 @@ $(EXECUTABLE): $(OFILES)
 .PHONY: clean zip tar upload start depend
 
 clean:
-	rm -f $(EXECUTABLE) *.o xwigla00.zip xwigla00.tar.gz
+	rm -f $(EXECUTABLE) $(EXECUTABLE).exe *.o xwigla00.zip xwigla00.tar.gz
 
 tar:
 	tar czf xwigla00.tar.gz *.c *.h Makefile tests/* stb/* images/* #-C doc/ doc.pdf

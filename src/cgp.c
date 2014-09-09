@@ -21,15 +21,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef CGP_USE_PTHREAD
-    #include <pthread.h>
-#endif
-
 #include "cgp.h"
 #include "random.h"
-
-
-void cgp_randomize_gene(cgp_chr chr, int gene);
 
 
 typedef struct {
@@ -38,9 +31,8 @@ typedef struct {
 } int_array;
 
 
-int_array allowed_vals[CGP_COLS];
-cgp_fitness_func fitness_function;
-cgp_problem_type problem_type;
+int_array _allowed_gene_vals[CGP_COLS];
+int _mutation_rate;
 
 
 #ifdef TEST_RANDOMIZE
@@ -50,29 +42,14 @@ cgp_problem_type problem_type;
 #endif
 
 
-/**
- * Returns true if WHAT is better or same as COMPARED_TO
- * @param  what
- * @param  compared_to
- * @return
- */
-static inline bool cgp_is_better_or_same(cgp_fitness_t what, cgp_fitness_t compared_to) {
-    return (problem_type == minimize)? what <= compared_to : what >= compared_to;
-}
-
-
 
 /**
  * Initialize CGP internals
  * @param Fitness function to use
  * @param Type of solved problem
  */
-void cgp_init(cgp_fitness_func fitness, cgp_problem_type type)
+void cgp_init()
 {
-    // remember fitness function and problem type
-    fitness_function = fitness;
-    problem_type = type;
-
     // calculate allowed values of node inputs in each column
     for (int x = 0; x < CGP_COLS; x++) {
 
@@ -84,18 +61,18 @@ void cgp_init(cgp_fitness_func fitness, cgp_problem_type type)
         int maximum = CGP_ROWS * x + CGP_INPUTS;
 
         int size = CGP_INPUTS + maximum - minimum;
-        allowed_vals[x].size = size;
-        allowed_vals[x].values = (int*) malloc(sizeof(int) * size);
+        _allowed_gene_vals[x].size = size;
+        _allowed_gene_vals[x].values = (int*) malloc(sizeof(int) * size);
 
         int key = 0;
         // primary input indexes
         for (int val = 0; val < CGP_INPUTS; val++, key++) {
-            allowed_vals[x].values[key] = val;
+            _allowed_gene_vals[x].values[key] = val;
         }
 
         // nodes to the left output indexes
         for (int val = minimum; val < maximum; val++, key++) {
-            allowed_vals[x].values[key] = val;
+            _allowed_gene_vals[x].values[key] = val;
         }
     }
 
@@ -103,9 +80,9 @@ void cgp_init(cgp_fitness_func fitness, cgp_problem_type type)
 #ifdef TEST_INIT
     for (int x = 0; x < CGP_COLS; x++) {
         printf ("x = %d: ", x);
-        for (int y = 0; y < allowed_vals[x].size; y++) {
+        for (int y = 0; y < _allowed_gene_vals[x].size; y++) {
             if (y > 0) printf(", ");
-            printf ("%d", allowed_vals[x].values[y]);
+            printf ("%d", _allowed_gene_vals[x].values[y]);
         }
         printf("\n");
     }
@@ -119,35 +96,136 @@ void cgp_init(cgp_fitness_func fitness, cgp_problem_type type)
 void cgp_deinit()
 {
     for (int x = 0; x < CGP_COLS; x++) {
-        free(allowed_vals[x].values);
+        free(_allowed_gene_vals[x].values);
     }
 }
 
 
 /**
- * Create a new chromosome
+ * Create a new cgpictors population with given size
+ * @param  mutation rate (in number of genes)
+ * @param  population size
  * @return
  */
-cgp_chr cgp_create_chr()
+ga_pop_t cgp_init_pop(int mutation_rate, int pop_size, ga_fitness_func_t fitness_func)
 {
-    cgp_chr new_chr = (cgp_chr) malloc(sizeof(_cgp_chr));
-    new_chr->has_fitness = false;
+    /* global settings */
+    _mutation_rate = mutation_rate;
 
-    for (int i = 0; i < CGP_CHR_LENGTH; i++) {
-        cgp_randomize_gene(new_chr, i);
-    }
+    /* prepare methods vector */
+    ga_func_vect_t methods = {
+        .init = cgp_init_chr,
+        .deinit = cgp_deinit_chr,
+        .fitness = fitness_func,
+        .offspring = cgp_offspring,
 
-    return new_chr;
+        .mutate = cgp_mutate_chr,
+    };
+
+    /* initialize GA */
+    return ga_create_pop(pop_size, maximize, methods);
 }
 
 
 /**
- * Clear memory associated with given chromosome
+ * Sets mutation rate
+ * @param mutation_rate
+ */
+void cgp_set_mutation_rate(int mutation_rate)
+{
+    _mutation_rate = mutation_rate;
+}
+
+
+/* chromosome *****************************************************************/
+
+
+/**
+ * Initialize new CGP genome
+ * @param chromosome
+ */
+int cgp_init_chr(ga_chr_t chromosome)
+{
+    cgp_genome_t genome = (cgp_genome_t) malloc(sizeof(struct cgp_genome));
+    if (genome == NULL) {
+        return -1;
+    }
+
+    for (int i = 0; i < CGP_CHR_LENGTH; i++) {
+        cgp_randomize_gene(genome, i);
+    }
+
+    chromosome->genome = genome;
+    return 0;
+}
+
+
+/**
+ * Deinitialize CGP genome
+ * @param  chromosome
+ * @return
+ */
+void cgp_deinit_chr(ga_chr_t chromosome)
+{
+    cgp_genome_t genome = (cgp_genome_t) chromosome->genome;
+    free(genome);
+}
+
+
+/* mutation *******************************************************************/
+
+
+/**
+ * Replace gene on given locus with random alele
+ * @param chr
+ * @param gene
+ */
+void cgp_randomize_gene(cgp_genome_t genome, int gene)
+{
+    if (gene >= CGP_CHR_LENGTH)
+        return;
+
+    if (gene < CGP_CHR_OUTPUTS_INDEX) {
+        // mutating node input or function
+        int node_index = gene / 3;
+        int gene_index = gene % 3;
+        int col = cgp_node_col(node_index);
+
+        TEST_RANDOMIZE_PRINTF("gene %u, node %u, gene %u, col %u\n", gene, node_index, gene_index, col);
+
+        if (gene_index == CGP_FUNC_INPUTS) {
+            // mutating function
+            genome->nodes[node_index].function = (cgp_func_t) rand_range(0, CGP_FUNC_COUNT - 1);
+            TEST_RANDOMIZE_PRINTF("func 0 - %u\n", CGP_FUNC_COUNT - 1);
+
+        } else {
+            // mutating input
+            genome->nodes[node_index].inputs[gene_index] = rand_schoice(_allowed_gene_vals[col].size, _allowed_gene_vals[col].values);
+            TEST_RANDOMIZE_PRINTF("input choice from %u\n", _allowed_gene_vals[col].size);
+        }
+
+    } else {
+        // mutating primary output connection
+        int index = gene - CGP_CHR_OUTPUTS_INDEX;
+        genome->outputs[index] = rand_range(0, CGP_INPUTS + CGP_NODES - 1);
+        TEST_RANDOMIZE_PRINTF("out 0 - %u\n", CGP_INPUTS + CGP_NODES - 1);
+    }
+}
+
+
+/**
+ * Mutate given chromosome
  * @param chr
  */
-void cgp_destroy_chr(cgp_chr chr)
+void cgp_mutate_chr(ga_chr_t chromosome)
 {
-    free(chr);
+    cgp_genome_t genome = (cgp_genome_t) chromosome->genome;
+
+    int genes_to_change = rand_range(0, _mutation_rate);
+    for (int i = 0; i < genes_to_change; i++) {
+        int gene = rand_range(0, CGP_CHR_LENGTH - 1);
+        cgp_randomize_gene(genome, gene);
+    }
 }
 
 
@@ -157,28 +235,15 @@ void cgp_destroy_chr(cgp_chr chr)
  * @param  replacement
  * @return
  */
-void cgp_replace_chr(cgp_chr chr, cgp_chr replacement)
+void cgp_replace_chr(ga_chr_t chromosome, ga_chr_t replacement)
 {
-    memcpy(chr->nodes, replacement->nodes, sizeof(_cgp_node) * CGP_NODES);
-    memcpy(chr->outputs, replacement->outputs, sizeof(int) * CGP_OUTPUTS);
-    chr->fitness = replacement->fitness;
-    chr->has_fitness = replacement->has_fitness;
-}
+    cgp_genome_t dst = (cgp_genome_t) chromosome->genome;
+    cgp_genome_t src = (cgp_genome_t) replacement->genome;
 
-
-/**
- * Mutate given chromosome
- * @param chr
- * @param max_changed_genes
- */
-void cgp_mutate_chr(cgp_chr chr, int max_changed_genes)
-{
-    int genes_to_change = rand_range(0, max_changed_genes);
-    for (int i = 0; i < genes_to_change; i++) {
-        int gene = rand_range(0, CGP_CHR_LENGTH - 1);
-        cgp_randomize_gene(chr, gene);
-    }
-    chr->has_fitness = false;
+    memcpy(dst->nodes, src->nodes, sizeof(cgp_node_t) * CGP_NODES);
+    memcpy(dst->outputs, src->outputs, sizeof(int) * CGP_OUTPUTS);
+    chromosome->fitness = replacement->fitness;
+    chromosome->has_fitness = replacement->has_fitness;
 }
 
 
@@ -192,15 +257,16 @@ void cgp_mutate_chr(cgp_chr chr, int max_changed_genes)
  * Calculate output of given chromosome and inputs
  * @param chr
  */
-void cgp_get_output(cgp_chr chr, cgp_value_t *inputs, cgp_value_t *outputs)
+void cgp_get_output(ga_chr_t chromosome, cgp_value_t *inputs, cgp_value_t *outputs)
 {
+    cgp_genome_t genome = (cgp_genome_t) chromosome->genome;
     cgp_value_t inner_outputs[CGP_INPUTS + CGP_NODES];
 
     // copy primary inputs to working array
     memcpy(inner_outputs, inputs, sizeof(cgp_value_t) * CGP_INPUTS);
 
     for (int i = 0; i < CGP_NODES; i++) {
-        _cgp_node *n = &(chr->nodes[i]);
+        cgp_node_t *n = &(genome->nodes[i]);
         cgp_value_t A = inner_outputs[n->inputs[0]];
         cgp_value_t B = inner_outputs[n->inputs[1]];
         cgp_value_t Y;
@@ -228,7 +294,7 @@ void cgp_get_output(cgp_chr chr, cgp_value_t *inputs, cgp_value_t *outputs)
     }
 
     for (int i = 0; i < CGP_OUTPUTS; i++) {
-        outputs[i] = inner_outputs[chr->outputs[i]];
+        outputs[i] = inner_outputs[genome->outputs[i]];
     }
 
 #ifdef TEST_EVAL
@@ -242,230 +308,21 @@ void cgp_get_output(cgp_chr chr, cgp_value_t *inputs, cgp_value_t *outputs)
 }
 
 
-/**
- * Calculate fitness of given chromosome, but only if its `has_fitness`
- * attribute is set to `false`
- * @param chr
- */
-cgp_fitness_t cgp_evaluate_chr(cgp_chr chr)
-{
-    if (!chr->has_fitness) {
-        return cgp_reevaluate_chr(chr);
-    } else {
-        return chr->fitness;
-    }
-}
-
-
-/**
- * Calculate fitness of given chromosome, regardless of its `has_fitness`
- * value
- * @param chr
- */
-cgp_fitness_t cgp_reevaluate_chr(cgp_chr chr)
-{
-    chr->fitness = (*fitness_function)(chr);
-    chr->has_fitness = true;
-    return chr->fitness;
-}
-
-
-/**
- * Replace gene on given locus with random alele
- * @param chr
- * @param gene
- */
-void cgp_randomize_gene(cgp_chr chr, int gene)
-{
-    if (gene >= CGP_CHR_LENGTH)
-        return;
-
-    if (gene < CGP_CHR_OUTPUTS_INDEX) {
-        // mutating node input or function
-        int node_index = gene / 3;
-        int gene_index = gene % 3;
-        int col = cgp_node_col(node_index);
-
-        TEST_RANDOMIZE_PRINTF("gene %u, node %u, gene %u, col %u\n", gene, node_index, gene_index, col);
-
-        if (gene_index == CGP_FUNC_INPUTS) {
-            // mutating function
-            chr->nodes[node_index].function = rand_range(0, CGP_FUNC_COUNT - 1);
-            TEST_RANDOMIZE_PRINTF("func 0 - %u\n", CGP_FUNC_COUNT - 1);
-
-        } else {
-            // mutating input
-            chr->nodes[node_index].inputs[gene_index] = rand_schoice(allowed_vals[col].size, allowed_vals[col].values);
-            TEST_RANDOMIZE_PRINTF("input choice from %u\n", allowed_vals[col].size);
-        }
-
-    } else {
-        // mutating primary output connection
-        int index = gene - CGP_CHR_OUTPUTS_INDEX;
-        chr->outputs[index] = rand_range(0, CGP_INPUTS + CGP_NODES - 1);
-        TEST_RANDOMIZE_PRINTF("out 0 - %u\n", CGP_INPUTS + CGP_NODES - 1);
-    }
-}
-
 
 /* population *****************************************************************/
 
-
 /**
- * Create a new CGP population with given size
- * @param  size
- * @return
- */
-cgp_pop cgp_create_pop(int size)
-{
-    cgp_pop new_pop = (cgp_pop) malloc(sizeof(_cgp_pop));
-    if (new_pop == NULL) return NULL;
-
-    new_pop->size = size;
-    new_pop->generation = 0;
-    new_pop->best_chr_index = -1;
-    new_pop->chromosomes = (cgp_chr*) malloc(sizeof(cgp_chr) * size);
-    if (new_pop->chromosomes == NULL) {
-        free(new_pop);
-        return NULL;
-    }
-
-    for (int i = 0; i < size; i++) {
-        new_pop->chromosomes[i] = cgp_create_chr();
-    }
-
-    return new_pop;
-}
-
-
-/**
- * Clear memory associated with given population (including its chromosomes)
- * @param pop
- */
-void cgp_destroy_pop(cgp_pop pop)
-{
-    if (pop != NULL) {
-        for (int i = 0; i < pop->size; i++) {
-            cgp_destroy_chr(pop->chromosomes[i]);
-        }
-        free(pop->chromosomes);
-    }
-    free(pop);
-}
-
-
-/**
- * Calculate fitness of whole population, using `cgp_evaluate_chr`
- * @param chr
- */
-void _cgp_evaluate_pop_simple(cgp_pop pop)
-{
-    cgp_fitness_t best_fitness;
-    int best_index;
-
-    // reevaluate population
-    for (int i = 0; i < pop->size; i++) {
-        cgp_fitness_t f = cgp_evaluate_chr(pop->chromosomes[i]);
-        if (i == 0 || cgp_is_better_or_same(f, best_fitness)) {
-            best_fitness = f;
-            best_index = i;
-        }
-    }
-
-    // if best index hasn't changed, try to find different one with the same fitness
-    if (best_index == pop->best_chr_index) {
-        for (int i = 0; i < pop->size; i++) {
-            cgp_fitness_t f = pop->chromosomes[i]->fitness;
-            if (i != best_index && f == best_fitness) {
-                best_index = i;
-                break;
-            }
-        }
-    }
-
-    // set new best values
-    pop->best_fitness = best_fitness;
-    pop->best_chr_index = best_index;
-}
-
-
-#ifdef CGP_USE_PTHREAD
-
-
-/**
- * _cgp_evaluate_pop_pthread helper - thread source code
- * @param chromosome to evaluate
- */
-void* _cgp_evaluate_pop_pthread_worker(void *chromosome)
-{
-    cgp_evaluate_chr((cgp_chr)chromosome);
-    return NULL;
-}
-
-
-/**
- * Calculate fitness of whole population, using `cgp_evaluate_chr`
- * @param chr
- */
-void _cgp_evaluate_pop_pthread(cgp_pop pop)
-{
-    cgp_fitness_t best_fitness;
-    int best_index;
-
-    // reevaluate population
-
-    pthread_t threads[pop->size];
-    for (int i = 0; i < pop->size; i++) {
-        pthread_create(&threads[i], NULL, _cgp_evaluate_pop_pthread_worker, (void*)pop->chromosomes[i]);
-    }
-    for (int i = 0; i < pop->size; i++) {
-        pthread_join(threads[i], NULL);
-    }
-
-    // find best fitness
-    for (int i = 0; i < pop->size; i++) {
-        cgp_fitness_t f = pop->chromosomes[i]->fitness;
-        if (i == 0 || cgp_is_better_or_same(f, best_fitness)) {
-            best_fitness = f;
-            best_index = i;
-        }
-    }
-
-    // if best index hasn't changed, try to find different one with the same fitness
-    if (best_index == pop->best_chr_index) {
-        for (int i = 0; i < pop->size; i++) {
-            cgp_fitness_t f = pop->chromosomes[i]->fitness;
-            if (i != best_index && f == best_fitness) {
-                best_index = i;
-                break;
-            }
-        }
-    }
-
-    // set new best values
-    pop->best_fitness = best_fitness;
-    pop->best_chr_index = best_index;
-}
-
-
-#endif /* CGP_USE_PTHREAD */
-
-
-/**
- * Advance population to next generation
+ * Create new generation
  * @param pop
  * @param mutation_rate
  */
-void cgp_next_generation(cgp_pop pop, int mutation_rate)
+void cgp_offspring(ga_pop_t pop)
 {
-    cgp_chr parent = pop->chromosomes[pop->best_chr_index];
+    ga_chr_t parent = pop->chromosomes[pop->best_chr_index];
 
     for (int i = 0; i < pop->size; i++) {
         if (i == pop->best_chr_index) continue;
         cgp_replace_chr(pop->chromosomes[i], parent);
-        cgp_mutate_chr(pop->chromosomes[i], mutation_rate);
+        ga_mutate_chr(pop, pop->chromosomes[i]);
     }
-
-    cgp_evaluate_pop(pop);
-    pop->generation++;
 }

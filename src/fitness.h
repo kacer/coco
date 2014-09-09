@@ -50,7 +50,7 @@ void fitness_deinit();
  * @param  chr
  * @return fitness value
  */
-static inline img_image fitness_filter_image(cgp_chr chr);
+static inline img_image fitness_filter_image(ga_chr_t chr);
 
 
 /**
@@ -62,7 +62,7 @@ static inline img_image fitness_filter_image(cgp_chr chr);
  * @param  chr
  * @return fitness value
  */
-img_image _fitness_filter_image_simple(cgp_chr chr);
+img_image _fitness_filter_image_simple(ga_chr_t chr);
 
 
 /**
@@ -74,18 +74,18 @@ img_image _fitness_filter_image_simple(cgp_chr chr);
  * @param  chr
  * @return fitness value
  */
-img_image _fitness_filter_image_pthread(cgp_chr chr);
+img_image _fitness_filter_image_pthread(ga_chr_t chr);
 
 
 #ifdef FITNESS_USE_PTHREAD
 
-    static inline img_image fitness_filter_image(cgp_chr chr) {
+    static inline img_image fitness_filter_image(ga_chr_t chr) {
         return _fitness_filter_image_pthread(chr);
     }
 
 #else
 
-    static inline img_image fitness_filter_image(cgp_chr chr) {
+    static inline img_image fitness_filter_image(ga_chr_t chr) {
         return _fitness_filter_image_simple(chr);
     }
 
@@ -98,7 +98,7 @@ img_image _fitness_filter_image_pthread(cgp_chr chr);
  * @param  chr
  * @return fitness value
  */
-cgp_fitness_t fitness_eval_cgp(cgp_chr chr);
+ga_fitness_t fitness_eval_cgp(ga_chr_t chr);
 
 
 /**
@@ -109,4 +109,4 @@ cgp_fitness_t fitness_eval_cgp(cgp_chr chr);
  * @param  filtered image
  * @return fitness value (PSNR)
  */
-cgp_fitness_t fitness_psnr(img_image original, img_image filtered);
+ga_fitness_t fitness_psnr(img_image original, img_image filtered);

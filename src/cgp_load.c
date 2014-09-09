@@ -30,10 +30,11 @@
  * @param fp
  * @return 0 on success, -1 on file format error, -2 on incompatible CGP config
  */
-int cgp_load_chr_compat(cgp_chr chr, FILE *fp)
+int cgp_load_chr_compat(ga_chr_t chr, FILE *fp)
 {
     int inputs, outputs, cols, rows, func_inputs, func_outputs, func_count;
     int count;
+    cgp_genome_t genome = (cgp_genome_t) chr->genome;
 
     count = fscanf(fp, "{%u, %u, %u, %u, %u, %u, %u}", &inputs, &outputs,
         &cols, &rows, &func_inputs, &func_outputs, &func_count);
@@ -52,7 +53,7 @@ int cgp_load_chr_compat(cgp_chr chr, FILE *fp)
 
 
     for (int i = 0; i < CGP_NODES; i++) {
-        _cgp_node *n = &(chr->nodes[i]);
+        cgp_node_t *n = &genome->nodes[i];
 
         int nodeid;
         count = fscanf(fp, "([%u] %u, %u, %u)",
@@ -67,7 +68,7 @@ int cgp_load_chr_compat(cgp_chr chr, FILE *fp)
     fscanf(fp, "(");
     for (int i = 0; i < CGP_OUTPUTS; i++) {
         if (i > 0) fscanf(fp, ",");
-        count = fscanf(fp, "%u", &chr->outputs[i]);
+        count = fscanf(fp, "%u", &genome->outputs[i]);
         if (count != 1) return -1;
     }
     fscanf(fp, ")\n");
@@ -83,7 +84,7 @@ int cgp_load_chr_compat(cgp_chr chr, FILE *fp)
  * @param fp
  * @return 0 on success, -1 on file format error, -2 on incompatible CGP config
  */
-int cgp_load_pop_compat(cgp_pop *pop_ptr, FILE *fp)
+int cgp_load_pop_compat(ga_pop_t *pop_ptr, int mutation_rate, ga_fitness_func_t fitness_func, FILE *fp)
 {
     int generation;
     int size;
@@ -97,7 +98,7 @@ int cgp_load_pop_compat(cgp_pop *pop_ptr, FILE *fp)
         return -1;
     }
 
-    cgp_pop population = cgp_create_pop(size);
+    ga_pop_t population = cgp_init_pop(mutation_rate, size, fitness_func);
     population->generation = generation;
     population->best_chr_index = best_index;
 
@@ -108,7 +109,7 @@ int cgp_load_pop_compat(cgp_pop *pop_ptr, FILE *fp)
         }
     }
 
-    cgp_evaluate_pop(population);
+    ga_evaluate_pop(population);
     *pop_ptr = population;
     return 0;
 }

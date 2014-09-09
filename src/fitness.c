@@ -66,7 +66,7 @@ void fitness_deinit()
  * @param  chr
  * @return fitness value
  */
-img_image _fitness_filter_image_simple(cgp_chr chr)
+img_image _fitness_filter_image_simple(ga_chr_t chr)
 {
     img_image filtered = img_create(original_image->width, original_image->height,
         original_image->comp);
@@ -91,28 +91,28 @@ img_image _fitness_filter_image_simple(cgp_chr chr)
 typedef struct {
     int start;
     int stop;
-    cgp_chr chr;
+    ga_chr_t chr;
     img_image filtered;
-} fitness_filter_image_pthread_work;
+} fitness_filter_image_pthread_job;
 
 
 /**
  * _fitness_filter_image_pthread helper - thread source code
  * @param chromosome to evaluate
  */
-void* _fitness_filter_image_pthread_worker(void *_work)
+void* _fitness_filter_image_pthread_worker(void *_job)
 {
-    fitness_filter_image_pthread_work *work =(fitness_filter_image_pthread_work*) _work;
+    fitness_filter_image_pthread_job *job =(fitness_filter_image_pthread_job*) _job;
 
-    for (int i = work->start; i < work->stop; i++) {
+    for (int i = job->start; i < job->stop; i++) {
         img_window *w = &noisy_image_windows->windows[i];
 
         cgp_value_t *inputs = w->pixels;
         cgp_value_t output_pixel[1];
-        cgp_get_output(work->chr, inputs, output_pixel);
+        cgp_get_output(job->chr, inputs, output_pixel);
 
         // thread-safe: each thread writes to different pixels
-        img_set_pixel(work->filtered, w->pos_x, w->pos_y, output_pixel[0]);
+        img_set_pixel(job->filtered, w->pos_x, w->pos_y, output_pixel[0]);
     }
 
     return NULL;
@@ -127,31 +127,31 @@ void* _fitness_filter_image_pthread_worker(void *_work)
  * @param  chr
  * @return fitness value
  */
-img_image _fitness_filter_image_pthread(cgp_chr chr)
+img_image _fitness_filter_image_pthread(ga_chr_t chr)
 {
     img_image filtered = img_create(original_image->width, original_image->height,
         original_image->comp);
 
 
-    /* prepare work for threads */
+    /* prepare jobs for threads */
 
     // rounds up the number of tasks per thread, useful if windows count
     // does not divide evenly by NUMTHREADS
     int per_thread = (noisy_image_windows->size + FITNESS_NUMTHREADS - 1) / FITNESS_NUMTHREADS;
-    fitness_filter_image_pthread_work works[FITNESS_NUMTHREADS];
+    fitness_filter_image_pthread_job jobs[FITNESS_NUMTHREADS];
     pthread_t threads[FITNESS_NUMTHREADS];
 
     for (int i = 0; i < FITNESS_NUMTHREADS; i++) {
-        works[i].chr = chr;
-        works[i].filtered = filtered;
-        works[i].start = i * per_thread;
-        works[i].stop = (i == FITNESS_NUMTHREADS - 1)
+        jobs[i].chr = chr;
+        jobs[i].filtered = filtered;
+        jobs[i].start = i * per_thread;
+        jobs[i].stop = (i == FITNESS_NUMTHREADS - 1)
             ? noisy_image_windows->size
             : (i + 1) * per_thread;
     }
 
     for (int i = 0; i < FITNESS_NUMTHREADS; i++) {
-        pthread_create(&threads[i], NULL, _fitness_filter_image_pthread_worker, &works[i]);
+        pthread_create(&threads[i], NULL, _fitness_filter_image_pthread_worker, &jobs[i]);
     }
 
     for (int i = 0; i < FITNESS_NUMTHREADS; i++) {
@@ -171,10 +171,10 @@ img_image _fitness_filter_image_pthread(cgp_chr chr)
  * @param  chr
  * @return fitness value
  */
-cgp_fitness_t fitness_eval_cgp(cgp_chr chr)
+ga_fitness_t fitness_eval_cgp(ga_chr_t chr)
 {
     img_image filtered = fitness_filter_image(chr);
-    cgp_fitness_t fitness = fitness_psnr(original_image, filtered);
+    ga_fitness_t fitness = fitness_psnr(original_image, filtered);
     img_destroy(filtered);
 
     return fitness;
@@ -189,7 +189,7 @@ cgp_fitness_t fitness_eval_cgp(cgp_chr chr)
  * @param  filtered image
  * @return fitness value (PSNR)
  */
-cgp_fitness_t fitness_psnr(img_image original, img_image filtered)
+ga_fitness_t fitness_psnr(img_image original, img_image filtered)
 {
     assert(original->width == filtered->width);
     assert(original->height == filtered->height);
