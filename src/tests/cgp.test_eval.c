@@ -3,6 +3,7 @@
  * Compile with -DTEST_EVAL
  */
 
+#include <stdlib.h>
 #include <stdio.h>
 
 #include "../cgp.h"
@@ -14,24 +15,28 @@ int main(int argc, char const *argv[])
     cgp_value_t outputs[CGP_OUTPUTS] = {};
 
     cgp_init();
-    cgp_chr chr = cgp_create_chr();
+
+    cgp_genome_t genome = (cgp_genome_t) malloc(sizeof(struct cgp_genome));
+    struct ga_chr chr = {
+        .genome = genome
+    };
 
     // define nodes
-    for (uint i = 0; i < CGP_NODES; i++) {
-        _cgp_node *n = &(chr->nodes[i]);
+    for (int i = 0; i < CGP_NODES; i++) {
+        cgp_node_t *n = &(genome->nodes[i]);
 
         n->inputs[0] = i + CGP_INPUTS - CGP_ROWS - 3;
         n->inputs[1] = i + CGP_INPUTS - CGP_ROWS - 1;
-        n->function = i % CGP_FUNC_COUNT;
+        n->function = (cgp_func_t) (i % CGP_FUNC_COUNT);
     }
 
     // define outputs
-    chr->outputs[0] = 13;
+    genome->outputs[0] = 13;
 
-    cgp_dump_chr_asciiart(chr, stdout);
+    cgp_dump_chr_asciiart(&chr, stdout);
     putchar('\n');
-    cgp_get_output(chr, inputs, outputs);
+    cgp_get_output(&chr, inputs, outputs);
 
-    cgp_destroy_chr(chr);
+    free(genome);
     cgp_deinit();
 }
