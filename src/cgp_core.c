@@ -34,6 +34,7 @@ typedef struct {
 
 int_array _allowed_gene_vals[CGP_COLS];
 int _mutation_rate;
+ga_fitness_func_t _fitness_func;
 
 
 #ifdef TEST_RANDOMIZE
@@ -46,11 +47,12 @@ int _mutation_rate;
 
 /**
  * Initialize CGP internals
- * @param Fitness function to use
- * @param Type of solved problem
  */
-void cgp_init()
+void cgp_init(int mutation_rate, ga_fitness_func_t fitness_func)
 {
+    _mutation_rate = mutation_rate;
+    _fitness_func = fitness_func;
+
     // calculate allowed values of node inputs in each column
     for (int x = 0; x < CGP_COLS; x++) {
 
@@ -116,7 +118,7 @@ ga_pop_t cgp_init_pop(int pop_size)
         .free_genome = cgp_free_genome,
         .init_genome = cgp_randomize_genome,
 
-        .fitness = NULL,  // must be set later!
+        .fitness = _fitness_func,
         .offspring = cgp_offspring,
     };
 
@@ -124,28 +126,6 @@ ga_pop_t cgp_init_pop(int pop_size)
     ga_pop_t pop = ga_create_pop(pop_size, maximize, methods);
     ga_init_pop(pop);
     return pop;
-}
-
-
-/**
- * Sets mutation rate
- * @param mutation_rate
- */
-void cgp_set_mutation_rate(int mutation_rate)
-{
-    _mutation_rate = mutation_rate;
-}
-
-
-/**
- * Sets fitness function
- * @param mutation_rate
- */
-void cgp_set_fitness_func(ga_pop_t pop, ga_fitness_func_t fitness_func)
-{
-    assert(fitness_func != NULL);
-    pop->methods.fitness = fitness_func;
-    assert(pop->methods.fitness != NULL);
 }
 
 

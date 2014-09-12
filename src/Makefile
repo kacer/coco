@@ -16,14 +16,14 @@
 #   \___)     (___/
 
 CC=gcc
-CFLAGS=-g -Wall -std=gnu99 -DDEBUG -DGA_USE_PTHREAD -D_XOPEN_SOURCE=700
+CFLAGS=-g -Wall -std=c99 -fopenmp -DDEBUG -D_XOPEN_SOURCE=700
 EXECUTABLE=coco
 CMDLINE=-i images/lena_gray_256.png -n images/lena_gray_256_saltpepper_10.png
 SERVER=merlin
 SERVER_LOCATION=~/coco
-SOURCES=main.c ga.c cgp_core.c cgp_dump.c cgp_load.c image.c fitness.c vault.c archive.c
-OFILES= main.o ga.o cgp_core.o cgp_dump.o cgp_load.o image.o fitness.o vault.o archive.o
-LIBS=-lm -lc -lpthread -lncurses
+SOURCES=main.c ga.c cgp_core.c cgp_dump.c cgp_load.c predictors.c image.c fitness.c vault.c archive.c config.c
+OFILES= main.o ga.o cgp_core.o cgp_dump.o cgp_load.o predictors.o image.o fitness.o vault.o archive.o config.o
+LIBS=-lm -lc
 
 all: $(EXECUTABLE)
 

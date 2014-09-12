@@ -23,6 +23,7 @@
 
 #include "cgp.h"
 #include "image.h"
+#include "archive.h"
 #include "predictors.h"
 
 
@@ -30,8 +31,10 @@
  * Initializes fitness module - prepares test image
  * @param original
  * @param noisy
+ * @param cgp_archive
  */
-void fitness_init(img_image_t original, img_image_t noisy);
+void fitness_init(img_image_t original, img_image_t noisy,
+    archive_t cgp_archive);
 
 
 /**
@@ -68,7 +71,16 @@ ga_fitness_t fitness_eval_cgp(ga_chr_t chr);
  * @param  predictor
  * @return fitness value
  */
-ga_fitness_t fitness_predict_cgp(ga_chr_t chr, pred_genome_t predictor);
+ga_fitness_t fitness_predict_cgp(ga_chr_t cgp_chr, ga_chr_t pred_chr);
+
+
+/**
+ * Evaluates predictor fitness
+ *
+ * @param  chr
+ * @return fitness value
+ */
+ga_fitness_t fitness_eval_predictor(ga_chr_t chr);
 
 
 /**

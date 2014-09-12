@@ -220,18 +220,14 @@ ga_fitness_t ga_reevaluate_chr(ga_pop_t pop, ga_chr_t chr)
 /* fitness calculation ********************************************************/
 
 
-/**
- * Calculate fitness of whole population, using `ga_evaluate_chr`
- * @param chr
- */
-void _ga_evaluate_pop_simple(ga_pop_t pop)
+void _ga_find_new_best(ga_pop_t pop)
 {
     ga_fitness_t best_fitness;
     int best_index;
 
-    // reevaluate population
+    /* find best fitness */
     for (int i = 0; i < pop->size; i++) {
-        ga_fitness_t f = ga_evaluate_chr(pop, pop->chromosomes[i]);
+        ga_fitness_t f = pop->chromosomes[i]->fitness;
         if (i == 0 || ga_is_better_or_same(pop->problem_type, f, best_fitness)) {
             best_fitness = f;
             best_index = i;
@@ -252,6 +248,23 @@ void _ga_evaluate_pop_simple(ga_pop_t pop)
     // set new best values
     pop->best_fitness = best_fitness;
     pop->best_chr_index = best_index;
+}
+
+
+/**
+ * Calculate fitness of whole population, using `ga_evaluate_chr`
+ * @param chr
+ */
+void _ga_evaluate_pop_simple(ga_pop_t pop)
+{
+    // reevaluate population
+    #pragma omp parallel for
+    for (int i = 0; i < pop->size; i++) {
+        ga_evaluate_chr(pop, pop->chromosomes[i]);
+    }
+
+    /* find new best chromosome */
+    _ga_find_new_best(pop);
 }
 
 
@@ -283,9 +296,6 @@ void _ga_evaluate_pop_simple(ga_pop_t pop)
      */
     void _ga_evaluate_pop_pthread(ga_pop_t pop)
     {
-        ga_fitness_t best_fitness;
-        int best_index;
-
         /* reevaluate population */
 
         _thread_job jobs[pop->size];
@@ -300,30 +310,8 @@ void _ga_evaluate_pop_simple(ga_pop_t pop)
             pthread_join(threads[i], NULL);
         }
 
-        /* find best fitness */
-        for (int i = 0; i < pop->size; i++) {
-            ga_fitness_t f = pop->chromosomes[i]->fitness;
-            if (i == 0 || ga_is_better_or_same(pop->problem_type, f, best_fitness)) {
-                best_fitness = f;
-                best_index = i;
-            }
-        }
-
-        /* if best index hasn't changed,
-           try to find different one with the same fitness */
-        if (best_index == pop->best_chr_index) {
-            for (int i = 0; i < pop->size; i++) {
-                ga_fitness_t f = pop->chromosomes[i]->fitness;
-                if (i != best_index && f == best_fitness) {
-                    best_index = i;
-                    break;
-                }
-            }
-        }
-
-        /* set new best values */
-        pop->best_fitness = best_fitness;
-        pop->best_chr_index = best_index;
+        /* find new best chromosome */
+        _ga_find_new_best(pop);
     }
 
 

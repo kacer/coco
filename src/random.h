@@ -55,6 +55,18 @@ static inline int rand_range(int low, int high)
 
 
 /**
+ * Generates random number between low and high, inclusive
+ * @param  low
+ * @param  high
+ * @return
+ */
+static inline unsigned int rand_urange(unsigned int low, unsigned int high)
+{
+    return rand() % (high - low + 1) + low;
+}
+
+
+/**
  * Returns randomly chosen number from the list of signed integers
  * @param  length
  * @param  choices

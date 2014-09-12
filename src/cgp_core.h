@@ -74,24 +74,8 @@ typedef struct cgp_genome* cgp_genome_t;
 
 /**
  * Initialize CGP internals
- * @param Fitness function to use
- * @param Type of solved problem
  */
-void cgp_init();
-
-
-/**
- * Sets mutation rate
- * @param mutation_rate
- */
-void cgp_set_mutation_rate(int mutation_rate);
-
-
-/**
- * Sets fitness function
- * @param mutation_rate
- */
-void cgp_set_fitness_func(ga_pop_t pop, ga_fitness_func_t fitness_func);
+void cgp_init(int mutation_rate, ga_fitness_func_t fitness_func);
 
 
 /**

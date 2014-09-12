@@ -26,55 +26,28 @@
 #include <ctype.h>
 #include <signal.h>
 
+#ifdef _OPENMP
+  #include <omp.h>
+#endif
+
 #include "cgp.h"
 #include "image.h"
+#include "vault.h"
 #include "random.h"
+#include "config.h"
 #include "fitness.h"
 #include "archive.h"
-#include "vault.h"
+#include "predictors.h"
 
 
-const char* HELP_MESSAGE =
-    "Colearning in Coevolutionary Algorithms\n"
-    "Bc. Michal Wiglasz <xwigla00@stud.fit.vutbr.cz>\n"
-    "\n"
-    "Master Thesis\n"
-    "2014/2015\n"
-    "\n"
-    "Supervisor: Ing. Michaela Šikulová <isikulova@fit.vutbr.cz>\n"
-    "\n"
-    "Faculty of Information Technologies\n"
-    "Brno University of Technology\n"
-    "http://www.fit.vutbr.cz/\n"
-    "     _       _\n"
-    "  __(.)=   =(.)__\n"
-    "  \\___)     (___/\n"
-    "\n"
-    "Usage:"
-    "    ./coco -i original.png -n noisy.png [-v vault] [-g]\n"
-    "Command line options:\n"
-    "    -h      Show this help and exit\n"
-    "    -i      Original image filename\n"
-    "    -n      Noisy image filename\n"
-    "    -v      Vault directory (default is \"vault\"\n"
-;
-
-
-#define CGP_MUTATION_RATE 5   /* number of max. changed genes */
-#define CGP_POP_SIZE 8
-#define CGP_GENERATIONS 50000
-#define CGP_ARCHIVE_SIZE 10
-
-#define PRINT_INTERVAL 20
-#define VAULT_INTERVAL 200
-
-// outputting
-void print_progress(ga_pop_t cgp_population);
-void print_results(ga_pop_t cgp_population);
-
-
-// SIGINT handler
+// signal handlers
 volatile sig_atomic_t interrupted = 0;
+volatile sig_atomic_t cpu_limit_reached = 0;
+
+
+/**
+ * Handles SIGINT. Sets `interrupted` flag.
+ */
 void sigint_handler(int _)
 {
     signal(SIGINT, sigint_handler);
@@ -82,8 +55,9 @@ void sigint_handler(int _)
 }
 
 
-// SIGXCPU handler
-volatile sig_atomic_t cpu_limit_reached = 0;
+/**
+ * Handles SIGXCPU. Sets `cpu_limit_reached` flag.
+ */
 void sigxcpu_handler(int _)
 {
     signal(SIGXCPU, sigxcpu_handler);
@@ -91,6 +65,11 @@ void sigxcpu_handler(int _)
 }
 
 
+/**
+ * Saves image filtered by best filter to results directory
+ * @param cgp_population
+ * @param noisy
+ */
 void save_image(ga_pop_t cgp_population, img_image_t noisy)
 {
     char filename[25 + 8 + 1];
@@ -117,9 +96,9 @@ void print_results(ga_pop_t cgp_population)
 {
     print_progress(cgp_population);
 
-    printf(".--------------.\n"
-           "| Best circuit |\n"
-           "'--------------'\n");
+    printf("\n"
+           "Best circuit\n"
+           "------------\n");
     cgp_dump_chr_asciiart(cgp_population->chromosomes[cgp_population->best_chr_index], stdout);
     printf("\n");
 }
@@ -127,74 +106,9 @@ void print_results(ga_pop_t cgp_population)
 
 #define SAVE_IMAGE_AND_STATE() { \
     print_results(cgp_population); \
-    save_image(cgp_population, cmdargs.noisy); \
-    vault_store(&cmdargs.vault, cgp_population); \
+    save_image(cgp_population, img_noisy); \
+    if (config.vault_enabled) vault_store(&vault, cgp_population); \
     SLOWLOG("Current output image and state stored."); \
-}
-
-
-typedef struct
-{
-    img_image_t original;
-    img_image_t noisy;
-    vault_storage vault;
-} args_t;
-
-
-args_t parse_cmdline(int argc, char *argv[])
-{
-    args_t args = {
-        .vault = {
-            .directory = "vault",
-        }
-    };
-
-    opterr = 0;
-    int opt;
-    while ((opt = getopt(argc, argv, "i:n:v:h")) != -1) {
-        switch (opt) {
-            case 'i':
-                args.original = img_load(optarg);
-                break;
-
-            case 'n':
-                args.noisy = img_load(optarg);
-                break;
-
-            case 'v':
-                args.vault.directory = (char*) malloc(sizeof(char) * (strlen(optarg) + 1));
-                strcpy(args.vault.directory, optarg);
-                break;
-
-            case 'h':
-                fprintf(stderr, "%s", HELP_MESSAGE);
-                exit(1);
-
-            case '?':
-                if (optopt == 'i' || optopt == 'n' || optopt == 'v') {
-                    fprintf(stderr, "Option -%c requires an argument.\n", optopt);
-                } else if (isprint(optopt)) {
-                    fprintf (stderr, "Unknown option `-%c'.\n", optopt);
-                } else {
-                    fprintf (stderr, "Unknown option character `\\x%x'.\n", optopt);
-                }
-
-                fprintf(stderr, "Use -h for help.\n");
-                exit(1);
-        }
-    }
-
-    if (!args.original) {
-        fprintf(stderr, "Failed to load original image or no filename given.\n");
-        exit(1);
-    }
-
-    if (!args.noisy) {
-        fprintf(stderr, "Failed to load noisy image or no filename given.\n");
-        exit(1);
-    }
-
-    return args;
 }
 
 
@@ -203,13 +117,38 @@ int main(int argc, char *argv[])
     // application return code
     int retval = 0;
 
-    // cmd line arguments
-    args_t cmdargs = parse_cmdline(argc, argv);
+    // configuration
+    static config_t config = {
+        .max_generations = 50000,
+        .algorithm = predictors,
+
+        .cgp_mutate_genes = 5,
+        .cgp_population_size = 8,
+        .cgp_archive_size = 10,
+
+        .pred_size = 0.25,
+        .pred_mutation_rate = 0.05,
+        .pred_population_size = 10,
+
+        .log_interval = 20,
+        .results_dir = "results",
+
+        .vault_enabled = false,
+        .vault_interval = 200,
+    };
+
+    // vault
+    vault_storage_t vault;
 
     // populations and archives
     ga_pop_t cgp_population;
     ga_pop_t pred_population;
     archive_t cgp_archive;
+    archive_t pred_archive;
+
+    // images
+    img_image_t img_original;
+    img_image_t img_noisy;
 
     // current best fitness achieved
     ga_fitness_t cgp_current_best;
@@ -217,87 +156,172 @@ int main(int argc, char *argv[])
     // stored when SIGINT was received last time
     long interrupted_generation = -1;
 
-    img_save_bmp(cmdargs.original, "results/img_original.bmp");
-    img_save_bmp(cmdargs.noisy, "results/img_noisy.bmp");
 
-    // initialize everything
-    cgp_init();
+    /*
+        Load configuration
+     */
+
+
+    retval = config_load_args(argc, argv, &config);
+    if (retval != 0) {
+        return 1;
+    }
+
+    if ((img_original = img_load(config.input_image)) == NULL) {
+        fprintf(stderr, "Failed to load original image or no filename given.\n");
+        return 1;
+    }
+
+    if ((img_noisy = img_load(config.noisy_image)) == NULL) {
+        fprintf(stderr, "Failed to load noisy image or no filename given.\n");
+        return 1;
+    }
+
+
+    /*
+        Initialize data structures etc.
+     */
+
+
+    // signal handlers
+    signal(SIGINT, sigint_handler);
+    signal(SIGXCPU, sigxcpu_handler);
+
+    // random number generator
     rand_init();
-    fitness_init(cmdargs.original, cmdargs.noisy);
-    vault_init(&cmdargs.vault);
 
-    arc_func_vect_t arc_methods = {
+    // evolution
+    cgp_init(config.cgp_mutate_genes, fitness_eval_cgp);
+    int img_size = img_original->width * img_original->height;
+    pred_init(img_size - 1, img_size, config.pred_size * img_size,
+        config.pred_mutation_rate);
+
+    // vault
+    if (config.vault_enabled) {
+        vault_init(&vault);
+    }
+
+    // CGP archive
+    arc_func_vect_t arc_cgp_methods = {
         .alloc_genome = cgp_alloc_genome,
         .free_genome = cgp_free_genome,
         .copy_genome = cgp_copy_genome,
         .fitness = fitness_eval_cgp,
     };
-    cgp_archive = arc_create(CGP_ARCHIVE_SIZE, arc_methods);
-
+    cgp_archive = arc_create(config.cgp_archive_size, arc_cgp_methods);
     if (cgp_archive == NULL) {
         fprintf(stderr, "Failed to initialize CGP archive.\n");
-        exit(1);
+        return 1;
     }
 
-    SLOWLOG("Mutation rate: %d genes max", CGP_MUTATION_RATE);
-    SLOWLOG("Initial PSNR value:           %.20g", fitness_psnr(cmdargs.original, cmdargs.noisy));
+    // predictor archive
+    arc_func_vect_t arc_pred_methods = {
+        .alloc_genome = pred_alloc_genome,
+        .free_genome = pred_free_genome,
+        .copy_genome = pred_copy_genome,
+        .fitness = NULL,
+    };
+    pred_archive = arc_create(1, arc_pred_methods);
+    if (pred_archive == NULL) {
+        fprintf(stderr, "Failed to initialize predictors archive.\n");
+        return 1;
+    }
+
+    // fitness function
+    fitness_init(img_original, img_noisy, cgp_archive);
 
 
-    // try to restart from vault OR create the initial population
+    /*
+        Evolution recovery / initialization
+     */
 
-    if (vault_retrieve(&cmdargs.vault, &cgp_population) == 0) {
+
+    if (config.vault_enabled && vault_retrieve(&vault, &cgp_population) == 0) {
         SLOWLOG("Population retrieved from vault.");
 
     } else {
-        cgp_population = cgp_init_pop(CGP_POP_SIZE);
+        cgp_population = cgp_init_pop(config.cgp_population_size);
+        pred_population = pred_init_pop(config.pred_population_size);
     }
 
-    cgp_set_mutation_rate(CGP_MUTATION_RATE);
-    cgp_set_fitness_func(cgp_population, fitness_eval_cgp);
+
+    /*
+        Log initial info
+     */
+
+
+    #ifdef _OPENMP
+        SLOWLOG("OpenMP is enabled.");
+        SLOWLOG("CPUs: %d", omp_get_num_procs());
+        SLOWLOG("Max threads: %d", omp_get_max_threads());
+        return 0;
+    #endif
+
+    SLOWLOG("Mutation rate: %d genes max", config.cgp_mutate_genes);
+    SLOWLOG("Initial PSNR value:           %.20g",
+        fitness_psnr(img_original, img_noisy));
+
+
     ga_evaluate_pop(cgp_population);
-    cgp_current_best = cgp_population->best_fitness;
     print_progress(cgp_population);
+    img_save_bmp(img_original, "results/img_original.bmp");
+    img_save_bmp(img_noisy, "results/img_noisy.bmp");
+    cgp_current_best = cgp_population->best_fitness;
 
 
-    // install signal handlers
-    signal(SIGINT, sigint_handler);
-    signal(SIGXCPU, sigxcpu_handler);
+    /*
+        Evolution itself
+     */
 
 
-    // evolve
+    if (interrupted) {
+        // SIGINT received during initialization
+        retval = -SIGINT;
+        goto cleanup;
+    }
 
-    while (cgp_population->generation < CGP_GENERATIONS) {
-        if ((cgp_population->generation % PRINT_INTERVAL) == 0) {
-            print_progress(cgp_population);
-        }
+
+    while (cgp_population->generation < config.max_generations) {
+
+        // next generation
         ga_next_generation(cgp_population);
 
+        // log progress
+        if ((cgp_population->generation % config.log_interval) == 0) {
+            print_progress(cgp_population);
+        }
+
+        // check SIGXCPU
         if (cpu_limit_reached) {
-            print_results(cgp_population);
             SAVE_IMAGE_AND_STATE();
-            retval = 10;
+            retval = -SIGXCPU;
             goto cleanup;
         }
 
-        if ((cgp_population->generation % VAULT_INTERVAL) == 0) {
-            vault_store(&cmdargs.vault, cgp_population);
-            save_image(cgp_population, cmdargs.noisy);
+        // store to vault
+        if ((cgp_population->generation % config.vault_interval) == 0) {
+            SAVE_IMAGE_AND_STATE();
         }
 
+        // copy to archive
         if (cgp_population->best_fitness > cgp_current_best) {
             print_progress(cgp_population);
             SLOWLOG("Best fitness changed, moving circuit to archive");
-            arc_insert(cgp_archive, cgp_population->chromosomes[cgp_population->best_chr_index]);
+            ga_chr_t best = cgp_population->chromosomes[cgp_population->best_chr_index];
+            ga_chr_t archived = arc_insert(cgp_archive, best);
+            SLOWLOG("Predicted fitness: %.20g", best->fitness);
+            SLOWLOG("Real fitness: %.20g", archived->fitness);
             cgp_current_best = cgp_population->best_fitness;
         }
 
+        // SIGINT
         if (interrupted) {
 
             if (interrupted_generation >= 0 && interrupted_generation > cgp_population->generation - 1000) {
+                retval = -SIGINT;
                 goto cleanup;
             }
 
-            print_results(cgp_population);
             SAVE_IMAGE_AND_STATE();
 
             interrupted = 0;
@@ -306,11 +330,14 @@ int main(int argc, char *argv[])
 
     } // while loop
 
-    print_results(cgp_population);
-    save_image(cgp_population, cmdargs.noisy);
+    SAVE_IMAGE_AND_STATE();
 
 
-    // cleanup everything
+    /*
+        Clean-up
+     */
+
+
 cleanup:
 
     ga_destroy_pop(cgp_population);
@@ -318,8 +345,8 @@ cleanup:
     cgp_deinit();
     fitness_deinit();
 
-    img_destroy(cmdargs.original);
-    img_destroy(cmdargs.noisy);
+    img_destroy(img_original);
+    img_destroy(img_noisy);
 
     return retval;
 }

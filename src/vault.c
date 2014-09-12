@@ -34,8 +34,11 @@
  * Initialize vault storage
  * @param storage
  */
-int vault_init(vault_storage *storage)
+int vault_init(vault_storage_t *storage)
 {
+    if (storage->directory == NULL)
+        return 0;
+
     int retval = mkdir(storage->directory, S_IRWXU);
     if (retval && errno == EEXIST) {
         return 0;
@@ -58,8 +61,11 @@ int _get_dest_filename(char *buffer, int buffer_size, char *directory, int gener
  * @param storage
  * @param population
  */
-int vault_store(vault_storage *storage, ga_pop_t cgp_population)
+int vault_store(vault_storage_t *storage, ga_pop_t cgp_population)
 {
+    if (storage->directory == NULL)
+        return 0;
+
     char fullname[MAX_FILENAME_LENGTH];
     if (_get_dest_filename(fullname, MAX_FILENAME_LENGTH, storage->directory, cgp_population->generation) < 0) {
         return VAULT_ERROR;
@@ -95,8 +101,11 @@ int _get_src_filename(char *buffer, int buffer_size, char *directory, char *file
  * @param storage
  * @param population
  */
-int vault_retrieve(vault_storage *storage, ga_pop_t *cgp_pop_ptr)
+int vault_retrieve(vault_storage_t *storage, ga_pop_t *cgp_pop_ptr)
 {
+    if (storage->directory == NULL)
+        return VAULT_EMPTY;
+
     // find last existing file
 
     struct dirent **entries;

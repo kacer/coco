@@ -30,15 +30,14 @@
 
 typedef struct {
     char *directory;
-    ga_fitness_t cgp_fitness_func;
-} vault_storage;
+} vault_storage_t;
 
 
 /**
  * Initialize vault storage
  * @param storage
  */
-int vault_init(vault_storage *storage);
+int vault_init(vault_storage_t *storage);
 
 
 /**
@@ -46,7 +45,7 @@ int vault_init(vault_storage *storage);
  * @param storage
  * @param population
  */
-int vault_store(vault_storage *storage, ga_pop_t cgp_population);
+int vault_store(vault_storage_t *storage, ga_pop_t cgp_population);
 
 
 /**
@@ -54,7 +53,7 @@ int vault_store(vault_storage *storage, ga_pop_t cgp_population);
  * @param storage
  * @param population
  */
-int vault_retrieve(vault_storage *storage, ga_pop_t *cgp_pop_ptr);
+int vault_retrieve(vault_storage_t *storage, ga_pop_t *cgp_pop_ptr);
 
 
 /**

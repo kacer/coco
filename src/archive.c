@@ -23,19 +23,6 @@
 #include "archive.h"
 
 
-static inline int arc_real_index(archive_t arc, int index)
-{
-    if (arc->stored < arc->capacity) {
-        return index;
-
-    } else {
-        int real = (arc->pointer + index) % arc->capacity;
-        if (real < 0) real += arc->capacity;
-        return real;
-    }
-}
-
-
 
 /**
  * Allocate memory for and initialize new archive

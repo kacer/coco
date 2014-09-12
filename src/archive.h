@@ -90,3 +90,27 @@ void arc_destroy(archive_t arc);
  */
 ga_chr_t arc_insert(archive_t arc, ga_chr_t chr);
 
+
+/**
+ * Returns real index of item in archive's ring buffer
+ */
+static inline int arc_real_index(archive_t arc, int index)
+{
+    if (arc->stored < arc->capacity) {
+        return index;
+
+    } else {
+        int real = (arc->pointer + index) % arc->capacity;
+        if (real < 0) real += arc->capacity;
+        return real;
+    }
+}
+
+
+/**
+ * Returns item stored on given index
+ */
+static inline ga_chr_t arc_get(archive_t arc, int index)
+{
+    return arc->chromosomes[arc_real_index(arc, index)];
+}

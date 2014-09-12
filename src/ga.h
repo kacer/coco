@@ -268,7 +268,7 @@ void _ga_evaluate_pop_simple(ga_pop_t pop);
 void _ga_evaluate_pop_pthread(ga_pop_t pop);
 
 
-#ifdef GA_USE_PTHREAD
+#if !defined(_OPENMP) && defined(GA_USE_PTHREAD)
 
     static inline void ga_evaluate_pop(ga_pop_t pop) {
         _ga_evaluate_pop_pthread(pop);
