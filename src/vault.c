@@ -17,7 +17,6 @@
  *   \___)     (___/
  */
 
-#define _XOPEN_SOURCE 700
 
 #include <errno.h>
 #include <stdio.h>

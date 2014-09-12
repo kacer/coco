@@ -34,16 +34,18 @@
 
 
 /**
- * Create a new CGP population with given size
+ * Create a new CGP population with given size. The genomes are not
+ * initialized at this point.
+ *
  * @param  size
  * @param  chromosomes_length
  * @return
  */
 ga_pop_t ga_create_pop(int size, ga_problem_type_t type, ga_func_vect_t methods)
 {
-    /* only init/deinit are required for initialization */
-    assert(methods.init != NULL);
-    assert(methods.deinit != NULL);
+    /* only alloc/free are required for initialization */
+    assert(methods.alloc_genome != NULL);
+    assert(methods.free_genome != NULL);
 
     ga_pop_t new_pop = (ga_pop_t) malloc(sizeof(struct ga_pop));
     if (new_pop == NULL) {
@@ -66,14 +68,15 @@ ga_pop_t ga_create_pop(int size, ga_problem_type_t type, ga_func_vect_t methods)
 
     /* initialize chromosomes */
     for (int i = 0; i < size; i++) {
-        ga_chr_t new_chr = (ga_chr_t) malloc(sizeof(struct ga_chr));
-        if (new_chr == NULL || new_pop->methods.init(new_chr) != 0) {
-           for (int x = i - 1; x >= 0; x--) {
-               new_pop->methods.deinit(new_chr);
-           }
-           return NULL;
+        ga_chr_t new_chr = ga_alloc_chr(methods.alloc_genome);
+
+        if (new_chr == NULL) {
+            for (int x = i - 1; x >= 0; x--) {
+                ga_free_chr(new_pop->chromosomes[x], methods.free_genome);
+            }
+            free(new_pop);
+            return NULL;
         }
-        new_chr->has_fitness = false;
         new_pop->chromosomes[i] = new_chr;
     }
 
@@ -82,15 +85,34 @@ ga_pop_t ga_create_pop(int size, ga_problem_type_t type, ga_func_vect_t methods)
 
 
 /**
+ * Initializes population to random chromosomes
+ * @param pop
+ */
+int ga_init_pop(ga_pop_t pop)
+{
+    assert(pop->methods.init_genome != NULL);
+
+    for (int i = 0; i < pop->size; i++) {
+        int retval = pop->methods.init_genome(pop->chromosomes[i]);
+        if (retval != 0) {
+            return retval;
+        }
+    }
+    return 0;
+}
+
+
+/**
  * Sets method vector
  */
 void ga_set_methods(ga_pop_t pop, ga_func_vect_t methods)
 {
-    assert(methods.init != NULL);
-    assert(methods.deinit != NULL);
+    assert(methods.alloc_genome != NULL);
+    assert(methods.free_genome != NULL);
+    assert(methods.init_genome != NULL);
     assert(methods.fitness != NULL);
     assert(methods.offspring != NULL);
-    assert(methods.crossover != NULL || methods.mutate != NULL);
+
     pop->methods = methods;
 }
 
@@ -103,7 +125,8 @@ void ga_destroy_pop(ga_pop_t pop)
 {
     if (pop != NULL) {
         for (int i = 0; i < pop->size; i++) {
-            pop->methods.deinit(pop->chromosomes[i]);
+            pop->methods.free_genome(pop->chromosomes[i]->genome);
+            free(pop->chromosomes[i]);
         }
         free(pop->chromosomes);
     }
@@ -115,16 +138,51 @@ void ga_destroy_pop(ga_pop_t pop)
 
 
 /**
- * Mutate given chromosome
- * @param pop
- * @param chr
+ * Allocates memory for chromosome
+ *
+ * @param  problem-specific genome allocation function
+ * @return pointer to allocated chromosome
  */
-void ga_mutate_chr(ga_pop_t pop, ga_chr_t chr)
+ga_chr_t ga_alloc_chr(ga_alloc_genome_func_t alloc_func)
 {
-    if (pop->methods.mutate != NULL) {
-        pop->methods.mutate(chr);
-        chr->has_fitness = false;
+    ga_chr_t new_chr = (ga_chr_t) malloc(sizeof(struct ga_chr));
+    if (new_chr == NULL) {
+        return NULL;
     }
+    void *new_genome = alloc_func();
+    if (new_genome == NULL) {
+        free(new_chr);
+        return NULL;
+    }
+
+    new_chr->has_fitness = false;
+    new_chr->genome = new_genome;
+    return new_chr;
+}
+
+
+/**
+ * De-allocates memory for chromosome
+ *
+ * @param  problem-specific genome de-allocation function
+ */
+void ga_free_chr(ga_chr_t chr, ga_free_genome_func_t free_func)
+{
+    free_func(chr->genome);
+    free(chr);
+}
+
+
+/**
+ * Copies `src` chromosome to `dst`.
+ *
+ * @param  problem-specific genome copying function
+ */
+void ga_copy_chr(ga_chr_t dst, ga_chr_t src, ga_copy_genome_func_t copy_func)
+{
+    copy_func(dst->genome, src->genome);
+    dst->has_fitness = src->has_fitness;
+    dst->fitness = src->fitness;
 }
 
 

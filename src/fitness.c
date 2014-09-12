@@ -28,8 +28,8 @@
 #include "fitness.h"
 
 
-img_image original_image;
-img_window_array noisy_image_windows;
+img_image_t original_image;
+img_window_array_t noisy_image_windows;
 
 
 /**
@@ -37,7 +37,7 @@ img_window_array noisy_image_windows;
  * @param original
  * @param noisy
  */
-void fitness_init(img_image original, img_image noisy)
+void fitness_init(img_image_t original, img_image_t noisy)
 {
     assert(original->width == noisy->width);
     assert(original->height == noisy->height);
@@ -66,13 +66,13 @@ void fitness_deinit()
  * @param  chr
  * @return fitness value
  */
-img_image _fitness_filter_image_simple(ga_chr_t chr)
+img_image_t _fitness_filter_image_simple(ga_chr_t chr)
 {
-    img_image filtered = img_create(original_image->width, original_image->height,
+    img_image_t filtered = img_create(original_image->width, original_image->height,
         original_image->comp);
 
     for (int i = 0; i < noisy_image_windows->size; i++) {
-        img_window *w = &noisy_image_windows->windows[i];
+        img_window_t *w = &noisy_image_windows->windows[i];
 
         cgp_value_t *inputs = w->pixels;
         cgp_value_t output_pixel[1];
@@ -92,7 +92,7 @@ typedef struct {
     int start;
     int stop;
     ga_chr_t chr;
-    img_image filtered;
+    img_image_t filtered;
 } fitness_filter_image_pthread_job;
 
 
@@ -105,7 +105,7 @@ void* _fitness_filter_image_pthread_worker(void *_job)
     fitness_filter_image_pthread_job *job =(fitness_filter_image_pthread_job*) _job;
 
     for (int i = job->start; i < job->stop; i++) {
-        img_window *w = &noisy_image_windows->windows[i];
+        img_window_t *w = &noisy_image_windows->windows[i];
 
         cgp_value_t *inputs = w->pixels;
         cgp_value_t output_pixel[1];
@@ -127,9 +127,9 @@ void* _fitness_filter_image_pthread_worker(void *_job)
  * @param  chr
  * @return fitness value
  */
-img_image _fitness_filter_image_pthread(ga_chr_t chr)
+img_image_t _fitness_filter_image_pthread(ga_chr_t chr)
 {
-    img_image filtered = img_create(original_image->width, original_image->height,
+    img_image_t filtered = img_create(original_image->width, original_image->height,
         original_image->comp);
 
 
@@ -173,7 +173,7 @@ img_image _fitness_filter_image_pthread(ga_chr_t chr)
  */
 ga_fitness_t fitness_eval_cgp(ga_chr_t chr)
 {
-    img_image filtered = fitness_filter_image(chr);
+    img_image_t filtered = fitness_filter_image(chr);
     ga_fitness_t fitness = fitness_psnr(original_image, filtered);
     img_destroy(filtered);
 
@@ -189,7 +189,7 @@ ga_fitness_t fitness_eval_cgp(ga_chr_t chr)
  * @param  filtered image
  * @return fitness value (PSNR)
  */
-ga_fitness_t fitness_psnr(img_image original, img_image filtered)
+ga_fitness_t fitness_psnr(img_image_t original, img_image_t filtered)
 {
     assert(original->width == filtered->width);
     assert(original->height == filtered->height);

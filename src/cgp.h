@@ -20,8 +20,6 @@
 
 #pragma once
 
-#include <stdbool.h>
-
 #include "cgp_core.h"
 #include "cgp_dump.h"
 #include "cgp_load.h"

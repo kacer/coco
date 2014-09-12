@@ -16,7 +16,7 @@ int main(int argc, char const *argv[])
 
     cgp_init();
 
-    cgp_genome_t genome = (cgp_genome_t) malloc(sizeof(struct cgp_genome));
+    cgp_genome_t genome = (cgp_genome_t) cgp_alloc_genome();
     struct ga_chr chr = {
         .genome = genome
     };

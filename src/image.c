@@ -38,8 +38,8 @@ const int COMP = 1;
  * @param  filename
  * @return
  */
-img_image img_create(int width, int height, int comp) {
-    img_image img = (img_image) malloc(sizeof(_img_image));
+img_image_t img_create(int width, int height, int comp) {
+    img_image_t img = (img_image_t) malloc(sizeof(struct img_image));
     if (img == NULL) return NULL;
 
     img->width = width;
@@ -56,8 +56,8 @@ img_image img_create(int width, int height, int comp) {
  * @param  filename
  * @return
  */
-img_image img_load(char const *filename) {
-    img_image img = (img_image) malloc(sizeof(_img_image));
+img_image_t img_load(char const *filename) {
+    img_image_t img = (img_image_t) malloc(sizeof(struct img_image));
     if (img == NULL) return NULL;
 
     img->data = stbi_load(filename, &(img->width), &(img->height), &(img->comp), COMP);
@@ -77,7 +77,7 @@ img_image img_load(char const *filename) {
  * @param  img
  * @return 0 on failure, non-zero on success
  */
-int img_save_bmp(img_image img, char const *filename) {
+int img_save_bmp(img_image_t img, char const *filename) {
     return stbi_write_bmp(filename, img->width, img->height, img->comp, img->data);
 }
 
@@ -86,7 +86,7 @@ int img_save_bmp(img_image img, char const *filename) {
  * Clears all data associated with image from memory
  * @param img
  */
-void img_destroy(img_image img) {
+void img_destroy(img_image_t img) {
     if (img != NULL) free(img->data);
     free(img);
 }
@@ -96,7 +96,7 @@ void img_destroy(img_image img) {
  * Clears all data associated with image windows from memory
  * @param img
  */
-void img_windows_destroy(img_window_array arr) {
+void img_windows_destroy(img_window_array_t arr) {
     if (arr != NULL) free(arr->windows);
     free(arr);
 }
@@ -129,12 +129,12 @@ static inline int get_neighbour_index(int baseX, int baseY, int width, int heigh
  * @param  filename
  * @return
  */
-img_window_array img_split_windows(img_image img) {
+img_window_array_t img_split_windows(img_image_t img) {
     int size = img->width * img->height;
-    img_window *windows = (img_window*) malloc(sizeof(img_window) * size);
+    img_window_t *windows = (img_window_t*) malloc(sizeof(img_window_t) * size);
     if (windows == NULL) return NULL;
 
-    img_window_array arr = (img_window_array) malloc(sizeof(_img_window_array));
+    img_window_array_t arr = (img_window_array_t) malloc(sizeof(struct img_window_array));
     if (arr == NULL) {
         free(windows);
         return NULL;

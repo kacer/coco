@@ -65,19 +65,21 @@ def main():
                         help='Do not use valgrind')
     parser.add_argument('--verbose', '-v', action='store_true',
                         help='Do not use valgrind')
+    parser.add_argument('--stop', '-s', action='store_true',
+                        help='Stop on first failure')
     args = parser.parse_args()
     verbose = args.verbose
+    stop_on_failure = args.stop
 
     gcc_flags = parse_makefile('../Makefile')
 
     for testfile in args.testfiles:
 
         if verbose:
-            print(yellow('Test %s' % (testfile)), file=sys.stderr)
+            print(yellow('Test %s' % (testfile)))
 
         if not os.path.isfile(testfile):
-            print(red("Skipping non-existing file %s" % (testfile,)),
-                  file=sys.stderr)
+            print(red("Skipping non-existing file %s" % (testfile,)))
             continue
 
         with open(testfile, 'rt') as fp:
@@ -86,9 +88,11 @@ def main():
             # grab first comment
             m = re.match(RE_COMMENT, content, re.I + re.U + re.S)
             if not m:
-                print(red("File %s does not contain header" % (testfile,)),
-                      file=sys.stderr)
-                continue
+                print(red("File %s does not contain header" % (testfile,)))
+                if stop_on_failure:
+                    return
+                else:
+                    continue
 
             init_comment = m.group(1)
             lines = map(str.strip, re.split(r'\s*\n\s*\*\s', init_comment))
@@ -110,42 +114,62 @@ def main():
         # compile
 
         try:
-            binary = tempfile.NamedTemporaryFile(prefix='cocotest_', delete=False)
+            binary = tempfile.NamedTemporaryFile(prefix='cocotest_',
+                                                 delete=False)
             binary.close()
+
+            args = [testfile] + gcc_flags + flags + ['-o', binary.name]
 
             if verbose:
                 print('Compiling %s to %s' % (testfile, binary.name))
-            args = ["gcc"] + [testfile] + gcc_flags + flags + ['-o', binary.name]
-            p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                print('GCC command:\ngcc', ' '.join(args))
+
+            p = subprocess.Popen(["gcc"] + args,
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE)
             out, err = p.communicate()
             if err or p.returncode != 0:
-                print(red('Test %s failed to compile' % (testfile)), file=sys.stderr)
+                print(red('Test %s failed to compile' % (testfile)))
                 print(err, file=sys.stderr)
-                continue
+                if stop_on_failure:
+                    return
+                else:
+                    continue
 
             # run
 
             if verbose:
                 print('Running %s' % (binary.name,))
-            args = [binary.name]
-            p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            p = subprocess.Popen([binary.name],
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE)
             out, err = p.communicate()
+            print (green(out))
+
             if err or p.returncode != 0:
-                print(red('Test %s failed' % (testfile)), file=sys.stderr)
+                print(red('Test %s failed (stderr non-empty or retval != 0)' % (testfile)))
                 print(err, file=sys.stderr)
-                continue
+                if stop_on_failure:
+                    return
+                else:
+                    continue
 
             if use_diff:
                 with open(re.sub('.c$', '.out', testfile), 'rt') as fp:
                     reference_out = fp.read()
 
-                result = list(difflib.unified_diff(reference_out.splitlines(1), out.splitlines(1)))
+                result = list(difflib.unified_diff(
+                    reference_out.splitlines(1), out.splitlines(1)
+                ))
                 if len(result):
-                    print(red('Test %s failed' % (testfile)), file=sys.stderr)
-                    print(''.join(result), file=sys.stderr)
-                    continue
+                    print(red('Test %s failed (diff mismatch)' % (testfile)))
+                    #print(''.join(result), file=sys.stderr)
+                    if stop_on_failure:
+                        return
+                    else:
+                        continue
 
-            print(green('Test %s OK' % (testfile)), file=sys.stderr)
+            print(green('Test %s OK' % (testfile)))
 
         finally:
             os.unlink(binary.name)

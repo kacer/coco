@@ -22,7 +22,7 @@
 #include <string.h>
 #include <assert.h>
 
-#include "cgp.h"
+#include "cgp_core.h"
 #include "random.h"
 
 
@@ -112,16 +112,18 @@ ga_pop_t cgp_init_pop(int pop_size)
 {
     /* prepare methods vector */
     ga_func_vect_t methods = {
-        .init = cgp_init_chr,
-        .deinit = cgp_deinit_chr,
+        .alloc_genome = cgp_alloc_genome,
+        .free_genome = cgp_free_genome,
+        .init_genome = cgp_randomize_genome,
+
         .fitness = NULL,  // must be set later!
         .offspring = cgp_offspring,
-
-        .mutate = cgp_mutate_chr,
     };
 
     /* initialize GA */
-    return ga_create_pop(pop_size, maximize, methods);
+    ga_pop_t pop = ga_create_pop(pop_size, maximize, methods);
+    ga_init_pop(pop);
+    return pop;
 }
 
 
@@ -151,21 +153,26 @@ void cgp_set_fitness_func(ga_pop_t pop, ga_fitness_func_t fitness_func)
 
 
 /**
- * Initialize new CGP genome
+ * Allocates memory for new CGP genome
  * @param chromosome
  */
-int cgp_init_chr(ga_chr_t chromosome)
+void* cgp_alloc_genome()
 {
-    cgp_genome_t genome = (cgp_genome_t) malloc(sizeof(struct cgp_genome));
-    if (genome == NULL) {
-        return -1;
-    }
+    return malloc(sizeof(struct cgp_genome));
+}
+
+
+/**
+ * Initializes CGP genome to random values
+ * @param chromosome
+ */
+int cgp_randomize_genome(ga_chr_t chromosome)
+{
+    cgp_genome_t genome = (cgp_genome_t) chromosome->genome;
 
     for (int i = 0; i < CGP_CHR_LENGTH; i++) {
         cgp_randomize_gene(genome, i);
     }
-
-    chromosome->genome = genome;
     return 0;
 }
 
@@ -175,9 +182,8 @@ int cgp_init_chr(ga_chr_t chromosome)
  * @param  chromosome
  * @return
  */
-void cgp_deinit_chr(ga_chr_t chromosome)
+void cgp_free_genome(void *genome)
 {
-    cgp_genome_t genome = (cgp_genome_t) chromosome->genome;
     free(genome);
 }
 
@@ -245,15 +251,13 @@ void cgp_mutate_chr(ga_chr_t chromosome)
  * @param  replacement
  * @return
  */
-void cgp_replace_chr(ga_chr_t chromosome, ga_chr_t replacement)
+void cgp_copy_genome(void *_dst, void *_src)
 {
-    cgp_genome_t dst = (cgp_genome_t) chromosome->genome;
-    cgp_genome_t src = (cgp_genome_t) replacement->genome;
+    cgp_genome_t dst = (cgp_genome_t) _dst;
+    cgp_genome_t src = (cgp_genome_t) _src;
 
     memcpy(dst->nodes, src->nodes, sizeof(cgp_node_t) * CGP_NODES);
     memcpy(dst->outputs, src->outputs, sizeof(int) * CGP_OUTPUTS);
-    chromosome->fitness = replacement->fitness;
-    chromosome->has_fitness = replacement->has_fitness;
 }
 
 
@@ -318,8 +322,8 @@ void cgp_get_output(ga_chr_t chromosome, cgp_value_t *inputs, cgp_value_t *outpu
 }
 
 
-
 /* population *****************************************************************/
+
 
 /**
  * Create new generation
@@ -332,7 +336,9 @@ void cgp_offspring(ga_pop_t pop)
 
     for (int i = 0; i < pop->size; i++) {
         if (i == pop->best_chr_index) continue;
-        cgp_replace_chr(pop->chromosomes[i], parent);
-        ga_mutate_chr(pop, pop->chromosomes[i]);
+        ga_chr_t chr = pop->chromosomes[i];
+        ga_copy_chr(chr, parent, cgp_copy_genome);
+        cgp_mutate_chr(chr);
+        chr->has_fitness = false;
     }
 }

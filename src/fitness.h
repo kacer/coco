@@ -34,7 +34,7 @@
  * @param original
  * @param noisy
  */
-void fitness_init(img_image original, img_image noisy);
+void fitness_init(img_image_t original, img_image_t noisy);
 
 
 /**
@@ -50,7 +50,7 @@ void fitness_deinit();
  * @param  chr
  * @return fitness value
  */
-static inline img_image fitness_filter_image(ga_chr_t chr);
+static inline img_image_t fitness_filter_image(ga_chr_t chr);
 
 
 /**
@@ -62,7 +62,7 @@ static inline img_image fitness_filter_image(ga_chr_t chr);
  * @param  chr
  * @return fitness value
  */
-img_image _fitness_filter_image_simple(ga_chr_t chr);
+img_image_t _fitness_filter_image_simple(ga_chr_t chr);
 
 
 /**
@@ -74,18 +74,18 @@ img_image _fitness_filter_image_simple(ga_chr_t chr);
  * @param  chr
  * @return fitness value
  */
-img_image _fitness_filter_image_pthread(ga_chr_t chr);
+img_image_t _fitness_filter_image_pthread(ga_chr_t chr);
 
 
 #ifdef FITNESS_USE_PTHREAD
 
-    static inline img_image fitness_filter_image(ga_chr_t chr) {
+    static inline img_image_t fitness_filter_image(ga_chr_t chr) {
         return _fitness_filter_image_pthread(chr);
     }
 
 #else
 
-    static inline img_image fitness_filter_image(ga_chr_t chr) {
+    static inline img_image_t fitness_filter_image(ga_chr_t chr) {
         return _fitness_filter_image_simple(chr);
     }
 
@@ -102,6 +102,16 @@ ga_fitness_t fitness_eval_cgp(ga_chr_t chr);
 
 
 /**
+ * Predictes CGP circuit fitness
+ *
+ * @param  chr
+ * @param  predictor
+ * @return fitness value
+ */
+//ga_fitness_t fitness_predict_cgp(ga_chr_t chr, pred_genome predictor);
+
+
+/**
  * Calculates fitness using the PSNR (peak signal-to-noise ratio) function.
  * The higher the value, the better the filter.
  *
@@ -109,4 +119,4 @@ ga_fitness_t fitness_eval_cgp(ga_chr_t chr);
  * @param  filtered image
  * @return fitness value (PSNR)
  */
-ga_fitness_t fitness_psnr(img_image original, img_image filtered);
+ga_fitness_t fitness_psnr(img_image_t original, img_image_t filtered);

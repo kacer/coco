@@ -20,8 +20,6 @@
 
 #pragma once
 
-#include <stdbool.h>
-
 #include "ga.h"
 #include "cgp_config.h"
 
@@ -111,18 +109,35 @@ ga_pop_t cgp_init_pop(int pop_size);
 
 
 /**
- * Initialize new CGP genome
- * @param chromosome
+ * Allocates memory for new CGP genome
+ * @return pointer to newly allocated genome
  */
-int cgp_init_chr(ga_chr_t chromosome);
+void* cgp_alloc_genome();
+
+
+/**
+ * Initializes CGP genome to random values
+ * @param chromosome
+ * @return 0 on success, other value on error
+ */
+int cgp_randomize_genome(ga_chr_t chromosome);
 
 
 /**
  * Deinitialize CGP genome
- * @param  chromosome
+ * @param  genome
  * @return
  */
-void cgp_deinit_chr(ga_chr_t chromosome);
+void cgp_free_genome(void *genome);
+
+
+/**
+ * Replace chromosome genes with genes from other chromomose
+ * @param  chr
+ * @param  replacement
+ * @return
+ */
+void cgp_copy_genome(void *_dst, void *_src);
 
 
 /**

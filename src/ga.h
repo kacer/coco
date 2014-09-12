@@ -47,51 +47,77 @@ typedef struct ga_pop* ga_pop_t;
 
 
 /**
- * Genome allocation/initialization function
+ * Genome allocation function
+ *
+ * This function should allocate all required memory and should not
+ * perform initialization of any kind (e.g. generate random genes).
+ *
  * @param  chromosome
  * @return
  */
-typedef int (*ga_init_func_t)(ga_chr_t chromosome);
+typedef void* (*ga_alloc_genome_func_t)();
 
 
 /**
- * Genome deallocation/deinitialization function
+ * Genome deallocation function.
+ *
+ * This function should release any memory resources allocated by
+ * ga_free_genome_func_t.
+ *
  * @param  chromosome
- * @return
+ * @return pointer to allocated genome
  */
-typedef void (*ga_deinit_func_t)(ga_chr_t chromosome);
+typedef void (*ga_free_genome_func_t)(void *genome);
+
+
+/**
+ * Genome initialization function
+ *
+ * This function should initialize the genome, i.e. generate random
+ * genes.
+ *
+ * @param  chromosome
+ * @return 0 on success, any other value on error
+ */
+typedef int (*ga_init_genome_func_t)(ga_chr_t chromosome);
+
+
+/**
+ * Genome copy function.
+ *
+ * This function should copy genes from `src` to `dst`.
+ *
+ * @param  chromosome
+ */
+typedef void (*ga_copy_genome_func_t)(void *dst, void* src);
 
 
 /**
  * Fitness function
+ *
+ * This function should calculate given chromosome (genome) fitness.
+ * It must not skip calculation even if `has_fitness` attribute is set
+ * to `true`.
+ *
+ * @param  chromosome
+ * @return fitness value associated to given chromosome
  */
 typedef ga_fitness_t (*ga_fitness_func_t)(ga_chr_t chromosome);
 
 
 /**
- * Genome mutation function
- * @param  chromosome
- * @return
- */
-typedef void (*ga_mutate_func_t)(ga_chr_t chromosome);
-
-
-/**
- * Population offspring generator function - should modify chromosomes in place
+ * New generation population generator function
+ *
+ * This function should modify given population chromosomes in place.
+ * Parent selection, crossover, mutation, etc. happens here.
+ *
+ * It is important to reset `has_fitness` attributes, if genome changes!
+ *
  * @param  parent chromosomes
  * @return
  */
 typedef void (*ga_offspring_func_t)(ga_pop_t population);
 
-
-/**
- * Genome crossover function
- * @param  child
- * @param  mom
- * @param  dad
- * @return
- */
-typedef void (*ga_crossover_func_t)(ga_chr_t child, ga_chr_t mom, ga_chr_t dad);
 
 
 /**
@@ -107,15 +133,18 @@ typedef enum {
  * User-defined methods
  */
 typedef struct {
-    /* required */
-    ga_init_func_t init;
-    ga_deinit_func_t deinit;
-    ga_fitness_func_t fitness;
-    ga_offspring_func_t offspring;
+    /* memory allocation */
+    ga_alloc_genome_func_t alloc_genome;
+    ga_free_genome_func_t free_genome;
 
-    /* at least one of "mutate", "crossover" must be set */
-    ga_mutate_func_t mutate;
-    ga_crossover_func_t crossover;
+    /* random genome initialization */
+    ga_init_genome_func_t init_genome;
+
+    /* fitness function */
+    ga_fitness_func_t fitness;
+
+    /* children generator */
+    ga_offspring_func_t offspring;
 } ga_func_vect_t;
 
 
@@ -139,12 +168,21 @@ struct ga_pop {
 
 
 /**
- * Create a new CGP population with given size
+ * Create a new CGP population with given size. The genomes are not
+ * initialized at this point.
+ *
  * @param  size
- * @param  problem-specific methods
+ * @param  chromosomes_length
  * @return
  */
 ga_pop_t ga_create_pop(int size, ga_problem_type_t type, ga_func_vect_t methods);
+
+
+/**
+ * Initializes population to random chromosomes
+ * @param pop
+ */
+int ga_init_pop(ga_pop_t pop);
 
 
 /**
@@ -161,11 +199,28 @@ void ga_destroy_pop(ga_pop_t pop);
 
 
 /**
- * Mutate given chromosome
- * @param pop
- * @param chr
+ * Allocates memory for chromosome
+ *
+ * @param  problem-specific genome allocation function
+ * @return pointer to allocated chromosome
  */
-void ga_mutate_chr(ga_pop_t pop, ga_chr_t chr);
+ga_chr_t ga_alloc_chr(ga_alloc_genome_func_t alloc_func);
+
+
+/**
+ * De-allocates memory for chromosome
+ *
+ * @param  problem-specific genome de-allocation function
+ */
+void ga_free_chr(ga_chr_t chr, ga_free_genome_func_t free_func);
+
+
+/**
+ * Copies `src` chromosome to `dst`.
+ *
+ * @param  problem-specific genome copying function
+ */
+void ga_copy_chr(ga_chr_t dst, ga_chr_t src, ga_copy_genome_func_t copy_func);
 
 
 /**

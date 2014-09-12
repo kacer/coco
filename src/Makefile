@@ -21,8 +21,8 @@ EXECUTABLE=coco
 SERVER=merlin
 SERVER_LOCATION=~/coco
 CMDLINE=
-SOURCES=main.c ga.c cgp.c cgp_dump.c cgp_load.c image.c fitness.c vault.c windows.c
-OFILES= main.o ga.o cgp.o cgp_dump.o cgp_load.o image.o fitness.o vault.o windows.o
+SOURCES=main.c ga.c cgp_core.c cgp_dump.c cgp_load.c image.c fitness.c vault.c archive.c windows.c
+OFILES= main.o ga.o cgp_core.o cgp_dump.o cgp_load.o image.o fitness.o vault.o archive.o windows.o
 LIBS=-lm -lc -lpthread -lncurses
 
 all: $(EXECUTABLE)

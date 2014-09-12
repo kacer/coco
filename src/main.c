@@ -30,6 +30,7 @@
 #include "image.h"
 #include "random.h"
 #include "fitness.h"
+#include "archive.h"
 #include "vault.h"
 
 #ifdef NCURSES
@@ -69,6 +70,7 @@ const char* HELP_MESSAGE =
 #define CGP_MUTATION_RATE 5   /* number of max. changed genes */
 #define CGP_POP_SIZE 8
 #define CGP_GENERATIONS 50000
+#define CGP_ARCHIVE_SIZE 10
 
 #define PRINT_INTERVAL 20
 #define VAULT_INTERVAL 200
@@ -78,8 +80,8 @@ const char* HELP_MESSAGE =
 bool using_ncurses = false;
 
 // outputting
-void print_progress(ga_pop_t population);
-void print_results(ga_pop_t population);
+void print_progress(ga_pop_t cgp_population);
+void print_results(ga_pop_t cgp_population);
 
 
 // SIGINT handler
@@ -100,11 +102,11 @@ void sigxcpu_handler(int _)
 }
 
 
-void save_image(ga_pop_t population, img_image noisy)
+void save_image(ga_pop_t cgp_population, img_image_t noisy)
 {
     char filename[25 + 8 + 1];
-    snprintf(filename, 25 + 8 + 1, "results/img_filtered_%08d.bmp", population->generation);
-    img_image filtered = fitness_filter_image(population->chromosomes[population->best_chr_index]);
+    snprintf(filename, 25 + 8 + 1, "results/img_filtered_%08d.bmp", cgp_population->generation);
+    img_image_t filtered = fitness_filter_image(cgp_population->chromosomes[cgp_population->best_chr_index]);
     img_save_bmp(filtered, filename);
     img_destroy(filtered);
 }
@@ -115,21 +117,21 @@ void save_image(ga_pop_t population, img_image noisy)
 #define _SLOWLOG(...) { printf(__VA_ARGS__); printf("\n"); }
 
 
-void _print_progress(ga_pop_t population)
+void _print_progress(ga_pop_t cgp_population)
 {
     printf("Generation %4d: best fitness %.20g\n",
-        population->generation, population->best_fitness);
+        cgp_population->generation, cgp_population->best_fitness);
 }
 
 
-void _print_results(ga_pop_t population)
+void _print_results(ga_pop_t cgp_population)
 {
-    _print_progress(population);
+    _print_progress(cgp_population);
 
     printf(".--------------.\n"
            "| Best circuit |\n"
            "'--------------'\n");
-    cgp_dump_chr_asciiart(population->chromosomes[population->best_chr_index], stdout);
+    cgp_dump_chr_asciiart(cgp_population->chromosomes[cgp_population->best_chr_index], stdout);
     printf("\n");
 }
 
@@ -144,25 +146,25 @@ void _print_results(ga_pop_t population)
     } while(false);
 
 
-    void _nc_print_progress(ga_pop_t population)
+    void _nc_print_progress(ga_pop_t cgp_population)
     {
         static ga_fitness_t last_best = 0;
 
         _NC_PROGRESS("Generation %4d: best fitness %.20g",
-            population->generation, population->best_fitness);
+            cgp_population->generation, cgp_population->best_fitness);
 
-        if (population->best_fitness > last_best) {
-            last_best = population->best_fitness;
+        if (cgp_population->best_fitness > last_best) {
+            last_best = cgp_population->best_fitness;
             SLOWLOG("Generation %4d: best fitness %.20g",
-                population->generation, population->best_fitness);
+                cgp_population->generation, cgp_population->best_fitness);
         }
 
-        if (population->best_chr_index >= 0) {
+        if (cgp_population->best_chr_index >= 0) {
             char* buffer = NULL;
             size_t bufferSize = 0;
             FILE* memory = open_memstream(&buffer, &bufferSize);
 
-            cgp_dump_chr_asciiart(population->chromosomes[population->best_chr_index], memory);
+            cgp_dump_chr_asciiart(cgp_population->chromosomes[cgp_population->best_chr_index], memory);
             fclose(memory);
 
             werase(circuit_window);
@@ -173,21 +175,21 @@ void _print_results(ga_pop_t population)
         }
     }
 
-    void _nc_print_results(ga_pop_t population)
+    void _nc_print_results(ga_pop_t cgp_population)
     {
-        _nc_print_progress(population);
+        _nc_print_progress(cgp_population);
     }
 
-    void print_progress(ga_pop_t population)
+    void print_progress(ga_pop_t cgp_population)
     {
-        if (using_ncurses) _nc_print_progress(population);
-        else _print_progress(population);
+        if (using_ncurses) _nc_print_progress(cgp_population);
+        else _print_progress(cgp_population);
     }
 
-    void print_results(ga_pop_t population)
+    void print_results(ga_pop_t cgp_population)
     {
-        if (using_ncurses) _nc_print_results(population);
-        else _print_results(population);
+        if (using_ncurses) _nc_print_results(cgp_population);
+        else _print_results(cgp_population);
     }
 
 #else
@@ -200,54 +202,62 @@ void _print_results(ga_pop_t population)
 
 
 #define SAVE_IMAGE_AND_STATE() { \
-    print_results(population); \
-    save_image(population, noisy); \
-    vault_store(&vault, population); \
+    print_results(cgp_population); \
+    save_image(cgp_population, cmdargs.noisy); \
+    vault_store(&cmdargs.vault, cgp_population); \
     SLOWLOG("Current output image and state stored."); \
 }
 
 
-int main(int argc, char *argv[])
+typedef struct
 {
-    // application return code
-    int retval = 0;
+    img_image_t original;
+    img_image_t noisy;
+    vault_storage vault;
+    bool using_ncurses;
+} args_t;
 
-    // images
-    img_image original = NULL;
-    img_image noisy = NULL;
-    vault_storage vault = { .directory = "vault" };
+
+args_t parse_cmdline(int argc, char *argv[])
+{
+    args_t args = {
+        .using_ncurses = false,
+        .vault = {
+            .directory = "vault",
+        }
+    };
 
     opterr = 0;
     int opt;
     while ((opt = getopt(argc, argv, "i:n:v:hg")) != -1) {
         switch (opt) {
             case 'i':
-                original = img_load(optarg);
+                args.original = img_load(optarg);
                 break;
 
             case 'n':
-                noisy = img_load(optarg);
+                args.noisy = img_load(optarg);
                 break;
 
             case 'v':
-                vault.directory = (char*) malloc(sizeof(char) * (strlen(optarg) + 1));
-                strcpy(vault.directory, optarg);
+                args.vault.directory = (char*) malloc(sizeof(char) * (strlen(optarg) + 1));
+                strcpy(args.vault.directory, optarg);
                 break;
 
             case 'h':
                 fprintf(stderr, "%s", HELP_MESSAGE);
-                return 1;
+                exit(1);
 
             case 'g':
 #ifdef NCURSES
-                using_ncurses = true;
+                args.using_ncurses = true;
                 break;
 #else
                 fprintf(stderr,
                     "Graphic interface is not available.\n"
                     "Compile with -DNCURSES to enable.\n"
                 );
-                return 1;
+                exit(1);
 #endif
 
             case '?':
@@ -260,82 +270,116 @@ int main(int argc, char *argv[])
                 }
 
                 fprintf(stderr, "Use -h for help.\n");
-                return 1;
+                exit(1);
         }
     }
 
-    if (!original) {
+    if (!args.original) {
         fprintf(stderr, "Failed to load original image or no filename given.\n");
-        return 1;
+        exit(1);
     }
 
-    if (!noisy) {
+    if (!args.noisy) {
         fprintf(stderr, "Failed to load noisy image or no filename given.\n");
-        return 1;
+        exit(1);
     }
 
-    img_save_bmp(original, "results/img_original.bmp");
-    img_save_bmp(noisy, "results/img_noisy.bmp");
+    return args;
+}
+
+
+int main(int argc, char *argv[])
+{
+    // application return code
+    int retval = 0;
+
+    // cmd line arguments
+    args_t cmdargs = parse_cmdline(argc, argv);
+
+    // populations and archives
+    ga_pop_t cgp_population;
+    ga_pop_t pred_population;
+    archive_t cgp_archive;
+
+    // current best fitness achieved
+    ga_fitness_t cgp_current_best;
+
+    // stored when SIGINT was received last time
+    long interrupted_generation = -1;
+
+    img_save_bmp(cmdargs.original, "results/img_original.bmp");
+    img_save_bmp(cmdargs.noisy, "results/img_noisy.bmp");
 
     // initialize everything
     cgp_init();
     rand_init();
-    fitness_init(original, noisy);
-    vault_init(&vault);
+    fitness_init(cmdargs.original, cmdargs.noisy);
+    vault_init(&cmdargs.vault);
+
+    cgp_archive = arc_create(CGP_ARCHIVE_SIZE, cgp_alloc_genome, cgp_free_genome, cgp_copy_genome);
+    if (cgp_archive == NULL) {
+        fprintf(stderr, "Failed to initialize CGP archive.\n");
+        exit(1);
+    }
 
 #ifdef NCURSES
-    if (using_ncurses) windows_init();
+    if (cmdargs.using_ncurses) windows_init();
 #endif
 
     SLOWLOG("Mutation rate: %d genes max", CGP_MUTATION_RATE);
-    SLOWLOG("Initial PSNR value:           %.20g", fitness_psnr(original, noisy));
+    SLOWLOG("Initial PSNR value:           %.20g", fitness_psnr(cmdargs.original, cmdargs.noisy));
 
 
     // try to restart from vault OR create the initial population
 
-    ga_pop_t population;
-    if (vault_retrieve(&vault, &population) == 0) {
+    if (vault_retrieve(&cmdargs.vault, &cgp_population) == 0) {
         SLOWLOG("Population retrieved from vault.");
 
     } else {
-        population = cgp_init_pop(CGP_POP_SIZE);
+        cgp_population = cgp_init_pop(CGP_POP_SIZE);
     }
 
     cgp_set_mutation_rate(CGP_MUTATION_RATE);
-    cgp_set_fitness_func(population, fitness_eval_cgp);
-    ga_evaluate_pop(population);
-    print_progress(population);
+    cgp_set_fitness_func(cgp_population, fitness_eval_cgp);
+    ga_evaluate_pop(cgp_population);
+    cgp_current_best = cgp_population->best_fitness;
+    print_progress(cgp_population);
 
 
     // install signal handlers
-
     signal(SIGINT, sigint_handler);
     signal(SIGXCPU, sigxcpu_handler);
 
 
     // evolve
-    long interrupted_generation = -1;
 
-    while (population->generation < CGP_GENERATIONS) {
-        if ((population->generation % PRINT_INTERVAL) == 0) {
-            print_progress(population);
+    while (cgp_population->generation < CGP_GENERATIONS) {
+        if ((cgp_population->generation % PRINT_INTERVAL) == 0) {
+            print_progress(cgp_population);
         }
-        ga_next_generation(population);
+        ga_next_generation(cgp_population);
 
         if (cpu_limit_reached) {
-            print_results(population);
+            print_results(cgp_population);
             SAVE_IMAGE_AND_STATE();
             retval = 10;
             goto cleanup;
         }
 
-        if ((population->generation % VAULT_INTERVAL) == 0) {
-            vault_store(&vault, population);
-            save_image(population, noisy);
+        if ((cgp_population->generation % VAULT_INTERVAL) == 0) {
+            vault_store(&cmdargs.vault, cgp_population);
+            save_image(cgp_population, cmdargs.noisy);
+        }
+
+        if (cgp_population->best_fitness > cgp_current_best) {
+            print_progress(cgp_population);
+            SLOWLOG("Best fitness changed, moving circuit to archive");
+            arc_insert(cgp_archive, cgp_population->chromosomes[cgp_population->best_chr_index]);
+            cgp_current_best = cgp_population->best_fitness;
         }
 
 #ifdef NCURSES
-        if (using_ncurses) {
+        if (cmdargs.using_ncurses) {
             windows_event ev;
             while ((ev = windows_check_events()) != none) {
                 switch (ev) {
@@ -356,35 +400,36 @@ int main(int argc, char *argv[])
 
     if (interrupted) {
 
-        if (interrupted_generation >= 0 && interrupted_generation > population->generation - 1000) {
+        if (interrupted_generation >= 0 && interrupted_generation > cgp_population->generation - 1000) {
             goto cleanup;
         }
 
-        print_results(population);
+        print_results(cgp_population);
         SAVE_IMAGE_AND_STATE();
 
         interrupted = 0;
-        interrupted_generation = population->generation;
+        interrupted_generation = cgp_population->generation;
     }
 
     } // while loop
 
-    print_results(population);
-    save_image(population, noisy);
+    print_results(cgp_population);
+    save_image(cgp_population, cmdargs.noisy);
 
 
     // cleanup everything
 cleanup:
 #ifdef NCURSES
-    if (using_ncurses) windows_destroy();
+    if (cmdargs.using_ncurses) windows_destroy();
 #endif
 
-    ga_destroy_pop(population);
+    ga_destroy_pop(cgp_population);
+    arc_destroy(cgp_archive);
     cgp_deinit();
     fitness_deinit();
 
-    img_destroy(original);
-    img_destroy(noisy);
+    img_destroy(cmdargs.original);
+    img_destroy(cmdargs.noisy);
 
     return retval;
 }
