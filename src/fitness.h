@@ -25,10 +25,6 @@
 #include "image.h"
 
 
-// only if FITNESS_USE_PTHREAD is defined
-#define FITNESS_NUMTHREADS 5
-
-
 /**
  * Initializes fitness module - prepares test image
  * @param original
@@ -45,16 +41,6 @@ void fitness_deinit();
 
 /**
  * Filters image using given filter. Caller is responsible for freeing
- * the filtered image.
- *
- * @param  chr
- * @return fitness value
- */
-static inline img_image_t fitness_filter_image(ga_chr_t chr);
-
-
-/**
- * Filters image using given filter. Caller is responsible for freeing
  * the filtered image
  *
  * Works in single thread
@@ -62,34 +48,7 @@ static inline img_image_t fitness_filter_image(ga_chr_t chr);
  * @param  chr
  * @return fitness value
  */
-img_image_t _fitness_filter_image_simple(ga_chr_t chr);
-
-
-/**
- * Filters image using given filter. Caller is responsible for freeing
- * the filtered image
- *
- * Uses FITNESS_NUMTHREADS threads for paralelization
- *
- * @param  chr
- * @return fitness value
- */
-img_image_t _fitness_filter_image_pthread(ga_chr_t chr);
-
-
-#ifdef FITNESS_USE_PTHREAD
-
-    static inline img_image_t fitness_filter_image(ga_chr_t chr) {
-        return _fitness_filter_image_pthread(chr);
-    }
-
-#else
-
-    static inline img_image_t fitness_filter_image(ga_chr_t chr) {
-        return _fitness_filter_image_simple(chr);
-    }
-
-#endif
+img_image_t fitness_filter_image(ga_chr_t chr);
 
 
 /**

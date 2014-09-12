@@ -21,10 +21,6 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#ifdef FITNESS_USE_PTHREAD
-    #include <pthread.h>
-#endif
-
 #include "fitness.h"
 
 
@@ -61,12 +57,10 @@ void fitness_deinit()
  * Filters image using given filter. Caller is responsible for freeing
  * the filtered image
  *
- * Works in single thread
- *
  * @param  chr
  * @return fitness value
  */
-img_image_t _fitness_filter_image_simple(ga_chr_t chr)
+img_image_t fitness_filter_image(ga_chr_t chr)
 {
     img_image_t filtered = img_create(original_image->width, original_image->height,
         original_image->comp);
@@ -83,86 +77,6 @@ img_image_t _fitness_filter_image_simple(ga_chr_t chr)
 
     return filtered;
 }
-
-
-#ifdef FITNESS_USE_PTHREAD
-
-
-typedef struct {
-    int start;
-    int stop;
-    ga_chr_t chr;
-    img_image_t filtered;
-} fitness_filter_image_pthread_job;
-
-
-/**
- * _fitness_filter_image_pthread helper - thread source code
- * @param chromosome to evaluate
- */
-void* _fitness_filter_image_pthread_worker(void *_job)
-{
-    fitness_filter_image_pthread_job *job =(fitness_filter_image_pthread_job*) _job;
-
-    for (int i = job->start; i < job->stop; i++) {
-        img_window_t *w = &noisy_image_windows->windows[i];
-
-        cgp_value_t *inputs = w->pixels;
-        cgp_value_t output_pixel[1];
-        cgp_get_output(job->chr, inputs, output_pixel);
-
-        // thread-safe: each thread writes to different pixels
-        img_set_pixel(job->filtered, w->pos_x, w->pos_y, output_pixel[0]);
-    }
-
-    return NULL;
-}
-
-/**
- * Filters image using given filter. Caller is responsible for freeing
- * the filtered image
- *
- * Uses FITNESS_NUMTHREADS threads for paralelization
- *
- * @param  chr
- * @return fitness value
- */
-img_image_t _fitness_filter_image_pthread(ga_chr_t chr)
-{
-    img_image_t filtered = img_create(original_image->width, original_image->height,
-        original_image->comp);
-
-
-    /* prepare jobs for threads */
-
-    // rounds up the number of tasks per thread, useful if windows count
-    // does not divide evenly by NUMTHREADS
-    int per_thread = (noisy_image_windows->size + FITNESS_NUMTHREADS - 1) / FITNESS_NUMTHREADS;
-    fitness_filter_image_pthread_job jobs[FITNESS_NUMTHREADS];
-    pthread_t threads[FITNESS_NUMTHREADS];
-
-    for (int i = 0; i < FITNESS_NUMTHREADS; i++) {
-        jobs[i].chr = chr;
-        jobs[i].filtered = filtered;
-        jobs[i].start = i * per_thread;
-        jobs[i].stop = (i == FITNESS_NUMTHREADS - 1)
-            ? noisy_image_windows->size
-            : (i + 1) * per_thread;
-    }
-
-    for (int i = 0; i < FITNESS_NUMTHREADS; i++) {
-        pthread_create(&threads[i], NULL, _fitness_filter_image_pthread_worker, &jobs[i]);
-    }
-
-    for (int i = 0; i < FITNESS_NUMTHREADS; i++) {
-        pthread_join(threads[i], NULL);
-    }
-
-    return filtered;
-}
-
-
-#endif /* FITNESS_USE_PTHREAD */
 
 
 /**
