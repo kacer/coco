@@ -36,17 +36,15 @@ static inline int arc_real_index(archive_t arc, int index)
 }
 
 
+
 /**
  * Allocate memory for and initialize new archive
  *
  * @param  size Archive size
- * @param  problem-specific genome allocation function
- * @param  problem-specific genome de-allocation function
- * @param  problem-specific genome copying function
+ * @param  problem-specific genome function pointers
  * @return pointer to created archive
  */
-archive_t arc_create(int capacity, ga_alloc_genome_func_t alloc_func,
-    ga_free_genome_func_t free_func, ga_copy_genome_func_t copy_func)
+archive_t arc_create(int capacity, arc_func_vect_t methods)
 {
     archive_t arc = (archive_t) malloc(sizeof(struct archive));
     if (arc == NULL) {
@@ -56,10 +54,10 @@ archive_t arc_create(int capacity, ga_alloc_genome_func_t alloc_func,
     ga_chr_t *items = (ga_chr_t*) malloc(sizeof(ga_chr_t) * capacity);
 
     for (int i = 0; i < capacity; i++) {
-        items[i] = ga_alloc_chr(alloc_func);
+        items[i] = ga_alloc_chr(methods.alloc_genome);
         if (items[i] == NULL) {
             for (int x = i - 1; x >= 0; i--) {
-                ga_free_chr(items[x], free_func);
+                ga_free_chr(items[x], methods.free_genome);
             }
             free(arc);
             return NULL;
@@ -70,8 +68,7 @@ archive_t arc_create(int capacity, ga_alloc_genome_func_t alloc_func,
     arc->capacity = capacity;
     arc->stored = 0;
     arc->pointer = 0;
-    arc->free_func = free_func;
-    arc->copy_func = copy_func;
+    arc->methods = methods;
     return arc;
 }
 
@@ -82,7 +79,7 @@ archive_t arc_create(int capacity, ga_alloc_genome_func_t alloc_func,
 void arc_destroy(archive_t arc)
 {
     for (int i = 0; i < arc->capacity; i++) {
-        ga_free_chr(arc->chromosomes[i], arc->free_func);
+        ga_free_chr(arc->chromosomes[i], arc->methods.free_genome);
     }
     free(arc->chromosomes);
     free(arc);
@@ -94,6 +91,8 @@ void arc_destroy(archive_t arc)
  *
  * Chromosome is copied into place and pointer to it is returned.
  *
+ * Chromosome is reevaluated using `arc->methods.fitness` (if set).
+ *
  * @param  arc
  * @param  chr
  * @return pointer to stored chromosome in archive
@@ -102,12 +101,17 @@ ga_chr_t arc_insert(archive_t arc, ga_chr_t chr)
 {
     int target_index = arc_real_index(arc, 0);
     ga_chr_t dst = arc->chromosomes[target_index];
-    ga_copy_chr(dst, chr, arc->copy_func);
+    ga_copy_chr(dst, chr, arc->methods.copy_genome);
 
     if (arc->stored < arc->capacity) {
         arc->stored++;
     }
     arc->pointer = (arc->pointer + 1) % arc->capacity;
+
+    if (arc->methods.fitness != NULL) {
+        dst->fitness = arc->methods.fitness(dst);
+        dst->has_fitness = true;
+    }
 
     return dst;
 }

@@ -23,6 +23,7 @@
 
 #include "cgp.h"
 #include "image.h"
+#include "predictors.h"
 
 
 /**
@@ -67,7 +68,7 @@ ga_fitness_t fitness_eval_cgp(ga_chr_t chr);
  * @param  predictor
  * @return fitness value
  */
-//ga_fitness_t fitness_predict_cgp(ga_chr_t chr, pred_genome predictor);
+ga_fitness_t fitness_predict_cgp(ga_chr_t chr, pred_genome_t predictor);
 
 
 /**

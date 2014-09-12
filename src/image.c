@@ -45,7 +45,7 @@ img_image_t img_create(int width, int height, int comp) {
     img->width = width;
     img->height = height;
     img->comp = comp;
-    img->data = (unsigned char *) malloc(sizeof(unsigned char) * width * height * comp);
+    img->data = (img_pixel_t*) malloc(sizeof(img_pixel_t) * width * height * comp);
 
     return img;
 }

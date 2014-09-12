@@ -226,7 +226,14 @@ int main(int argc, char *argv[])
     fitness_init(cmdargs.original, cmdargs.noisy);
     vault_init(&cmdargs.vault);
 
-    cgp_archive = arc_create(CGP_ARCHIVE_SIZE, cgp_alloc_genome, cgp_free_genome, cgp_copy_genome);
+    arc_func_vect_t arc_methods = {
+        .alloc_genome = cgp_alloc_genome,
+        .free_genome = cgp_free_genome,
+        .copy_genome = cgp_copy_genome,
+        .fitness = fitness_eval_cgp,
+    };
+    cgp_archive = arc_create(CGP_ARCHIVE_SIZE, arc_methods);
+
     if (cgp_archive == NULL) {
         fprintf(stderr, "Failed to initialize CGP archive.\n");
         exit(1);

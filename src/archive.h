@@ -24,6 +24,22 @@
 #include "ga.h"
 
 
+ /**
+  * User-defined methods
+  */
+ typedef struct {
+     /* memory allocation */
+     ga_alloc_genome_func_t alloc_genome;
+     ga_free_genome_func_t free_genome;
+
+     /* copying */
+     ga_copy_genome_func_t copy_genome;
+
+     /* fitness function */
+     ga_fitness_func_t fitness;
+ } arc_func_vect_t;
+
+
 struct archive
 {
     /* archive capacity */
@@ -40,8 +56,7 @@ struct archive
     int pointer;
 
     /* genome-specific functions */
-    ga_copy_genome_func_t copy_func;
-    ga_free_genome_func_t free_func;
+    arc_func_vect_t methods;
 };
 typedef struct archive* archive_t;
 
@@ -50,13 +65,10 @@ typedef struct archive* archive_t;
  * Allocate memory for and initialize new archive
  *
  * @param  size Archive size
- * @param  problem-specific genome allocation function
- * @param  problem-specific genome de-allocation function
- * @param  problem-specific genome copying function
+ * @param  problem-specific genome function pointers
  * @return pointer to created archive
  */
-archive_t arc_create(int capacity, ga_alloc_genome_func_t alloc_func,
-    ga_free_genome_func_t free_func, ga_copy_genome_func_t copy_func);
+archive_t arc_create(int capacity, arc_func_vect_t methods);
 
 
 /**
@@ -69,6 +81,8 @@ void arc_destroy(archive_t arc);
  * Insert chromosome into archive
  *
  * Chromosome is copied into place and pointer to it is returned.
+ *
+ * Chromosome is reevaluated using `arc->methods.fitness` (if set).
  *
  * @param  arc
  * @param  chr

@@ -22,10 +22,13 @@
 
 
 #define WINDOW_SIZE 9
+#define WINDOW_CENTER 4
+
+typedef unsigned char img_pixel_t;
 
 
 struct img_image {
-    unsigned char *data;
+    img_pixel_t *data;
     int width;
     int height;
     int comp;
@@ -36,7 +39,7 @@ typedef struct img_image* img_image_t;
 typedef struct {
     int pos_x;
     int pos_y;
-    unsigned char pixels[WINDOW_SIZE];
+    img_pixel_t pixels[WINDOW_SIZE];
 } img_window_t;
 
 
@@ -106,7 +109,7 @@ static inline int img_pixel_index(img_image_t img, int x, int y) {
  * Returns value of given pixel
  * @param img
  */
-static inline unsigned char img_get_pixel(img_image_t img, int x, int y) {
+static inline img_pixel_t img_get_pixel(img_image_t img, int x, int y) {
     return img->data[img_pixel_index(img, x, y)];
 }
 
@@ -115,6 +118,6 @@ static inline unsigned char img_get_pixel(img_image_t img, int x, int y) {
  * Sets value of given pixel
  * @param img
  */
-static inline void img_set_pixel(img_image_t img, int x, int y, unsigned char value) {
+static inline void img_set_pixel(img_image_t img, int x, int y, img_pixel_t value) {
     img->data[img_pixel_index(img, x, y)] = value;
 }

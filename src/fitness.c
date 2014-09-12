@@ -28,6 +28,12 @@ img_image_t original_image;
 img_window_array_t noisy_image_windows;
 
 
+static inline double fitness_psnr_coeficient(int pixels_count)
+{
+    return 255 * 255 * (double)pixels_count;
+}
+
+
 /**
  * Initializes fitness module - prepares test image
  * @param original
@@ -69,13 +75,29 @@ img_image_t fitness_filter_image(ga_chr_t chr)
         img_window_t *w = &noisy_image_windows->windows[i];
 
         cgp_value_t *inputs = w->pixels;
-        cgp_value_t output_pixel[1];
-        cgp_get_output(chr, inputs, output_pixel);
+        cgp_value_t output_pixel;
+        cgp_get_output(chr, inputs, &output_pixel);
 
-        img_set_pixel(filtered, w->pos_x, w->pos_y, output_pixel[0]);
+        img_set_pixel(filtered, w->pos_x, w->pos_y, output_pixel);
     }
 
     return filtered;
+}
+
+
+/**
+ * Calculates difference between original and filtered pixel
+ *
+ * @param  chr
+ * @param  w
+ * @return
+ */
+double fitness_get_diff(ga_chr_t chr, img_window_t *w)
+{
+    cgp_value_t *inputs = w->pixels;
+    cgp_value_t output_pixel;
+    cgp_get_output(chr, inputs, &output_pixel);
+    return output_pixel - img_get_pixel(original_image, w->pos_x, w->pos_y);
 }
 
 
@@ -87,11 +109,43 @@ img_image_t fitness_filter_image(ga_chr_t chr)
  */
 ga_fitness_t fitness_eval_cgp(ga_chr_t chr)
 {
-    img_image_t filtered = fitness_filter_image(chr);
-    ga_fitness_t fitness = fitness_psnr(original_image, filtered);
-    img_destroy(filtered);
+    double coef = fitness_psnr_coeficient(noisy_image_windows->size);
+    double sum = 0;
 
-    return fitness;
+    for (int i = 0; i < noisy_image_windows->size; i++) {
+        img_window_t *w = &noisy_image_windows->windows[i];
+        double diff = fitness_get_diff(chr, w);
+        sum += diff * diff;
+    }
+
+    return coef / sum;
+}
+
+
+/**
+ * Predictes CGP circuit fitness
+ *
+ * @param  chr
+ * @param  predictor
+ * @return fitness value
+ */
+ga_fitness_t fitness_predict_cgp(ga_chr_t chr, pred_genome_t predictor)
+{
+    // PSNR coefficcient
+    double coef = fitness_psnr_coeficient(predictor->used_genes);
+    double sum = 0;
+
+    for (int i = 0; i < predictor->used_genes; i++) {
+
+        // fetch window specified by predictor
+        unsigned int index = predictor->genes[i];
+        img_window_t *w = &noisy_image_windows->windows[index];
+
+        double diff = fitness_get_diff(chr, w);
+        sum += diff * diff;
+    }
+
+    return coef / sum;
 }
 
 
@@ -109,7 +163,7 @@ ga_fitness_t fitness_psnr(img_image_t original, img_image_t filtered)
     assert(original->height == filtered->height);
     assert(original->comp == filtered->comp);
 
-    double coef = 255 * 255 * (double)original->width * original->height;
+    double coef = fitness_psnr_coeficient(original->width * original->height);
     double sum = 0;
 
     for (int x = 0; x < original->width; x++) {
