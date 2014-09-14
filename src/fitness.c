@@ -19,10 +19,12 @@
 
 
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 #include <math.h>
 
 #include "fitness.h"
+#include "cgp_avx.h"
 
 
 img_image_t original_image;
@@ -106,6 +108,37 @@ double _fitness_get_diff(ga_chr_t chr, img_window_t *w)
 
 
 /**
+ * Calculates difference between original and filtered pixel
+ *
+ * @param  chr
+ * @param  w
+ * @return
+ */
+double _fitness_get_sqdiffsum_avx(ga_chr_t chr, img_window_t *w)
+{
+    cgp_value_t inputs[32][CGP_INPUTS] __attribute__ ((aligned (16)));
+    for (int i = 0; i < 32; i++) {
+        printf("memcpy %d\n", i);
+        memcpy(inputs[i], w[i].pixels, sizeof(cgp_value_t) * CGP_INPUTS);
+    }
+
+    cgp_value_t outputs[32][1];
+
+    printf("start\n");
+    cgp_get_output_avx(chr, inputs, outputs);
+
+    double sum = 0;
+    for (int i = 0; i < 32; i++) {
+        cgp_value_t output_pixel = outputs[i][0];
+        double diff = output_pixel - img_get_pixel(original_image, w[i].pos_x, w[i].pos_y);
+        sum += diff * diff;
+    }
+
+    return sum;
+}
+
+
+/**
  * Evaluates CGP circuit fitness
  *
  * @param  chr
@@ -116,11 +149,21 @@ ga_fitness_t fitness_eval_cgp(ga_chr_t chr)
     double coef = fitness_psnr_coeficient(noisy_image_windows->size);
     double sum = 0;
 
+#ifdef FITNESS_AVX
+    assert((noisy_image_windows->size % 32) == 0);
+    for (int i = 0; i < noisy_image_windows->size; i += 32) {
+        img_window_t *w = &noisy_image_windows->windows[i];
+        printf("%p, %d, %p\n", chr, i, w);
+        double subsum = _fitness_get_sqdiffsum_avx(chr, w);
+        sum += subsum;
+    }
+#else
     for (int i = 0; i < noisy_image_windows->size; i++) {
         img_window_t *w = &noisy_image_windows->windows[i];
         double diff = _fitness_get_diff(chr, w);
         sum += diff * diff;
     }
+#endif
 
     return coef / sum;
 }

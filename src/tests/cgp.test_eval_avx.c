@@ -1,18 +1,35 @@
 /**
  * Tests CGP evaluation = calculation of the outputs.
- * Compile with -DTEST_EVAL
+ * Compile with -DTEST_EVAL_AVX
  */
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <immintrin.h>
 
+#include "../cpu.h"
 #include "../cgp.h"
+#include "../cgp_avx.h"
+
+
+
+#define in1 {0, 1, 2, 3, 4, 5, 6, 7, 8}
+#define in4 in1, in1, in1, in1
+#define in16 in4, in4, in4, in4
+#define in32 in16, in16
 
 
 int main(int argc, char const *argv[])
 {
-    cgp_value_t inputs[CGP_INPUTS] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
-    cgp_value_t outputs[CGP_OUTPUTS] = {};
+    // pre-flight check
+    if (!can_use_intel_core_4th_gen_features()) {
+        fprintf(stderr, "%s", "AVX2 not supported.\n");
+        exit(1);
+    }
+
+
+    cgp_value_t inputs[32][CGP_INPUTS] = {in32};
+    cgp_value_t outputs[32][CGP_OUTPUTS] = {};
 
     cgp_init(0, NULL);
 
@@ -37,7 +54,7 @@ int main(int argc, char const *argv[])
 
     cgp_dump_chr_asciiart(&chr, stdout);
     putchar('\n');
-    cgp_get_output(&chr, inputs, outputs);
+    cgp_get_output_avx(&chr, inputs, outputs);
 
     free(genome);
     cgp_deinit();
