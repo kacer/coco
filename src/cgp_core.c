@@ -32,9 +32,9 @@ typedef struct {
 } int_array;
 
 
-int_array _allowed_gene_vals[CGP_COLS];
-int _mutation_rate;
-ga_fitness_func_t _fitness_func;
+static int_array _allowed_gene_vals[CGP_COLS];
+static int _mutation_rate;
+static ga_fitness_func_t _fitness_func;
 
 
 #ifdef TEST_RANDOMIZE
@@ -105,7 +105,7 @@ void cgp_deinit()
 
 
 /**
- * Create a new cgpictors population with given size
+ * Create a new cgp population with given size
  * @param  mutation rate (in number of genes)
  * @param  population size
  * @return
@@ -125,6 +125,7 @@ ga_pop_t cgp_init_pop(int pop_size)
     /* initialize GA */
     ga_pop_t pop = ga_create_pop(pop_size, maximize, methods);
     ga_init_pop(pop);
+
     return pop;
 }
 
@@ -215,6 +216,7 @@ void cgp_randomize_gene(cgp_genome_t genome, int gene)
  */
 void cgp_mutate_chr(ga_chr_t chromosome)
 {
+    assert(_mutation_rate <= CGP_CHR_LENGTH);
     cgp_genome_t genome = (cgp_genome_t) chromosome->genome;
 
     int genes_to_change = rand_range(0, _mutation_rate);
@@ -313,7 +315,6 @@ void cgp_get_output(ga_chr_t chromosome, cgp_value_t *inputs, cgp_value_t *outpu
 void cgp_offspring(ga_pop_t pop)
 {
     ga_chr_t parent = pop->chromosomes[pop->best_chr_index];
-
     for (int i = 0; i < pop->size; i++) {
         if (i == pop->best_chr_index) continue;
         ga_chr_t chr = pop->chromosomes[i];

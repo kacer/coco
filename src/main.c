@@ -254,10 +254,10 @@ int main(int argc, char *argv[])
         SLOWLOG("OpenMP is enabled.");
         SLOWLOG("CPUs: %d", omp_get_num_procs());
         SLOWLOG("Max threads: %d", omp_get_max_threads());
-        return 0;
     #endif
 
     SLOWLOG("Mutation rate: %d genes max", config.cgp_mutate_genes);
+    SLOWLOG("Stop at generation: %d", config.max_generations);
     SLOWLOG("Initial PSNR value:           %.20g",
         fitness_psnr(img_original, img_noisy));
 

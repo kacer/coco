@@ -26,10 +26,10 @@
 #include "predictors.h"
 
 
-pred_gene_t _max_gene_value;
-pred_index_t _max_genome_length;
-pred_index_t _initial_genome_length;
-float _mutation_rate;
+static pred_gene_t _max_gene_value;
+static pred_index_t _max_genome_length;
+static pred_index_t _initial_genome_length;
+static float _mutation_rate;
 
 
 /**

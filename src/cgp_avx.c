@@ -78,26 +78,27 @@
  */
 void cgp_get_output_avx(ga_chr_t chromosome, unsigned char _inputs[32][CGP_INPUTS], unsigned char _outputs[32][CGP_OUTPUTS])
 {
+#ifdef FITNESS_AVX
     assert(CGP_OUTPUTS == 1);
     assert(CGP_ROWS == 4);
     assert(CGP_LBACK == 1);
 
     // primary inputs
-    __m256i inputs[CGP_INPUTS] __attribute__ ((aligned (16)));
+    __m256i inputs[CGP_INPUTS] __attribute__ ((aligned (32)));
 
     // previous and currently computed column
     register __m256i prev0, prev1, prev2, prev3;
     register __m256i current0, current1, current2, current3;
 
     // 0xFF constant
-    static __m256i FF __attribute__ ((aligned (16)));
+    static __m256i FF __attribute__ ((aligned (32)));
     FF = _mm256_set1_epi8(0xFF);
 
     cgp_genome_t genome = (cgp_genome_t) chromosome->genome;
 
     /* load primary inputs into 256-bit field */
     for (int i = 0; i < CGP_INPUTS; i++) {
-        inputs[i] = _mm256_set_epi8(
+        inputs[i] = _mm256_setr_epi8(
             _inputs[0][i], _inputs[1][i], _inputs[2][i], _inputs[3][i],
             _inputs[4][i], _inputs[5][i], _inputs[6][i], _inputs[7][i],
             _inputs[8][i], _inputs[9][i], _inputs[10][i], _inputs[11][i],
@@ -107,6 +108,20 @@ void cgp_get_output_avx(ga_chr_t chromosome, unsigned char _inputs[32][CGP_INPUT
             _inputs[24][i], _inputs[25][i], _inputs[26][i], _inputs[27][i],
             _inputs[28][i], _inputs[29][i], _inputs[30][i], _inputs[31][i]
         );
+        /* useful to test whether ymm reg contains same data as input */
+        /*
+        printf("---\n");
+        printf(UCFMT32 "\n\n", _inputs[0][i], _inputs[1][i], _inputs[2][i], _inputs[3][i],
+            _inputs[4][i], _inputs[5][i], _inputs[6][i], _inputs[7][i],
+            _inputs[8][i], _inputs[9][i], _inputs[10][i], _inputs[11][i],
+            _inputs[12][i], _inputs[13][i], _inputs[14][i], _inputs[15][i],
+            _inputs[16][i], _inputs[17][i], _inputs[18][i], _inputs[19][i],
+            _inputs[20][i], _inputs[21][i], _inputs[22][i], _inputs[23][i],
+            _inputs[24][i], _inputs[25][i], _inputs[26][i], _inputs[27][i],
+            _inputs[28][i], _inputs[29][i], _inputs[30][i], _inputs[31][i]);
+        PRINT_REG(inputs[i]);
+        printf("---\n");
+        */
     }
 
     /* if primary output is connected to primary input, skip evaluation */
@@ -289,5 +304,8 @@ void cgp_get_output_avx(ga_chr_t chromosome, unsigned char _inputs[32][CGP_INPUT
         unsigned char *_tmp = (unsigned char*) &_outputs[i];
         printf("O: %2d = " UCFMT32 "\n", i, UCVAL32(0));
     }
+#endif
+
+
 #endif
 }

@@ -144,7 +144,6 @@ def main():
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
             out, err = p.communicate()
-            print (green(out))
 
             if err or p.returncode != 0:
                 print(red('Test %s failed (stderr non-empty or retval != 0)' % (testfile)))

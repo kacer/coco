@@ -29,6 +29,8 @@
 
 #define OPT_ALGORITHM 'a'
 
+#define OPT_MAX_GENERATIONS 'g'
+
 #define OPT_ORIGINAL 'i'
 #define OPT_NOISY 'n'
 
@@ -90,6 +92,8 @@ int config_load_args(int argc, char **argv, config_t *cfg)
     {
         {"help", no_argument, 0, OPT_HELP},
 
+        {"max-generations", required_argument, 0, OPT_MAX_GENERATIONS},
+
         /* Algorithm mode */
         {"algorithm", required_argument, 0, OPT_ALGORITHM},
 
@@ -118,7 +122,7 @@ int config_load_args(int argc, char **argv, config_t *cfg)
         {0, 0, 0, 0}
     };
 
-    static const char *short_options = "ha:i:n:v:w:l:r:m:p:s:S:M:P";
+    static const char *short_options = "hg:a:i:n:v:w:l:r:m:p:s:S:M:P";
 
     while (1) {
         int option_index;
@@ -129,6 +133,10 @@ int config_load_args(int argc, char **argv, config_t *cfg)
             case OPT_HELP:
                 print_help();
                 return 1;
+
+            case OPT_MAX_GENERATIONS:
+                PARSE_INT(cfg->max_generations);
+                break;
 
             case OPT_ALGORITHM:
                 if (strcmp(optarg, "cgp") == 0) {
