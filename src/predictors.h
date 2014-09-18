@@ -26,10 +26,11 @@
 
 typedef unsigned int pred_gene_t;
 typedef unsigned int pred_index_t;
+typedef pred_gene_t* pred_gene_array_t;
 
 struct pred_genome {
     pred_index_t used_genes;
-    pred_gene_t *genes;
+    pred_gene_array_t genes;
 };
 typedef struct pred_genome* pred_genome_t;
 
@@ -38,7 +39,8 @@ typedef struct pred_genome* pred_genome_t;
  * Initialize predictor internals
  */
 void pred_init(pred_gene_t max_gene_value, pred_index_t max_genome_length,
-    pred_index_t initial_genome_length, float mutation_rate);
+    pred_index_t initial_genome_length, float mutation_rate,
+    float offspring_elite, float offspring_combine);
 
 
 /**
@@ -95,3 +97,17 @@ void pred_mutate(ga_chr_t chromosome);
  * @param mutation_rate
  */
 void pred_offspring(ga_pop_t pop);
+
+
+
+/**
+ * Dump predictor chromosome to file
+ */
+void pred_dump_chr(ga_chr_t chr, FILE *fp);
+
+
+
+/**
+ * Dump predictor chromosome to file
+ */
+void pred_dump_pop(ga_pop_t pop, FILE *fp);

@@ -48,9 +48,12 @@ typedef struct
     int cgp_population_size;
     int cgp_archive_size;
 
-    double pred_size;
-    double pred_mutation_rate;
+    float pred_size;
+    float pred_mutation_rate;
+    float pred_offspring_elite;
+    float pred_offspring_combine;
     int pred_population_size;
+
 
     int log_interval;
     char results_dir[FILENAME_LENGTH];

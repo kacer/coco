@@ -22,6 +22,7 @@
 
 #include <stdbool.h>
 #include <stdio.h>
+#include <float.h>
 
 
 /**
@@ -161,9 +162,12 @@ struct ga_pop {
     ga_func_vect_t methods;
 
     /* chromosomes */
-    ga_fitness_t best_fitness;
-    int best_chr_index;
     ga_chr_t *chromosomes;
+
+    /* best chromosome */
+    ga_fitness_t best_fitness;
+    ga_chr_t best_chromosome;
+    int best_chr_index;
 };
 
 
@@ -242,13 +246,43 @@ ga_fitness_t ga_reevaluate_chr(ga_pop_t pop, ga_chr_t chr);
 
 
 /**
+ * Set `has_fitness` flag for all chromosomes to false
+ */
+void ga_invalidate_fitness(ga_pop_t pop);
+
+
+/**
  * Returns true if WHAT is better or same as COMPARED_TO
+ * @param  problem_type
  * @param  what
  * @param  compared_to
  * @return
  */
 static inline bool ga_is_better_or_same(ga_problem_type_t type, ga_fitness_t what, ga_fitness_t compared_to) {
     return (type == minimize)? what <= compared_to : what >= compared_to;
+}
+
+
+/**
+ * Returns true if WHAT is better COMPARED_TO
+ * @param  problem_type
+ * @param  what
+ * @param  compared_to
+ * @return
+ */
+static inline bool ga_is_better(ga_problem_type_t type, ga_fitness_t what, ga_fitness_t compared_to) {
+    return (type == minimize)? what < compared_to : what > compared_to;
+}
+
+
+/**
+ * Returns worst fitness value possible
+ * @param  problem_type
+ * @return
+ */
+static inline bool ga_worst_fitness(ga_problem_type_t type) {
+    // beware, DBL_MIN is something like 1e-999 (positive number)
+    return (type == minimize)? DBL_MAX : -DBL_MAX;
 }
 
 

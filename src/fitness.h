@@ -32,10 +32,10 @@
  * @param original
  * @param noisy
  * @param cgp_archive
+ * @param pred_archive
  */
 void fitness_init(img_image_t original, img_image_t noisy,
-    archive_t cgp_archive);
-
+    archive_t cgp_archive, archive_t pred_archive);
 
 /**
  * Deinitialize fitness module internals
@@ -65,10 +65,20 @@ ga_fitness_t fitness_eval_cgp(ga_chr_t chr);
 
 
 /**
+ * If predictors archive is empty, returns `fitness_eval_cgp` result.
+ * If there is at least one predictor in archive
+ * returns `fitness_predict_cgp` result using first predictor in archive.
+ *
+ * @param  chr
+ * @return fitness value
+ */
+ga_fitness_t fitness_eval_or_predict_cgp(ga_chr_t chr);
+
+
+/**
  * Predictes CGP circuit fitness
  *
  * @param  chr
- * @param  predictor
  * @return fitness value
  */
 ga_fitness_t fitness_predict_cgp(ga_chr_t cgp_chr, ga_chr_t pred_chr);

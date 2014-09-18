@@ -21,8 +21,8 @@ EXECUTABLE=coco
 CMDLINE=-i images/lena_gray_256.png -n images/lena_gray_256_saltpepper_10.png
 SERVER=merlin
 SERVER_LOCATION=~/coco
-SOURCES=main.c ga.c cgp_core.c cgp_dump.c cgp_load.c cgp_avx.c predictors.c image.c fitness.c vault.c archive.c config.c
-OFILES= main.o ga.o cgp_core.o cgp_dump.o cgp_load.o cgp_avx.o predictors.o image.o fitness.o vault.o archive.o config.o
+SOURCES=main.c cpu.c ga.c cgp_core.c cgp_dump.c cgp_load.c cgp_avx.c predictors.c image.c fitness.c vault.c archive.c config.c
+OFILES= main.o cpu.o ga.o cgp_core.o cgp_dump.o cgp_load.o cgp_avx.o predictors.o image.o fitness.o vault.o archive.o config.o
 LIBS=-lm -lc
 
 all: $(EXECUTABLE)
@@ -36,7 +36,7 @@ $(EXECUTABLE): $(OFILES)
 .PHONY: clean zip tar upload start depend
 
 clean:
-	rm -f $(EXECUTABLE) $(EXECUTABLE).exe *.o xwigla00.zip xwigla00.tar.gz
+	rm -f $(EXECUTABLE) $(EXECUTABLE).exe $(EXECUTABLE).exe.stackdump *.o xwigla00.zip xwigla00.tar.gz
 
 tar:
 	tar czf xwigla00.tar.gz *.c *.h Makefile tests/* stb/* images/* #-C doc/ doc.pdf
@@ -52,6 +52,9 @@ download:
 
 start:
 	ssh $(SERVER) "$(SERVER_LOCATION)/$(EXECUTABLE) $(CMDLINE)"
+
+cgp_avx.o: cgp_avx.c
+	$(CC) $(CFLAGS) -mavx2 -c $< -o $@
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@

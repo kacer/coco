@@ -92,6 +92,34 @@ ga_chr_t arc_insert(archive_t arc, ga_chr_t chr);
 
 
 /**
+ * OpenMP: Enters archive write critical section
+ *
+ * Blocks until write lock is obtained.
+ */
+void arc_omp_write_enter(archive_t arc);
+
+
+/**
+ * OpenMP: Leaves archive writer critical section
+ */
+void arc_omp_write_leave(archive_t arc);
+
+
+/**
+ * OpenMP: Enters archive read critical section
+ *
+ * Blocks until read lock is obtained.
+ */
+void arc_omp_read_enter(archive_t arc);
+
+
+/**
+ * OpenMP: Leaves archive readr critical section
+ */
+void arc_omp_read_leave(archive_t arc);
+
+
+/**
  * Returns real index of item in archive's ring buffer
  */
 static inline int arc_real_index(archive_t arc, int index)
@@ -114,3 +142,36 @@ static inline ga_chr_t arc_get(archive_t arc, int index)
 {
     return arc->chromosomes[arc_real_index(arc, index)];
 }
+
+
+#ifdef _OPENMP
+
+    static inline void arc_write_enter(archive_t arc) {
+        arc_omp_write_enter(arc);
+    }
+    static inline void arc_write_leave(archive_t arc) {
+        arc_omp_write_leave(arc);
+    }
+    static inline void arc_read_enter(archive_t arc) {
+        arc_omp_read_enter(arc);
+    }
+    static inline void arc_read_leave(archive_t arc) {
+        arc_omp_read_leave(arc);
+    }
+
+#else
+
+    static inline void arc_write_enter(archive_t arc) {
+        // nothing to do in single-thread environment
+    }
+    static inline void arc_write_leave(archive_t arc) {
+        // nothing to do in single-thread environment
+    }
+    static inline void arc_read_enter(archive_t arc) {
+        // nothing to do in single-thread environment
+    }
+    static inline void arc_read_leave(archive_t arc) {
+        // nothing to do in single-thread environment
+    }
+
+#endif

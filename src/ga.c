@@ -217,6 +217,18 @@ ga_fitness_t ga_reevaluate_chr(ga_pop_t pop, ga_chr_t chr)
 }
 
 
+/**
+ * Set `has_fitness` flag for all chromosomes to false
+ */
+void ga_invalidate_fitness(ga_pop_t pop)
+{
+    #pragma omp parallel for
+    for (int i = 0; i < pop->size; i++) {
+        pop->chromosomes[i]->has_fitness = false;
+    }
+}
+
+
 /* fitness calculation ********************************************************/
 
 
@@ -248,6 +260,7 @@ void _ga_find_new_best(ga_pop_t pop)
     // set new best values
     pop->best_fitness = best_fitness;
     pop->best_chr_index = best_index;
+    pop->best_chromosome = pop->chromosomes[best_index];
 }
 
 

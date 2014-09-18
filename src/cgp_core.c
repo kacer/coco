@@ -314,7 +314,7 @@ void cgp_get_output(ga_chr_t chromosome, cgp_value_t *inputs, cgp_value_t *outpu
  */
 void cgp_offspring(ga_pop_t pop)
 {
-    ga_chr_t parent = pop->chromosomes[pop->best_chr_index];
+    ga_chr_t parent = pop->best_chromosome;
     for (int i = 0; i < pop->size; i++) {
         if (i == pop->best_chr_index) continue;
         ga_chr_t chr = pop->chromosomes[i];
