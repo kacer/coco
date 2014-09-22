@@ -86,8 +86,7 @@ void arc_destroy(archive_t arc)
  */
 ga_chr_t arc_insert(archive_t arc, ga_chr_t chr)
 {
-    int target_index = arc_real_index(arc, 0);
-    ga_chr_t dst = arc->chromosomes[target_index];
+    ga_chr_t dst = arc->chromosomes[arc->pointer];
     ga_copy_chr(dst, chr, arc->methods.copy_genome);
 
     if (arc->stored < arc->capacity) {
