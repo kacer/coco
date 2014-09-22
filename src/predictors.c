@@ -272,16 +272,12 @@ void pred_offspring(ga_pop_t pop)
     // create new population
     for (int i = 0; i < pop->size; i++) {
 
-        printf("%d: fitness %.5g", i, pop->chromosomes[i]->fitness);
-
         // skip elites
         if (is_elite[i]) {
-            printf(", is elite\n");
             continue;
 
         // if there are any combined children to make, do it
         } else if (combined_count >= 0) {
-            printf(", replaced by crossover\n");
 
             pred_gene_t children[_max_genome_length];
             _create_combined(pop, children);
@@ -293,7 +289,6 @@ void pred_offspring(ga_pop_t pop)
 
         // otherwise create random mutant
         } else {
-            printf(", replaced by random\n");
 
             pred_randomize_genome(pop->chromosomes[i]);
             pop->chromosomes[i]->has_fitness = false;
