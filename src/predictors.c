@@ -20,6 +20,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -49,6 +50,8 @@ void pred_init(pred_gene_t max_gene_value, pred_index_t max_genome_length,
     _mutation_rate = mutation_rate;
     _offspring_elite = offspring_elite;
     _offspring_combine = offspring_combine;
+
+    assert(_initial_genome_length <= _max_genome_length);
 }
 
 
@@ -150,16 +153,14 @@ void pred_copy_genome(void *_dst, void *_src)
  * @param  chromosome
  * @return
  */
-void pred_mutate(ga_chr_t chromosome)
+void pred_mutate(pred_gene_array_t genes)
 {
-    pred_genome_t genome = (pred_genome_t) chromosome->genome;
-
-    int max_changed_genes = _mutation_rate * genome->used_genes;
+    int max_changed_genes = _mutation_rate * _max_genome_length;
     int genes_to_change = rand_range(0, max_changed_genes);
 
     for (int i = 0; i < genes_to_change; i++) {
-        int gene = rand_range(0, genome->used_genes - 1);
-        genome->genes[gene] = rand_urange(0, _max_gene_value);
+        int gene = rand_range(0, _max_genome_length);
+        genes[gene] = rand_urange(0, _max_gene_value);
     }
 }
 
@@ -169,14 +170,14 @@ void _find_elites(ga_pop_t pop, int count, bool is_elite[])
     memset(is_elite, 0, sizeof(bool) * pop->size);
 
     for (; count > 0; count--) {
-        int best_fitness = 0;
-        int best_index = 0;
+        ga_fitness_t best_fitness = ga_worst_fitness(pop->problem_type);
+        int best_index = -1;
 
         // find best non-selected individual
         for (int i = 0; i < pop->size; i++) {
             if (!is_elite[i]) {
                 ga_chr_t chr = pop->chromosomes[i];
-                if (chr->fitness > best_fitness) {
+                if (ga_is_better(pop->problem_type, chr->fitness, best_fitness)) {
                     best_fitness = chr->fitness;
                     best_index = i;
                 }
@@ -227,6 +228,30 @@ void _create_combined(ga_pop_t pop, pred_gene_array_t children)
     pred_genome_t mom_genome = (pred_genome_t)mom->genome;
     pred_genome_t dad_genome = (pred_genome_t)dad->genome;
     _crossover1p(children, mom_genome->genes, dad_genome->genes);
+
+    /*
+    for (int i = 0; i < _max_genome_length; i++) {
+        printf("%4x ", mom_genome->genes[i]);
+    }
+    printf("\n");
+    for (int i = 0; i < _max_genome_length; i++) {
+        printf("%4x ", dad_genome->genes[i]);
+    }
+    printf("\n");
+    for (int i = 0; i < _max_genome_length; i++) {
+        printf("%4x ", children[i]);
+    }
+    printf("\n");
+    */
+
+    pred_mutate(children);
+
+    /*
+    for (int i = 0; i < _max_genome_length; i++) {
+        printf("%4x ", children[i]);
+    }
+    printf("\n\n");
+    */
 }
 
 
@@ -247,12 +272,16 @@ void pred_offspring(ga_pop_t pop)
     // create new population
     for (int i = 0; i < pop->size; i++) {
 
+        printf("%d: fitness %.5g", i, pop->chromosomes[i]->fitness);
+
         // skip elites
         if (is_elite[i]) {
+            printf(", is elite\n");
             continue;
 
         // if there are any combined children to make, do it
         } else if (combined_count >= 0) {
+            printf(", replaced by crossover\n");
 
             pred_gene_t children[_max_genome_length];
             _create_combined(pop, children);
@@ -264,6 +293,7 @@ void pred_offspring(ga_pop_t pop)
 
         // otherwise create random mutant
         } else {
+            printf(", replaced by random\n");
 
             pred_randomize_genome(pop->chromosomes[i]);
             pop->chromosomes[i]->has_fitness = false;

@@ -142,21 +142,6 @@ double _fitness_get_sqdiffsum_avx(ga_chr_t chr, img_window_t *w)
 }
 
 
-/**
- * Evaluates CGP circuit fitness
- *
- * @param  chr
- * @return fitness value
- */
-ga_fitness_t fitness_eval_or_predict_cgp(ga_chr_t chr)
-{
-    if (_pred_archive->stored > 0)
-        return fitness_predict_cgp(chr, arc_get(_pred_archive, 0));
-    else
-        return fitness_eval_cgp(chr);
-}
-
-
 double _fitness_get_sqdiffsum_scalar(ga_chr_t chr)
 {
     double sum = 0;
@@ -200,6 +185,21 @@ ga_fitness_t fitness_eval_cgp(ga_chr_t chr)
 #endif
 
     return _psnr_coeficient / sum;
+}
+
+
+/**
+ * Evaluates CGP circuit fitness
+ *
+ * @param  chr
+ * @return fitness value
+ */
+ga_fitness_t fitness_eval_or_predict_cgp(ga_chr_t chr)
+{
+    if (_pred_archive->stored > 0)
+        return fitness_predict_cgp(chr, arc_get(_pred_archive, 0));
+    else
+        return fitness_eval_cgp(chr);
 }
 
 

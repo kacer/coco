@@ -264,7 +264,7 @@ static inline bool ga_is_better_or_same(ga_problem_type_t type, ga_fitness_t wha
 
 
 /**
- * Returns true if WHAT is better COMPARED_TO
+ * Returns true if WHAT is better than COMPARED_TO
  * @param  problem_type
  * @param  what
  * @param  compared_to
@@ -280,7 +280,7 @@ static inline bool ga_is_better(ga_problem_type_t type, ga_fitness_t what, ga_fi
  * @param  problem_type
  * @return
  */
-static inline bool ga_worst_fitness(ga_problem_type_t type) {
+static inline double ga_worst_fitness(ga_problem_type_t type) {
     // beware, DBL_MIN is something like 1e-999 (positive number)
     return (type == minimize)? DBL_MAX : -DBL_MAX;
 }

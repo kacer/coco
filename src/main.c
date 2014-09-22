@@ -40,6 +40,7 @@
 #include "archive.h"
 #include "predictors.h"
 
+#include <limits.h>
 
 // signal handlers
 volatile sig_atomic_t interrupted = 0;
@@ -214,9 +215,14 @@ int main(int argc, char *argv[])
     // evolution
     cgp_init(config.cgp_mutate_genes, fitness_eval_or_predict_cgp);
     int img_size = img_original->width * img_original->height;
-    pred_init(img_size - 1, img_size, config.pred_size * img_size,
-        config.pred_mutation_rate, config.pred_offspring_elite,
-        config.pred_offspring_combine);
+    pred_init(
+        img_size - 1,  // max gene value
+        img_size,  // max genome length
+        config.pred_size * img_size,  // initial genome length
+        config.pred_mutation_rate,  // % of mutated genes
+        config.pred_offspring_elite,  // % of elite children
+        config.pred_offspring_combine  // % of "crossovered" children
+    );
 
     // vault
     if (config.vault_enabled) {

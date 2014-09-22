@@ -85,10 +85,10 @@ void pred_copy_genome(void *_dst, void *_src);
 
 /**
  * Genome mutation function
- * @param  chromosome
+ * @param  genes
  * @return
  */
-void pred_mutate(ga_chr_t chromosome);
+void pred_mutate(pred_gene_array_t genes);
 
 
 /**

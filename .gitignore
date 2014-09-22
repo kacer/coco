@@ -37,3 +37,7 @@ src/*.bmp
 
 # Junk
 src/vault/*
+Thumbs.db
+
+# Experimental results
+results/*
