@@ -98,7 +98,7 @@ void print_progress(ga_pop_t cgp_population, ga_pop_t pred_population,
 {
     printf("CGP generation %4d: best fitness %.20g\t\t",
         cgp_population->generation, cgp_population->best_fitness);
-    printf("PRED generation %4d: best fitness %.20g (archived %.20g\n",
+    printf("PRED generation %4d: best fitness %.20g (archived %.20g)\n",
         pred_population->generation, pred_population->best_fitness,
         arc_get(pred_archive, 0)->fitness);
 }
