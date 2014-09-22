@@ -414,7 +414,9 @@ int main(int argc, char *argv[])
 cleanup:
 
     ga_destroy_pop(cgp_population);
+    ga_destroy_pop(pred_population);
     arc_destroy(cgp_archive);
+    arc_destroy(pred_archive);
     cgp_deinit();
     fitness_deinit();
 

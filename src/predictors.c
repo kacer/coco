@@ -166,7 +166,7 @@ void pred_mutate(pred_gene_array_t genes)
     int genes_to_change = rand_range(0, max_changed_genes);
 
     for (int i = 0; i < genes_to_change; i++) {
-        int gene = rand_range(0, _max_genome_length);
+        int gene = rand_range(0, _max_genome_length - 1);
         genes[gene] = rand_urange(0, _max_gene_value);
     }
 }
@@ -289,36 +289,34 @@ void pred_offspring(ga_pop_t pop)
         }
     }
 
-    // crossover parents to make children
-    pred_gene_t children[pop->size][_max_genome_length];
-    for (int i = 0; i < crossover_count; i++) {
-        if (child_type[i] == crossover_product) {
-            _create_combined(pop, children[i]);
-        }
-    }
-
     // create new population
     #pragma omp parallel for
     for (int i = 0; i < pop->size; i++) {
 
-        // skip elites
+        // copy elites
         if (child_type[i] == keep_intact) {
-            continue;
+            ga_copy_chr(pop->children[i], pop->chromosomes[i], pred_copy_genome);
 
         // if there are any combined children to make, do it
         } else if (child_type[i] == crossover_product) {
 
-            pred_genome_t genome = (pred_genome_t) pop->chromosomes[i]->genome;
-            memcpy(genome->genes, children[i], sizeof(pred_gene_t) * _max_genome_length);
-            pop->chromosomes[i]->has_fitness = false;
+            pred_genome_t target_genome = (pred_genome_t) pop->children[i]->genome;
+            _create_combined(pop, target_genome->genes);
+            target_genome->used_genes = _initial_genome_length;
+            pop->children[i]->has_fitness = false;
 
         // otherwise create random mutant
         } else {
 
-            pred_randomize_genome(pop->chromosomes[i]);
-            pop->chromosomes[i]->has_fitness = false;
+            pred_randomize_genome(pop->children[i]);
+            pop->children[i]->has_fitness = false;
         }
     }
+
+    // switch new and old population
+    ga_chr_t *tmp = pop->chromosomes;
+    pop->chromosomes = pop->children;
+    pop->children = tmp;
 }
 
 

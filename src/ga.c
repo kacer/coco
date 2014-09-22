@@ -33,6 +33,42 @@
 /* population *****************************************************************/
 
 
+ga_chr_t *_ga_allocate_chromosomes(int size, ga_alloc_genome_func_t alloc_func,
+    ga_free_genome_func_t free_func)
+{
+    ga_chr_t *new_array = (ga_chr_t*) malloc(sizeof(ga_chr_t) * size);
+    if (new_array == NULL) {
+        return NULL;
+    }
+
+    /* initialize chromosomes */
+    for (int i = 0; i < size; i++) {
+        ga_chr_t new_chr = ga_alloc_chr(alloc_func);
+
+        if (new_chr == NULL) {
+            for (int x = i - 1; x >= 0; x--) {
+                ga_free_chr(new_array[x], free_func);
+            }
+            free(new_array);
+            return NULL;
+        }
+        new_array[i] = new_chr;
+    }
+
+    return new_array;
+}
+
+
+void _ga_free_chromosomes(ga_chr_t * arr, int size, ga_free_genome_func_t free_func)
+{
+
+    for (int i = 0; i < size; i++) {
+        ga_free_chr(arr[i], free_func);
+    }
+    free(arr);
+}
+
+
 /**
  * Create a new CGP population with given size. The genomes are not
  * initialized at this point.
@@ -60,24 +96,22 @@ ga_pop_t ga_create_pop(int size, ga_problem_type_t type, ga_func_vect_t methods)
     new_pop->best_chr_index = -1;
 
     /* allocate chromosome array */
-    new_pop->chromosomes = (ga_chr_t*) malloc(sizeof(ga_chr_t) * size);
+    new_pop->chromosomes = _ga_allocate_chromosomes(size, methods.alloc_genome,
+        methods.free_genome);
+
     if (new_pop->chromosomes == NULL) {
         free(new_pop);
         return NULL;
     }
 
-    /* initialize chromosomes */
-    for (int i = 0; i < size; i++) {
-        ga_chr_t new_chr = ga_alloc_chr(methods.alloc_genome);
+    /* allocate children array */
+    new_pop->children = _ga_allocate_chromosomes(size, methods.alloc_genome,
+        methods.free_genome);
 
-        if (new_chr == NULL) {
-            for (int x = i - 1; x >= 0; x--) {
-                ga_free_chr(new_pop->chromosomes[x], methods.free_genome);
-            }
-            free(new_pop);
-            return NULL;
-        }
-        new_pop->chromosomes[i] = new_chr;
+    if (new_pop->children == NULL) {
+        _ga_free_chromosomes(new_pop->chromosomes, size, methods.free_genome);
+        free(new_pop);
+        return NULL;
     }
 
     return new_pop;
@@ -126,9 +160,12 @@ void ga_destroy_pop(ga_pop_t pop)
     if (pop != NULL) {
         for (int i = 0; i < pop->size; i++) {
             pop->methods.free_genome(pop->chromosomes[i]->genome);
+            pop->methods.free_genome(pop->children[i]->genome);
             free(pop->chromosomes[i]);
+            free(pop->children[i]);
         }
         free(pop->chromosomes);
+        free(pop->children);
     }
     free(pop);
 }

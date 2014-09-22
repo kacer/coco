@@ -164,6 +164,9 @@ struct ga_pop {
     /* chromosomes */
     ga_chr_t *chromosomes;
 
+    /* space for children */
+    ga_chr_t *children;
+
     /* best chromosome */
     ga_fitness_t best_fitness;
     ga_chr_t best_chromosome;
