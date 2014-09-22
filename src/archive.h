@@ -100,7 +100,7 @@ void arc_omp_write_enter(archive_t arc);
 
 
 /**
- * OpenMP: Leaves archive writer critical section
+ * OpenMP: Leaves archive write critical section
  */
 void arc_omp_write_leave(archive_t arc);
 
@@ -114,7 +114,7 @@ void arc_omp_read_enter(archive_t arc);
 
 
 /**
- * OpenMP: Leaves archive readr critical section
+ * OpenMP: Leaves archive read critical section
  */
 void arc_omp_read_leave(archive_t arc);
 

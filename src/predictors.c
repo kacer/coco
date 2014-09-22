@@ -37,6 +37,13 @@ static float _offspring_elite;
 static float _offspring_combine;
 
 
+enum _offspring_op {
+    random_mutant,
+    crossover_product,
+    keep_intact,
+};
+
+
 /**
  * Initialize predictor internals
  */
@@ -165,17 +172,15 @@ void pred_mutate(pred_gene_array_t genes)
 }
 
 
-void _find_elites(ga_pop_t pop, int count, bool is_elite[])
+void _find_elites(ga_pop_t pop, int count, enum _offspring_op ops[])
 {
-    memset(is_elite, 0, sizeof(bool) * pop->size);
-
     for (; count > 0; count--) {
         ga_fitness_t best_fitness = ga_worst_fitness(pop->problem_type);
         int best_index = -1;
 
         // find best non-selected individual
         for (int i = 0; i < pop->size; i++) {
-            if (!is_elite[i]) {
+            if (ops[i] != keep_intact) {
                 ga_chr_t chr = pop->chromosomes[i];
                 if (ga_is_better(pop->problem_type, chr->fitness, best_fitness)) {
                     best_fitness = chr->fitness;
@@ -185,14 +190,14 @@ void _find_elites(ga_pop_t pop, int count, bool is_elite[])
         }
 
         // mark best found as elite
-        is_elite[best_index] = true;
+        ops[best_index] = keep_intact;
     }
 }
 
 
-void _tournament(ga_chr_t *winner, ga_chr_t red, ga_chr_t blue)
+void _tournament(ga_pop_t pop, ga_chr_t *winner, ga_chr_t red, ga_chr_t blue)
 {
-    if (red->fitness > blue->fitness) {
+    if (ga_is_better_or_same(pop->problem_type, red->fitness, blue->fitness)) {
         *winner = red;
     } else {
         *winner = blue;
@@ -219,11 +224,11 @@ void _create_combined(ga_pop_t pop, pred_gene_array_t children)
 
     red = rand_range(0, pop->size - 1);
     blue = rand_range(0, pop->size - 1);
-    _tournament(&mom, pop->chromosomes[red], pop->chromosomes[blue]);
+    _tournament(pop, &mom, pop->chromosomes[red], pop->chromosomes[blue]);
 
     red = rand_range(0, pop->size - 1);
     blue = rand_range(0, pop->size - 1);
-    _tournament(&dad, pop->chromosomes[red], pop->chromosomes[blue]);
+    _tournament(pop, &dad, pop->chromosomes[red], pop->chromosomes[blue]);
 
     pred_genome_t mom_genome = (pred_genome_t)mom->genome;
     pred_genome_t dad_genome = (pred_genome_t)dad->genome;
@@ -262,30 +267,50 @@ void _create_combined(ga_pop_t pop, pred_gene_array_t children)
  */
 void pred_offspring(ga_pop_t pop)
 {
-    int elite_count = ceil(pop->size * _offspring_elite);
-    int combined_count = ceil(pop->size * _offspring_combine);
+    // number of children copied and crossovered from parents
+    const int elite_count = ceil(pop->size * _offspring_elite);
+    const int crossover_count = ceil(pop->size * _offspring_combine);
+    assert(elite_count + crossover_count <= pop->size);
 
-    // mark each individual whether belongs to elite or not
-    bool is_elite[pop->size];
-    _find_elites(pop, elite_count, is_elite);
+    // this array describes how to create each individual
+    enum _offspring_op child_type[pop->size];
+    memset(child_type, random_mutant, sizeof(enum _offspring_op) * pop->size);
+
+    // find which individuals will be kept intact
+    _find_elites(pop, elite_count, child_type);
+
+    // find which individuals will be replaced from parents
+    // `i < pop->size` is already guarded by assert above
+    int crossover_set = 0;
+    for (int i = 0; crossover_set < crossover_count; i++) {
+        if (child_type[i] != keep_intact) {
+            child_type[i] = crossover_product;
+            crossover_set++;
+        }
+    }
+
+    // crossover parents to make children
+    pred_gene_t children[pop->size][_max_genome_length];
+    for (int i = 0; i < crossover_count; i++) {
+        if (child_type[i] == crossover_product) {
+            _create_combined(pop, children[i]);
+        }
+    }
 
     // create new population
+    #pragma omp parallel for
     for (int i = 0; i < pop->size; i++) {
 
         // skip elites
-        if (is_elite[i]) {
+        if (child_type[i] == keep_intact) {
             continue;
 
         // if there are any combined children to make, do it
-        } else if (combined_count >= 0) {
-
-            pred_gene_t children[_max_genome_length];
-            _create_combined(pop, children);
+        } else if (child_type[i] == crossover_product) {
 
             pred_genome_t genome = (pred_genome_t) pop->chromosomes[i]->genome;
-            memcpy(genome->genes, children, sizeof(pred_gene_t) * _max_genome_length);
+            memcpy(genome->genes, children[i], sizeof(pred_gene_t) * _max_genome_length);
             pop->chromosomes[i]->has_fitness = false;
-            combined_count--;
 
         // otherwise create random mutant
         } else {
