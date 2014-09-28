@@ -41,3 +41,14 @@ Thumbs.db
 
 # Experimental results
 results/*
+
+# Documentation
+text/*.pdf
+text/*.aux
+text/*.dvi
+text/*.log
+text/*.blg
+text/*.toc
+text/*.out
+text/*.lof
+text/literatura-latin2.bib
