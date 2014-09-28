@@ -38,6 +38,7 @@
 #include "config.h"
 #include "fitness.h"
 #include "archive.h"
+#include "logging.h"
 #include "predictors.h"
 
 #include <limits.h>
@@ -67,64 +68,9 @@ void sigxcpu_handler(int _)
 }
 
 
-/**
- * Saves image filtered by best filter to results directory
- * @param cgp_population
- * @param noisy
- */
-void save_image(ga_pop_t cgp_population, img_image_t noisy)
-{
-    char filename[25 + 8 + 1];
-    snprintf(filename, 25 + 8 + 1, "results/img_filtered_%08d.bmp", cgp_population->generation);
-    img_image_t filtered = fitness_filter_image(cgp_population->best_chromosome);
-    img_save_bmp(filtered, filename);
-    img_destroy(filtered);
-}
-
-
-/* standard console outputing */
-
-#ifdef DEBUG
-    #define DEBUGLOG(...) { printf(__VA_ARGS__); printf("\n"); }
-#else
-    #define DEBUGLOG(...)
-#endif
-
-#define SLOWLOG(...) { printf(__VA_ARGS__); printf("\n"); }
-
-
-void print_progress(ga_pop_t cgp_population, ga_pop_t pred_population,
-    archive_t pred_archive)
-{
-    printf("CGP generation %4d: best fitness %.20g\t\t",
-        cgp_population->generation, cgp_population->best_fitness);
-    printf("PRED generation %4d: best fitness %.20g (archived %.20g)\n",
-        pred_population->generation, pred_population->best_fitness,
-        arc_get(pred_archive, 0)->fitness);
-}
-
-
-void print_results(ga_pop_t cgp_population, ga_pop_t pred_population,
-    archive_t pred_archive)
-{
-    print_progress(cgp_population, pred_population, pred_archive);
-
-    printf("\n"
-           "Best predictor\n"
-           "--------------\n");
-    pred_dump_chr(pred_population->best_chromosome, stdout);
-
-    printf("\n"
-           "Best circuit\n"
-           "------------\n");
-    cgp_dump_chr_asciiart(cgp_population->best_chromosome, stdout);
-    printf("\n");
-}
-
-
 #define SAVE_IMAGE_AND_STATE() { \
     print_results(cgp_population, pred_population, pred_archive); \
-    save_image(cgp_population, img_noisy); \
+    save_filtered_image(config.results_dir, cgp_population, img_noisy); \
     if (config.vault_enabled) vault_store(&vault, cgp_population); \
     SLOWLOG("Current output image and state stored."); \
 }
@@ -203,11 +149,6 @@ int main(int argc, char *argv[])
     /*
         Initialize data structures etc.
      */
-
-
-    // signal handlers
-    signal(SIGINT, sigint_handler);
-    signal(SIGXCPU, sigxcpu_handler);
 
     // random number generator
     rand_init();
@@ -308,8 +249,8 @@ int main(int argc, char *argv[])
         cgp_population->best_fitness, pred_population->best_fitness);
 
     print_progress(cgp_population, pred_population, pred_archive);
-    img_save_bmp(img_original, "results/img_original.bmp");
-    img_save_bmp(img_noisy, "results/img_noisy.bmp");
+    save_original_image(config.results_dir, img_original);
+    save_noisy_image(config.results_dir, img_original);
     cgp_current_best = cgp_population->best_fitness;
     pred_current_best = pred_population->best_fitness;
 
@@ -318,13 +259,9 @@ int main(int argc, char *argv[])
         Evolution itself
      */
 
-
-    if (interrupted) {
-        // SIGINT received during initialization
-        retval = -SIGINT;
-        goto cleanup;
-    }
-
+    // signal handlers
+    signal(SIGINT, sigint_handler);
+    signal(SIGXCPU, sigxcpu_handler);
 
     while (cgp_population->generation < config.max_generations) {
 
