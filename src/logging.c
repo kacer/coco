@@ -23,7 +23,7 @@
 #define MAX_FILENAME_LENGTH 1000
 
 /* predictors log to second column */
-#define PRED_INDENT "                                                     "
+#define PRED_INDENT "                                                        "
 
 
 /**
@@ -32,6 +32,7 @@
  */
 void print_cgp_progress(ga_pop_t cgp_population)
 {
+    LOG_THREAD_IDENT(stdout);
     printf("CGP generation %4d: best fitness %.10g\n",
         cgp_population->generation, cgp_population->best_fitness);
 }
@@ -45,6 +46,7 @@ void print_cgp_progress(ga_pop_t cgp_population)
 void print_pred_progress(ga_pop_t pred_population,
     archive_t pred_archive)
 {
+    LOG_THREAD_IDENT(stdout);
     printf(PRED_INDENT);
     printf("PRED generation %4d: best fitness %.10g (archived %.10g)\n",
         pred_population->generation, pred_population->best_fitness,
@@ -61,11 +63,17 @@ void print_pred_progress(ga_pop_t pred_population,
 void print_progress(ga_pop_t cgp_population, ga_pop_t pred_population,
     archive_t pred_archive)
 {
+    LOG_THREAD_IDENT(stdout);
     printf("CGP generation %4d: best fitness %.10g\t\t",
         cgp_population->generation, cgp_population->best_fitness);
-    printf("PRED generation %4d: best fitness %.10g (archived %.10g)\n",
-        pred_population->generation, pred_population->best_fitness,
-        arc_get(pred_archive, 0)->fitness);
+    if (pred_population != NULL) {
+        printf("PRED generation %4d: best fitness %.10g",
+            pred_population->generation, pred_population->best_fitness);
+        if (pred_archive != NULL) {
+            printf(" (archived %.10g)\n", arc_get(pred_archive, 0)->fitness);
+        }
+        printf("\n");
+    }
 }
 
 
@@ -80,16 +88,42 @@ void print_results(ga_pop_t cgp_population, ga_pop_t pred_population,
 {
     print_progress(cgp_population, pred_population, pred_archive);
 
-    printf("\n"
-           "Best predictor\n"
-           "--------------\n");
-    pred_dump_chr(pred_population->best_chromosome, stdout);
+    if (pred_population != NULL) {
+        printf("\n"
+               "Best predictor\n"
+               "--------------\n");
+        pred_dump_chr(pred_population->best_chromosome, stdout);
+    }
 
     printf("\n"
            "Best circuit\n"
            "------------\n");
     cgp_dump_chr_asciiart(cgp_population->best_chromosome, stdout);
     printf("\n");
+}
+
+
+/**
+ * Logs that CGP best fitness has changed
+ * @param previous_best
+ * @param new_best
+ */
+void log_cgp_change(ga_fitness_t previous_best, ga_fitness_t new_best)
+{
+    SLOWLOG("Best CGP circuit changed by %.10g, moving to archive",
+                new_best - previous_best);
+}
+
+
+/**
+ * Logs that predictors best fitness has changed
+ * @param previous_best
+ * @param new_best
+ */
+void log_pred_change(ga_fitness_t previous_best, ga_fitness_t new_best)
+{
+    SLOWLOG(PRED_INDENT "Best predictor changed by %.10g, moving to archive",
+            new_best - previous_best);
 }
 
 

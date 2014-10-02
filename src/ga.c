@@ -27,6 +27,7 @@
 #endif
 
 #include "ga.h"
+#include "debug.h"
 #include "random.h"
 
 
@@ -370,13 +371,23 @@ void _ga_evaluate_pop_simple(ga_pop_t pop)
 
 
 /**
- * Advance population to next generation
+ * Advance population to next generation with evaluation
  * @param pop
- * @param mutation_rate
  */
 void ga_next_generation(ga_pop_t pop)
 {
     pop->methods.offspring(pop);
     ga_evaluate_pop(pop);
+    pop->generation++;
+}
+
+
+/**
+ * Advance population to next generation WITHOUT evaluation
+ * @param pop
+ */
+void ga_create_children(ga_pop_t pop)
+{
+    pop->methods.offspring(pop);
     pop->generation++;
 }

@@ -21,7 +21,13 @@
 #pragma once
 
 
+#ifdef _OPENMP
+    #include <omp.h>
+#endif
+
+
 #include "ga.h"
+#include "debug.h"
 
 
  /**
@@ -57,6 +63,11 @@ struct archive
 
     /* genome-specific functions */
     arc_func_vect_t methods;
+
+    #ifdef _OPENMP
+        /* lock for thread synchronization */
+        omp_lock_t omp_lock;
+    #endif
 };
 typedef struct archive* archive_t;
 
@@ -146,32 +157,50 @@ static inline ga_chr_t arc_get(archive_t arc, int index)
 
 #ifdef _OPENMP
 
-    static inline void arc_write_enter(archive_t arc) {
-        arc_omp_write_enter(arc);
+    /**
+     * Lock access to archive for other threads.
+     * Does nothing if compiled w/o OpenMP support
+     * @param arc
+     */
+    static inline void arc_lock(archive_t arc)
+    {
+        VERBOSELOG("th-%d: Locking archive at %p", omp_get_thread_num(), arc);
+        omp_set_lock(&arc->omp_lock);
     }
-    static inline void arc_write_leave(archive_t arc) {
-        arc_omp_write_leave(arc);
-    }
-    static inline void arc_read_enter(archive_t arc) {
-        arc_omp_read_enter(arc);
-    }
-    static inline void arc_read_leave(archive_t arc) {
-        arc_omp_read_leave(arc);
+
+
+    /**
+     * Unlock access to archive for other threads.
+     * Does nothing if compiled w/o OpenMP support
+     * @param arc
+     */
+    static inline void arc_unlock(archive_t arc)
+    {
+        VERBOSELOG("th-%d: Waiting for archive at %p", omp_get_thread_num(), arc);
+        omp_unset_lock(&arc->omp_lock);
     }
 
 #else
 
-    static inline void arc_write_enter(archive_t arc) {
-        // nothing to do in single-thread environment
+    /**
+     * Lock access to archive for other threads.
+     * Does nothing if compiled w/o OpenMP support
+     * @param arc
+     */
+    static inline void arc_lock(archive_t arc)
+    {
+
     }
-    static inline void arc_write_leave(archive_t arc) {
-        // nothing to do in single-thread environment
-    }
-    static inline void arc_read_enter(archive_t arc) {
-        // nothing to do in single-thread environment
-    }
-    static inline void arc_read_leave(archive_t arc) {
-        // nothing to do in single-thread environment
+
+
+    /**
+     * Unlock access to archive for other threads.
+     * Does nothing if compiled w/o OpenMP support
+     * @param arc
+     */
+    static inline void arc_unlock(archive_t arc)
+    {
+
     }
 
 #endif

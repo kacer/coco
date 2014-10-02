@@ -31,14 +31,10 @@
 
 /* standard console outputing */
 
-#ifdef DEBUG
-    #define DEBUGLOG(...) { fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); }
-#else
-    #define DEBUGLOG(...)
-#endif
+#include "debug.h"
 
-#define LOG(...) { fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); }
-#define SLOWLOG(...) { fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); }
+#define LOG(...) { LOG_THREAD_IDENT(stdout); fprintf(stdout, __VA_ARGS__); fprintf(stdout, "\n"); }
+#define SLOWLOG(...) { LOG_THREAD_IDENT(stdout); fprintf(stdout, __VA_ARGS__); fprintf(stdout, "\n"); }
 
 
 /**
@@ -75,6 +71,22 @@ void print_progress(ga_pop_t cgp_population, ga_pop_t pred_population,
  */
 void print_results(ga_pop_t cgp_population, ga_pop_t pred_population,
     archive_t pred_archive);
+
+
+/**
+ * Logs that CGP best fitness has changed
+ * @param previous_best
+ * @param new_best
+ */
+void log_cgp_change(ga_fitness_t previous_best, ga_fitness_t new_best);
+
+
+/**
+ * Logs that predictors best fitness has changed
+ * @param previous_best
+ * @param new_best
+ */
+void log_pred_change(ga_fitness_t previous_best, ga_fitness_t new_best);
 
 
 /**

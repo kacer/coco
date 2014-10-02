@@ -27,10 +27,17 @@
 
 typedef enum
 {
-    simple_cgp,
+    simple_cgp = 0,
     predictors,
     baldwin,
 } algorithm_t;
+
+
+static const char *config_algorithm_names[] = {
+    "simple_cgp",
+    "predictors",
+    "baldwin"
+};
 
 
 #define FILENAME_LENGTH 101
@@ -82,7 +89,11 @@ static inline void print_help() {
         "  __(.)=   =(.)__\n"
         "  \\___)     (___/\n"
         "\n"
-        "Usage:\n"
+        "To see system configuration just call:\n"
+        "    ./coco\n"
+        "\n"
+        "\n"
+        "To run evolution:\n"
         "    ./coco --original original.png --noisy noisy.png [options]\n"
         "\n"
         "Command line options:\n"

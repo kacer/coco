@@ -47,6 +47,11 @@
 volatile sig_atomic_t interrupted = 0;
 volatile sig_atomic_t cpu_limit_reached = 0;
 
+// when SIGINT was received last time
+static long interrupted_generation = -1;
+
+// if SIGINT is received twice within this gap, program exits
+const int SIGINT_GENERATIONS_GAP = 1000;
 
 /**
  * Handles SIGINT. Sets `interrupted` flag.
@@ -120,8 +125,37 @@ int main(int argc, char *argv[])
     ga_fitness_t cgp_current_best;
     ga_fitness_t pred_current_best;
 
-    // stored when SIGINT was received last time
-    long interrupted_generation = -1;
+
+    /*
+        Log system configuration
+     */
+
+    #ifdef _OPENMP
+        SLOWLOG("OpenMP is enabled. CPUs: %d. Max threads: %d.",
+            omp_get_num_procs(), omp_get_max_threads());
+
+            /*
+                Nested parallelism is essential and must be explicitly
+                enabled. Otherwise the population evaluation will be
+                serialised.
+             */
+            omp_set_nested(true);
+
+    #else
+
+        SLOWLOG("OpenMP is disabled, coevolution is not available.");
+
+    #endif
+
+    #ifdef FITNESS_AVX
+        if (can_use_intel_core_4th_gen_features()) {
+            SLOWLOG("AVX2 is enabled.")
+        } else {
+            SLOWLOG("AVX2 is enabled, but not supported by CPU.")
+        }
+    #else
+        SLOWLOG("AVX2 is disabled. Recompile with FITNESS_AVX defined to enable.");
+    #endif
 
 
     /*
@@ -158,10 +192,10 @@ int main(int argc, char *argv[])
     int img_size = img_original->width * img_original->height;
     pred_init(
         img_size - 1,  // max gene value
-        img_size,  // max genome length
-        config.pred_size * img_size,  // initial genome length
-        config.pred_mutation_rate,  // % of mutated genes
-        config.pred_offspring_elite,  // % of elite children
+        config.pred_size * img_size,   // max genome length
+        config.pred_size * img_size,   // initial genome length
+        config.pred_mutation_rate,     // % of mutated genes
+        config.pred_offspring_elite,   // % of elite children
         config.pred_offspring_combine  // % of "crossovered" children
     );
 
@@ -201,7 +235,7 @@ int main(int argc, char *argv[])
 
 
     /*
-        Evolution recovery / initialization
+        Populations recovery / initialization
      */
 
 
@@ -218,23 +252,17 @@ int main(int argc, char *argv[])
         Log initial info
      */
 
-
-    #ifdef _OPENMP
-        SLOWLOG("OpenMP is enabled. CPUs: %d. Max threads: %d.",
-            omp_get_num_procs(), omp_get_max_threads());
-    #endif
-
-    #ifdef FITNESS_AVX
-        if (can_use_intel_core_4th_gen_features()) {
-            SLOWLOG("AVX2 is enabled.")
-        } else {
-            SLOWLOG("AVX2 is enabled, but not supported by CPU.")
+    #ifndef _OPENMP
+        if (config.algorithm != simple_cgp) {
+            fprintf(stderr, "Only simple CGP is available.\n");
+            fprintf(stderr, "Please recompile program with OpenMP (-fopenmp for gcc) to run coevolution.\n");
+            return 1;
         }
     #endif
 
-    SLOWLOG("Mutation rate: %d genes max", config.cgp_mutate_genes);
+    SLOWLOG("Algorithm: %s", config_algorithm_names[config.algorithm]);
     SLOWLOG("Stop at generation: %d", config.max_generations);
-    SLOWLOG("Initial PSNR value:           %.20g",
+    SLOWLOG("Initial PSNR value:           %.10g",
         fitness_psnr(img_original, img_noisy));
 
     DEBUGLOG("Evaluating CGP population...");
@@ -245,12 +273,12 @@ int main(int argc, char *argv[])
     ga_evaluate_pop(pred_population);
     arc_insert(pred_archive, pred_population->best_chromosome);
 
-    DEBUGLOG("Best fitness: CGP %.20g, PRED %.20g",
+    DEBUGLOG("Best fitness: CGP %.10g, PRED %.10g",
         cgp_population->best_fitness, pred_population->best_fitness);
 
     print_progress(cgp_population, pred_population, pred_archive);
     save_original_image(config.results_dir, img_original);
-    save_noisy_image(config.results_dir, img_original);
+    save_noisy_image(config.results_dir, img_noisy);
     cgp_current_best = cgp_population->best_fitness;
     pred_current_best = pred_population->best_fitness;
 
@@ -259,88 +287,146 @@ int main(int argc, char *argv[])
         Evolution itself
      */
 
-    // signal handlers
+    DEBUGLOG("Installing signal handlers and starting the big while loop.");
+
+    // install signal handlers
     signal(SIGINT, sigint_handler);
     signal(SIGXCPU, sigxcpu_handler);
 
-    while (cgp_population->generation < config.max_generations) {
 
-        // next generation
-        for (int _ = 0; _ < 4; _++) {
-            ga_next_generation(cgp_population);
-        }
-        ga_next_generation(pred_population);
+    bool finished = false;
+    #pragma omp parallel sections num_threads(2)
+    {
+        #pragma omp section
+        {
+            while (!finished) {
+                // PREDICTORS generation
+                VERBOSELOG("One iteration of predictors.");
+                ga_create_children(pred_population);
+                arc_lock(cgp_archive);
 
-        // log progress
-        if ((cgp_population->generation % config.log_interval) == 0) {
-            print_progress(cgp_population, pred_population, pred_archive);
+                    ga_evaluate_pop(pred_population);
+
+                arc_unlock(cgp_archive);
+
+                // log progress
+                if ((pred_population->generation % config.log_interval) == 0) {
+                    print_pred_progress(pred_population, pred_archive);
+                }
+
+                // copy to archive
+                bool pred_better = ga_is_better(pred_population->problem_type,
+                    pred_population->best_fitness, arc_get(pred_archive, 0)->fitness);
+
+                if (pred_better) {
+                    // log
+                    print_pred_progress(pred_population, pred_archive);
+                    log_pred_change(pred_current_best, pred_population->best_fitness);
+
+                    // store and invalidate CGP fitness
+                    arc_lock(pred_archive);
+
+                        arc_insert(pred_archive, pred_population->best_chromosome);
+                        ga_invalidate_fitness(cgp_population);
+
+                    arc_unlock(pred_archive);
+
+                    // update
+                    pred_current_best = pred_population->best_fitness;
+                }
+            }
         }
 
-        // check SIGXCPU
-        if (cpu_limit_reached) {
-            SAVE_IMAGE_AND_STATE();
-            retval = -SIGXCPU;
-            goto cleanup;
+        #pragma omp section
+        {
+            while (!finished) {
+                // CGP generation
+                VERBOSELOG("One iteration of CGP.");
+                ga_create_children(cgp_population);
+                arc_lock(pred_archive);
+
+                    ga_evaluate_pop(cgp_population);
+
+                arc_unlock(pred_archive);
+
+                // log progress
+                if ((cgp_population->generation % config.log_interval) == 0) {
+                    print_cgp_progress(cgp_population);
+                }
+
+                // store to vault
+                if ((cgp_population->generation % config.vault_interval) == 0) {
+                    SAVE_IMAGE_AND_STATE();
+                }
+
+                // copy to archive
+                bool cgp_better = ga_is_better(cgp_population->problem_type,
+                    cgp_population->best_fitness, cgp_current_best);
+                if (cgp_better) {
+                    // log
+                    print_cgp_progress(cgp_population);
+                    log_cgp_change(cgp_current_best, cgp_population->best_fitness);
+
+                    // store and recalculate predictors fitness
+                    arc_lock(cgp_archive);
+
+                        ga_chr_t archived = arc_insert(cgp_archive, cgp_population->best_chromosome);
+                        ga_invalidate_fitness(pred_population);
+                        ga_reevaluate_chr(pred_population, arc_get(pred_archive, 0));
+
+                    arc_unlock(cgp_archive);
+
+                    SLOWLOG("Predicted fitness: %.20g", cgp_population->best_fitness);
+                    SLOWLOG("Real fitness: %.20g", archived->fitness);
+                    cgp_current_best = cgp_population->best_fitness;
+
+                    // drop fitness values
+                    ga_invalidate_fitness(pred_population);
+                    ga_reevaluate_chr(pred_population, arc_get(pred_archive, 0));
+                    pred_current_best = ga_worst_fitness(pred_population->problem_type);
+                }
+
+                // Last generation?
+                if (cgp_population->generation >= config.max_generations) {
+                    SLOWLOG("Generations limit reached (%d), terminating.", config.max_generations);
+                    retval = 0;
+                    finished = true;
+
+                } else if (cpu_limit_reached) {
+                    // SIGXCPU
+                    SLOWLOG("SIGXCPU received, terminating.");
+
+                    SAVE_IMAGE_AND_STATE();
+                    retval = -SIGXCPU;
+                    finished = true;
+
+                } else if (interrupted) {
+                    // SIGINT
+                    SLOWLOG("SIGINT received.");
+
+                    if (interrupted_generation >= 0 && interrupted_generation > cgp_population->generation - 1000) {
+                        retval = -SIGINT;
+                        finished = true;
+                    }
+
+                    SAVE_IMAGE_AND_STATE();
+
+                    interrupted = 0;
+                    interrupted_generation = cgp_population->generation;
+                }
+            }
         }
+
+    }
+
+
 
         // store to vault
+        /*
         if ((cgp_population->generation % config.vault_interval) == 0) {
             SAVE_IMAGE_AND_STATE();
         }
-
-        // copy to archive
-        bool cgp_better = ga_is_better(cgp_population->problem_type,
-            cgp_population->best_fitness, cgp_current_best);
-        bool pred_better = ga_is_better(pred_population->problem_type,
-            pred_population->best_fitness, arc_get(pred_archive, 0)->fitness);
-
-        if (cgp_better) {
-            print_progress(cgp_population, pred_population, pred_archive);
-            SLOWLOG("Best CGP circuit changed by %.20g, moving to archive",
-                cgp_population->best_fitness - cgp_current_best);
-            ga_chr_t best = cgp_population->best_chromosome;
-            ga_chr_t archived = arc_insert(cgp_archive, best);
-            SLOWLOG("Predicted fitness: %.20g", best->fitness);
-            SLOWLOG("Real fitness: %.20g", archived->fitness);
-            cgp_current_best = cgp_population->best_fitness;
-
-            // drop fitness values
-            ga_invalidate_fitness(pred_population);
-            ga_reevaluate_chr(pred_population, arc_get(pred_archive, 0));
-            pred_current_best = ga_worst_fitness(pred_population->problem_type);
-        }
-
-        if (pred_better)
-        {
-            print_progress(cgp_population, pred_population, pred_archive);
-            SLOWLOG("                                                       \t\t"
-                "Best predictor changed by %.20g, moving to archive",
-                pred_population->best_fitness - pred_current_best);
-            ga_chr_t best = pred_population->best_chromosome;
-            ga_chr_t archived = arc_insert(pred_archive, best);
-            SLOWLOG("                                                       \t\t"
-                "Fitness: %.20g", archived->fitness);
-            pred_current_best = pred_population->best_fitness;
-            ga_invalidate_fitness(cgp_population);
-        }
-
-        // SIGINT
-        if (interrupted) {
-
-            if (interrupted_generation >= 0 && interrupted_generation > cgp_population->generation - 1000) {
-                retval = -SIGINT;
-                goto cleanup;
-            }
-
-            SAVE_IMAGE_AND_STATE();
-
-            interrupted = 0;
-            interrupted_generation = cgp_population->generation;
-        }
-
-    } // while loop
-
-    SAVE_IMAGE_AND_STATE();
+        */
 
 
     /*

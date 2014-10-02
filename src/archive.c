@@ -56,6 +56,9 @@ archive_t arc_create(int capacity, arc_func_vect_t methods)
     arc->stored = 0;
     arc->pointer = 0;
     arc->methods = methods;
+    #ifdef _OPENMP
+        omp_init_lock(&arc->omp_lock);
+    #endif
     return arc;
 }
 
@@ -69,6 +72,9 @@ void arc_destroy(archive_t arc)
         ga_free_chr(arc->chromosomes[i], arc->methods.free_genome);
     }
     free(arc->chromosomes);
+    #ifdef _OPENMP
+        omp_destroy_lock(&arc->omp_lock);
+    #endif
     free(arc);
 }
 

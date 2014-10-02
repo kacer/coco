@@ -16,8 +16,8 @@
 #   \___)     (___/
 
 CC=gcc
-CFLAGS=-g -Wall -std=c99 -fopenmp -march=native \
-	-DFITNESS_AVX -DDEBUG -D_XOPEN_SOURCE=700
+CFLAGS=-g -Wall -std=c99 -fopenmp -march=native -D_XOPEN_SOURCE=700 \
+	-DFITNESS_AVX -DDEBUG -DxVERBOSE
 EXECUTABLE=coco
 CMDLINE=-i images/lena_gray_256.png -n images/lena_gray_256_saltpepper_10.png
 SERVER=merlin

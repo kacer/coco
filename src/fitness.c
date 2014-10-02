@@ -196,10 +196,11 @@ ga_fitness_t fitness_eval_cgp(ga_chr_t chr)
  */
 ga_fitness_t fitness_eval_or_predict_cgp(ga_chr_t chr)
 {
-    if (_pred_archive->stored > 0)
+    if (_pred_archive->stored > 0) {
         return fitness_predict_cgp(chr, arc_get(_pred_archive, 0));
-    else
+    } else {
         return fitness_eval_cgp(chr);
+    }
 }
 
 
