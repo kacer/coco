@@ -24,6 +24,7 @@
 
 #include "cgp.h"
 #include "image.h"
+#include "config.h"
 #include "archive.h"
 #include "fitness.h"
 #include "predictors.h"
@@ -112,3 +113,9 @@ void save_noisy_image(char *dir, img_image_t noisy);
  * @param noisy
  */
 void save_filtered_image(char *dir, ga_pop_t cgp_population, img_image_t noisy);
+
+
+/**
+ * Saves configuration to results directory
+ */
+void save_config(char *dir, config_t *config);

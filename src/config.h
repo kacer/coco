@@ -34,7 +34,7 @@ typedef enum
 
 
 static const char *config_algorithm_names[] = {
-    "simple_cgp",
+    "cgp",
     "predictors",
     "baldwin"
 };
@@ -60,7 +60,6 @@ typedef struct
     float pred_offspring_elite;
     float pred_offspring_combine;
     int pred_population_size;
-
 
     int log_interval;
     char results_dir[FILENAME_LENGTH];
@@ -156,4 +155,10 @@ int config_load_args(int argc, char **argv, config_t *cfg);
 /**
  * Load configuration from XML file
  */
-int config_load_xml(FILE *file, config_t *cfg);
+int config_load_file(FILE *file, config_t *cfg);
+
+
+/**
+ * Load configuration from XML file
+ */
+void config_save_file(FILE *file, config_t *cfg);

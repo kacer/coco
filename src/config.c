@@ -17,6 +17,7 @@
  *   \___)     (___/
  */
 
+#include <time.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -217,4 +218,37 @@ int config_load_args(int argc, char **argv, config_t *cfg)
     }
 
     return 0;
+}
+
+
+/**
+ * Load configuration from XML file
+ */
+int config_load_file(FILE *file, config_t *cfg);
+
+
+/**
+ * Load configuration from XML file
+ */
+void config_save_file(FILE *file, config_t *cfg)
+{
+    time_t now = time(NULL);
+    char timestr[200];
+    strftime(timestr, sizeof(timestr), "%Y-%m-%d %H:%M:%S %z", localtime(&now));
+
+    fprintf(file, "; Configuration file generated on %s\n", timestr);
+    fprintf(file, "original: %s\n", cfg->input_image);
+    fprintf(file, "noisy: %s\n", cfg->noisy_image);
+    fprintf(file, "algorithm: %s\n", config_algorithm_names[cfg->algorithm]);
+    fprintf(file, "max-generations: %d\n", cfg->max_generations);
+    fprintf(file, "vault-dir: %s\n", cfg->vault_directory);
+    fprintf(file, "vault-interval: %d\n", cfg->vault_interval);
+    fprintf(file, "log-interval: %d\n", cfg->log_interval);
+    fprintf(file, "results-dir: %s\n", cfg->results_dir);
+    fprintf(file, "cgp-mutate: %d\n", cfg->cgp_mutate_genes);
+    fprintf(file, "cgp-population-size: %d\n", cfg->cgp_population_size);
+    fprintf(file, "cgp-archive-size: %d\n", cfg->cgp_archive_size);
+    fprintf(file, "pred-size: %.5g\n", cfg->pred_size);
+    fprintf(file, "pred-mutate: %.5g\n", cfg->pred_mutation_rate);
+    fprintf(file, "pred-population-size: %d\n", cfg->pred_population_size);
 }

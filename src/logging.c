@@ -177,3 +177,16 @@ void save_filtered_image(char *dir, ga_pop_t cgp_population, img_image_t noisy)
     _save_filtered_image(dir, filtered, cgp_population->generation);
     img_destroy(filtered);
 }
+
+
+/**
+ * Saves configuration to results directory
+ */
+void save_config(char *dir, config_t *config)
+{
+    char filename[MAX_FILENAME_LENGTH];
+    snprintf(filename, MAX_FILENAME_LENGTH, "%s/config", dir);
+    FILE *f = fopen(filename, "wt");
+    config_save_file(f, config);
+    fclose(f);
+}
