@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "debug.h"
 #include "random.h"
 #include "fitness.h"
 #include "predictors.h"
@@ -104,6 +105,13 @@ void* pred_alloc_genome()
         return NULL;
     }
 
+    genome->used_values = (bool*) malloc(sizeof(bool) * (_max_gene_value + 1));
+    if (genome->genes == NULL) {
+        free(genome->genes);
+        free(genome);
+        return NULL;
+    }
+
     return genome;
 }
 
@@ -116,6 +124,7 @@ void* pred_alloc_genome()
 void pred_free_genome(void *_genome)
 {
     pred_genome_t genome = (pred_genome_t) _genome;
+    free(genome->used_values);
     free(genome->genes);
     free(genome);
 }
@@ -128,10 +137,13 @@ void pred_free_genome(void *_genome)
 int pred_randomize_genome(ga_chr_t chromosome)
 {
     pred_genome_t genome = (pred_genome_t) chromosome->genome;
+    memset(genome->used_values, 0, sizeof(bool) * (_max_gene_value + 1));
 
     genome->used_genes = _initial_genome_length;
     for (int i = 0; i < _max_genome_length; i++) {
-        genome->genes[i] = rand_urange(0, _max_gene_value);
+        pred_gene_t value = rand_urange(0, _max_gene_value);
+        genome->genes[i] = value;
+        genome->used_values[value] = true;
     }
 
     return 0;
@@ -150,6 +162,7 @@ void pred_copy_genome(void *_dst, void *_src)
     pred_genome_t src = (pred_genome_t) _src;
 
     memcpy(dst->genes, src->genes, sizeof(pred_gene_t) * _max_genome_length);
+    memcpy(dst->used_values, src->used_values, sizeof(bool) * _max_gene_value);
     dst->used_genes = src->used_genes;
 }
 
@@ -160,14 +173,25 @@ void pred_copy_genome(void *_dst, void *_src)
  * @param  chromosome
  * @return
  */
-void pred_mutate(pred_gene_array_t genes)
+void pred_mutate(pred_genome_t genome)
 {
     int max_changed_genes = _mutation_rate * _max_genome_length;
     int genes_to_change = rand_range(0, max_changed_genes);
 
     for (int i = 0; i < genes_to_change; i++) {
+        // choose mutated gene
         int gene = rand_range(0, _max_genome_length - 1);
-        genes[gene] = rand_urange(0, _max_gene_value);
+        pred_gene_t old_value = genome->genes[gene];
+
+        // generate new value - either unused or same value is valid
+        pred_gene_t value = rand_urange(0, _max_gene_value);
+        while(genome->used_values[value] && old_value != value) {
+            value = (value + 1) % (_max_gene_value + 1);
+        };
+
+        // rewrite gene
+        genome->genes[gene] = value;
+        genome->used_values[value] = true;
     }
 }
 
@@ -205,18 +229,46 @@ void _tournament(ga_pop_t pop, ga_chr_t *winner, ga_chr_t red, ga_chr_t blue)
 }
 
 
-void _crossover1p(pred_gene_array_t baby, pred_gene_array_t mom, pred_gene_array_t dad)
+void _crossover1p(pred_genome_t baby, pred_genome_t mom, pred_genome_t dad)
 {
     const int split_point = rand_range(0, _max_genome_length - 1);
 
-    memcpy(baby, mom, sizeof(pred_gene_t) * split_point);
+    // first clear usage flags
+    memset(baby->used_values, 0, sizeof(bool) * (_max_gene_value + 1));
 
-    memcpy(baby + split_point, dad + split_point,
-        sizeof(pred_gene_t) * (_max_genome_length - split_point));
+    // second copy everything we can from mom
+    int geneIndex = 0;
+    pred_gene_array_t parent_genes = mom->genes;
+
+    VERBOSELOG("Copying.");
+    for (int i = 0; i < _max_genome_length; i++) {
+        pred_gene_t value = parent_genes[i];
+        if (!baby->used_values[value]) {
+            baby->genes[geneIndex] = value;
+            baby->used_values[value] = true;
+            geneIndex++;
+        }
+
+        if (i == split_point) {
+            VERBOSELOG("Switching to dad.");
+            parent_genes = dad->genes;
+        }
+    }
+
+    VERBOSELOG("Finish with random values. Index: %d", geneIndex);
+    // now create random values in place of duplicates
+    for (; geneIndex < _max_genome_length; geneIndex++) {
+        pred_gene_t value = rand_urange(0, _max_gene_value);
+        while(baby->used_values[value]) {
+            value = (value + 1) % (_max_gene_value + 1);
+        };
+        baby->genes[geneIndex] = value;
+        baby->used_values[value] = true;
+    }
 }
 
 
-void _create_combined(ga_pop_t pop, pred_gene_array_t children)
+void _create_combined(ga_pop_t pop, pred_genome_t children)
 {
     ga_chr_t mom;
     ga_chr_t dad;
@@ -230,9 +282,10 @@ void _create_combined(ga_pop_t pop, pred_gene_array_t children)
     blue = rand_range(0, pop->size - 1);
     _tournament(pop, &dad, pop->chromosomes[red], pop->chromosomes[blue]);
 
+    VERBOSELOG("Making love.");
     pred_genome_t mom_genome = (pred_genome_t)mom->genome;
     pred_genome_t dad_genome = (pred_genome_t)dad->genome;
-    _crossover1p(children, mom_genome->genes, dad_genome->genes);
+    _crossover1p(children, mom_genome, dad_genome);
 
     /*
     for (int i = 0; i < _max_genome_length; i++) {
@@ -249,6 +302,7 @@ void _create_combined(ga_pop_t pop, pred_gene_array_t children)
     printf("\n");
     */
 
+    VERBOSELOG("Mutating newly created child.");
     pred_mutate(children);
 
     /*
@@ -292,22 +346,27 @@ void pred_offspring(ga_pop_t pop)
     // create new population
     #pragma omp parallel for
     for (int i = 0; i < pop->size; i++) {
+        VERBOSELOG("Processing child %d.", i);
 
         // copy elites
         if (child_type[i] == keep_intact) {
+            VERBOSELOG("Child %d is elite.", i);
             ga_copy_chr(pop->children[i], pop->chromosomes[i], pred_copy_genome);
 
         // if there are any combined children to make, do it
         } else if (child_type[i] == crossover_product) {
 
+            VERBOSELOG("Child %d is crossover.", i);
+
             pred_genome_t target_genome = (pred_genome_t) pop->children[i]->genome;
-            _create_combined(pop, target_genome->genes);
+            _create_combined(pop, target_genome);
             target_genome->used_genes = _initial_genome_length;
             pop->children[i]->has_fitness = false;
 
         // otherwise create random mutant
         } else {
 
+            VERBOSELOG("Child %d is random.", i);
             pred_randomize_genome(pop->children[i]);
             pop->children[i]->has_fitness = false;
         }

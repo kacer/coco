@@ -31,6 +31,7 @@ typedef pred_gene_t* pred_gene_array_t;
 struct pred_genome {
     pred_index_t used_genes;
     pred_gene_array_t genes;
+    bool *used_values;
 };
 typedef struct pred_genome* pred_genome_t;
 
@@ -88,7 +89,7 @@ void pred_copy_genome(void *_dst, void *_src);
  * @param  genes
  * @return
  */
-void pred_mutate(pred_gene_array_t genes);
+void pred_mutate(pred_genome_t genes);
 
 
 /**
