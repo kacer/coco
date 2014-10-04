@@ -17,16 +17,8 @@
  *   \___)     (___/
  */
 
-/*
-    CPU new instruction set check.
-    Source: https://software.intel.com/en-us/articles/how-to-detect-new-instruction-support-in-the-4th-generation-intel-core-processor-family
- */
-
 
 #pragma once
 
 
-/**
- * Checks whether current CPU supports AVX2 and other New Haswell features
- */
-int can_use_intel_core_4th_gen_features();
+#define MAX_FILENAME_LENGTH 1000

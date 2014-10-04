@@ -15,17 +15,20 @@
 #   __(.)=   =(.)__
 #   \___)     (___/
 
+
+# _XOPEN_SOURCE=700 required by scandir and alphasort from vault.c
+
 CC=gcc
-CFLAGS=-g -Wall -std=c99 -fopenmp -march=native -D_XOPEN_SOURCE=700 \
+CFLAGS=-g -Wall -std=c11 -fopenmp -march=native -D_XOPEN_SOURCE=700 \
 	-DFITNESS_AVX -DDEBUG -DxVERBOSE
 EXECUTABLE=coco
-CMDLINE=-i images/lena_gray_256.png -n images/lena_gray_256_saltpepper_10.png
+CMDLINE=-i images/lena_gray_256.png -n images/lena_gray_256_saltpepper_10.png -v
 SERVER=merlin
 SERVER_LOCATION=~/coco
 SOURCES=main.c cpu.c ga.c cgp_core.c cgp_dump.c cgp_load.c cgp_avx.c \
-	predictors.c image.c fitness.c vault.c archive.c config.c logging.c
+	predictors.c image.c fitness.c vault.c archive.c config.c logging.c algo.c
 OFILES= main.o cpu.o ga.o cgp_core.o cgp_dump.o cgp_load.o cgp_avx.o \
-	predictors.o image.o fitness.o vault.o archive.o config.o logging.o
+	predictors.o image.o fitness.o vault.o archive.o config.o logging.o algo.o
 LIBS=-lm -lc
 
 all: $(EXECUTABLE)

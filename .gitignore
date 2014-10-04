@@ -21,6 +21,7 @@
 *.x86_64
 *.hex
 *.exe.stackdump
+coco
 
 # Makefile little helper
 .depend
@@ -28,15 +29,14 @@
 # Private files
 *.sublime-workspace
 
-# Image files
-src/results
+# Log files
+src/cocolog
 src/*.bmp
 
 # Archives
 *.tar.gz
 
 # Junk
-src/vault/*
 Thumbs.db
 
 # Experimental results

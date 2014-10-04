@@ -17,23 +17,80 @@
  *   \___)     (___/
  */
 
+#include <time.h>
+#include <errno.h>
+#include <string.h>
+#include <sys/stat.h>
+
+#ifdef _OPENMP
+    #include <omp.h>
+#endif
+
 #include "logging.h"
 
 
-#define MAX_FILENAME_LENGTH 1000
+/**
+ * Write log line prolog (contains time, thread ident, section ident)
+ * @param fp
+ */
+void log_entry_prolog(FILE *fp, const char *section)
+{
+    time_t now = time(NULL);
+    char timestr[200];
+    strftime(timestr, sizeof(timestr), "%Y-%m-%d %H:%M:%S %z", localtime(&now));
+    fprintf(fp, "[%s] [%s] ", timestr, section);
+    #ifdef _OPENMP
+        fprintf(fp, "[thread-%02d] ", omp_get_thread_num());
+    #endif
+}
 
-/* predictors log to second column */
-#define PRED_INDENT "                                                        "
+
+/**
+ * Creates log directories
+ * @param  dir
+ * @param  vault_dir If not NULL, stores vault directory here
+ * @param  vault_dir_buffer_size
+ */
+int log_create_dirs(const char *dir, const char *vault_dir, const int vault_dir_buffer_size)
+{
+    // main directory
+    int retval;
+    char buf[MAX_FILENAME_LENGTH + 1];
+
+    retval = mkdir(dir, S_IRWXU);
+    if (retval != 0 && errno != EEXIST) {
+        return retval;
+    }
+
+    // images directory
+    snprintf(buf, MAX_FILENAME_LENGTH + 1, "%s/images", dir);
+    retval = mkdir(buf, S_IRWXU);
+    if (retval != 0 && errno != EEXIST) {
+        return retval;
+    }
+
+    // vault directory
+    snprintf(buf, MAX_FILENAME_LENGTH + 1, "%s/vault", dir);
+    retval = mkdir(buf, S_IRWXU);
+    if (retval != 0 && errno != EEXIST) {
+        return retval;
+    }
+    if (vault_dir != NULL) {
+        strncpy(vault_dir, buf, vault_dir_buffer_size);
+    }
+
+    return 0;
+}
 
 
 /**
  * Print current CGP progress
  * @param  cgp_population
  */
-void print_cgp_progress(ga_pop_t cgp_population)
+void log_cgp_progress(FILE *fp, ga_pop_t cgp_population)
 {
-    LOG_THREAD_IDENT(stdout);
-    printf("CGP generation %4d: best fitness %.10g\n",
+    log_entry_prolog(fp, SECTION_CGP);
+    fprintf(fp, "CGP generation %4d: best fitness " FITNESS_FMT "\n",
         cgp_population->generation, cgp_population->best_fitness);
 }
 
@@ -42,13 +99,14 @@ void print_cgp_progress(ga_pop_t cgp_population)
  * Print current predictors progress
  * @param  pred_population
  * @param  pred_archive
+ * @param  indent
  */
-void print_pred_progress(ga_pop_t pred_population,
-    archive_t pred_archive)
+    void log_pred_progress(FILE *fp, ga_pop_t pred_population,
+    archive_t pred_archive, bool indent)
 {
-    LOG_THREAD_IDENT(stdout);
-    printf(PRED_INDENT);
-    printf("PRED generation %4d: best fitness %.10g (archived %.10g)\n",
+    log_entry_prolog(fp, SECTION_PRED);
+    if (indent) fprintf(fp, PRED_INDENT);
+    fprintf(fp, "PRED generation %4d: best fitness " FITNESS_FMT " (archived " FITNESS_FMT ")\n",
         pred_population->generation, pred_population->best_fitness,
         arc_get(pred_archive, 0)->fitness);
 }
@@ -63,14 +121,14 @@ void print_pred_progress(ga_pop_t pred_population,
 void print_progress(ga_pop_t cgp_population, ga_pop_t pred_population,
     archive_t pred_archive)
 {
-    LOG_THREAD_IDENT(stdout);
-    printf("CGP generation %4d: best fitness %.10g\t\t",
+    log_entry_prolog(stdout, "combined");
+    printf("CGP generation %4d: best fitness " FITNESS_FMT "\t\t",
         cgp_population->generation, cgp_population->best_fitness);
     if (pred_population != NULL) {
-        printf("PRED generation %4d: best fitness %.10g",
+        printf("PRED generation %4d: best fitness " FITNESS_FMT "",
             pred_population->generation, pred_population->best_fitness);
         if (pred_archive != NULL) {
-            printf(" (archived %.10g)\n", arc_get(pred_archive, 0)->fitness);
+            printf(" (archived " FITNESS_FMT ")\n", arc_get(pred_archive, 0)->fitness);
         }
         printf("\n");
     }
@@ -108,10 +166,24 @@ void print_results(ga_pop_t cgp_population, ga_pop_t pred_population,
  * @param previous_best
  * @param new_best
  */
-void log_cgp_change(ga_fitness_t previous_best, ga_fitness_t new_best)
+void log_cgp_change(FILE *fp, ga_fitness_t previous_best, ga_fitness_t new_best)
 {
-    SLOWLOG("Best CGP circuit changed by %.10g, moving to archive",
-                new_best - previous_best);
+    log_entry_prolog(fp, SECTION_CGP);
+    fprintf(fp, "Best CGP circuit changed by " FITNESS_FMT "\n", new_best - previous_best);
+}
+
+
+/**
+ * Logs that CGP was moved to archive
+ * @param predicted
+ * @param real
+ */
+void log_cgp_archived(FILE *fp, ga_fitness_t predicted, ga_fitness_t real)
+{
+    log_entry_prolog(fp, SECTION_CGP);
+    fprintf(fp, "Moving CGP circuit to archive. "
+        "Fitness predicted / real: " FITNESS_FMT " / " FITNESS_FMT "\n",
+        predicted, real);
 }
 
 
@@ -120,10 +192,11 @@ void log_cgp_change(ga_fitness_t previous_best, ga_fitness_t new_best)
  * @param previous_best
  * @param new_best
  */
-void log_pred_change(ga_fitness_t previous_best, ga_fitness_t new_best)
+void log_pred_change(FILE *fp, ga_fitness_t previous_best, ga_fitness_t new_best, bool indent)
 {
-    SLOWLOG(PRED_INDENT "Best predictor changed by %.10g, moving to archive",
-            new_best - previous_best);
+    log_entry_prolog(fp, SECTION_PRED);
+    if (indent) fprintf(fp, PRED_INDENT);
+    fprintf(fp, "Best predictor changed by " FITNESS_FMT "\n", new_best - previous_best);
 }
 
 
@@ -132,10 +205,10 @@ void log_pred_change(ga_fitness_t previous_best, ga_fitness_t new_best)
  * @param cgp_population
  * @param noisy
  */
-void _save_filtered_image(char *dir, img_image_t noisy, int generation)
+void _save_filtered_image(const char *dir, img_image_t noisy, int generation)
 {
-    char filename[MAX_FILENAME_LENGTH];
-    snprintf(filename, MAX_FILENAME_LENGTH, "%s/img_filtered_%08d.bmp", dir, generation);
+    char filename[MAX_FILENAME_LENGTH + 1];
+    snprintf(filename, MAX_FILENAME_LENGTH + 1, "%s/images/img_filtered_%08d.bmp", dir, generation);
     img_save_bmp(noisy, filename);
 }
 
@@ -145,10 +218,10 @@ void _save_filtered_image(char *dir, img_image_t noisy, int generation)
  * @param dir results directory
  * @param original
  */
-void save_original_image(char *dir, img_image_t original)
+void save_original_image(const char *dir, img_image_t original)
 {
-    char filename[MAX_FILENAME_LENGTH];
-    snprintf(filename, MAX_FILENAME_LENGTH, "%s/img_original.bmp", dir);
+    char filename[MAX_FILENAME_LENGTH + 1];
+    snprintf(filename, MAX_FILENAME_LENGTH + 1, "%s/images/img_original.bmp", dir);
     img_save_bmp(original, filename);
 }
 
@@ -158,7 +231,7 @@ void save_original_image(char *dir, img_image_t original)
  * @param dir results directory
  * @param noisy
  */
-void save_noisy_image(char *dir, img_image_t noisy)
+void save_noisy_image(const char *dir, img_image_t noisy)
 {
     _save_filtered_image(dir, noisy, 0);
 }
@@ -171,7 +244,7 @@ void save_noisy_image(char *dir, img_image_t noisy)
  * @param cgp_population
  * @param noisy
  */
-void save_filtered_image(char *dir, ga_pop_t cgp_population, img_image_t noisy)
+void save_filtered_image(const char *dir, ga_pop_t cgp_population, img_image_t noisy)
 {
     img_image_t filtered = fitness_filter_image(cgp_population->best_chromosome);
     _save_filtered_image(dir, filtered, cgp_population->generation);
@@ -182,11 +255,30 @@ void save_filtered_image(char *dir, ga_pop_t cgp_population, img_image_t noisy)
 /**
  * Saves configuration to results directory
  */
-void save_config(char *dir, config_t *config)
+void save_config(const char *dir, config_t *config)
 {
-    char filename[MAX_FILENAME_LENGTH];
-    snprintf(filename, MAX_FILENAME_LENGTH, "%s/config", dir);
+    char filename[MAX_FILENAME_LENGTH + 1];
+    snprintf(filename, MAX_FILENAME_LENGTH + 1, "%s/config.log", dir);
     FILE *f = fopen(filename, "wt");
     config_save_file(f, config);
     fclose(f);
+}
+
+
+/**
+ * Open specified file for writing. Caller is responsible for closing.
+ * @param  dir
+ * @param  file
+ * @return
+ */
+FILE *open_log_file(const char *dir, const char *file)
+{
+    char filename[MAX_FILENAME_LENGTH + 1];
+    snprintf(filename, MAX_FILENAME_LENGTH + 1, "%s/%s", dir, file);
+    FILE *fp = fopen(filename, "wt");
+    if (fp) {
+        log_entry_prolog(fp, SECTION_SYS);
+        fprintf(fp, "Log started.");
+    }
+    return fp;
 }

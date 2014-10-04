@@ -54,6 +54,7 @@ void run_cpuid(uint32_t eax, uint32_t ecx, uint32_t* abcd)
      /* in case of PIC under 32-bit EBX cannot be clobbered */
     __asm__ ( "movl %%ebx, %%edi \n\t cpuid \n\t xchgl %%ebx, %%edi" : "=D" (ebx),
 # else
+    #pragma GCC diagnostic ignored "-Wuninitialized"
     __asm__ ( "cpuid" : "+b" (ebx),
 # endif
               "+a" (eax), "+c" (ecx), "=d" (edx) );
@@ -106,3 +107,16 @@ int check_4th_gen_intel_core_features()
 
 #endif /* non-Intel compiler */
 
+
+/**
+ * Checks whether current CPU supports AVX2 and other New Haswell features
+ */
+int can_use_intel_core_4th_gen_features()
+{
+    static int the_4th_gen_features_available = -1;
+    /* test is performed once */
+    if (the_4th_gen_features_available < 0 )
+        the_4th_gen_features_available = check_4th_gen_intel_core_features();
+
+    return the_4th_gen_features_available;
+}

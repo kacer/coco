@@ -32,6 +32,8 @@
 
 #include "cpu.h"
 #include "cgp.h"
+#include "algo.h"
+#include "files.h"
 #include "image.h"
 #include "vault.h"
 #include "random.h"
@@ -107,85 +109,6 @@ int check_signals(int current_generation)
 }
 
 
-/**
- * Simple CGP (no coevolution) main loop
- * @param  cgp_population
- * @param  config
- * @param  vault
- * @param  img_noisy Noisy image (to store filtered img to results)
- * @return Program return value
- */
-int simple_cgp_main(
-    ga_pop_t cgp_population,
-    config_t *config,
-    vault_storage_t *vault,
-    img_image_t img_noisy
-);
-
-
-/**
- * Coevolutionary or simple CGP main loop
- * @param  cgp_population
- * @param  pred_population
- * @param  cgp_archive CGP archive
- * @param  pred_archive Predictors archive
- * @param  cgp_current_best Pointer to shared variable holding best CGP fitness found
- * @param  config
- * @param  vault
- * @param  img_noisy Noisy image (to store filtered img to results)
- * @param  finished Pointer to shared variable indicating that the program
- *                  should terminate
- * @return Program return value
- */
-int coev_cgp_main(
-    // populations
-    ga_pop_t cgp_population,
-    ga_pop_t pred_population,
-
-    // archives
-    archive_t cgp_archive,
-    archive_t pred_archive,
-
-    // best found fitness value
-    ga_fitness_t *cgp_current_best,
-
-    // config
-    config_t *config,
-    vault_storage_t *vault,
-
-    // input
-    img_image_t img_noisy,
-
-    // status
-    bool *finished
-);
-
-
-/**
- * Coevolutionary predictors main loop
- * @param  cgp_population
- * @param  pred_population
- * @param  pred_archive Predictors archive
- * @param  config
- * @param  finished Pointer to shared variable indicating that the program
- *                  should terminate
- */
-void coev_pred_main(
-    // populations
-    ga_pop_t cgp_population,
-    ga_pop_t pred_population,
-
-    // archive
-    archive_t pred_archive,
-
-    // config
-    config_t *config,
-
-    // status
-    bool *finished
-);
-
-
 /******************************************************************************/
 
 
@@ -207,7 +130,7 @@ int main(int argc, char *argv[])
         .pred_offspring_combine = 0.5,
 
         .log_interval = 20,
-        .results_dir = "results",
+        .log_dir = "cocolog",
 
         .vault_enabled = false,
         .vault_interval = 200,
@@ -229,6 +152,10 @@ int main(int argc, char *argv[])
     // current best fitness achieved
     ga_fitness_t cgp_current_best;
 
+    // log files
+    FILE *best_circuit_file;
+    FILE *progress_log_file;
+
     // application exit code
     int retval = 0;
 
@@ -238,7 +165,7 @@ int main(int argc, char *argv[])
      */
 
     #ifdef _OPENMP
-        SLOWLOG("OpenMP is enabled. CPUs: %d. Max threads: %d.",
+        printf("OpenMP is enabled. CPUs: %d. Max threads: %d.\n",
             omp_get_num_procs(), omp_get_max_threads());
 
             /*
@@ -250,25 +177,24 @@ int main(int argc, char *argv[])
 
     #else
 
-        SLOWLOG("OpenMP is disabled, coevolution is not available.");
+        printf("OpenMP is disabled, coevolution is not available.\n");
 
     #endif
 
     #ifdef FITNESS_AVX
         if (can_use_intel_core_4th_gen_features()) {
-            SLOWLOG("AVX2 is enabled.")
+            printf("AVX2 is enabled.\n");
         } else {
-            SLOWLOG("AVX2 is enabled, but not supported by CPU.")
+            printf("AVX2 is enabled, but not supported by CPU.\n");
         }
     #else
-        SLOWLOG("AVX2 is disabled. Recompile with FITNESS_AVX defined to enable.");
+        printf("AVX2 is disabled. Recompile with FITNESS_AVX defined to enable.\n");
     #endif
 
 
     /*
-        Load configuration
+        Load configuration and images and init log directory and files
      */
-
 
     if (config_load_args(argc, argv, &config) != 0) {
         fprintf(stderr, "Failed to load configuration.\n");
@@ -282,6 +208,22 @@ int main(int argc, char *argv[])
 
     if ((img_noisy = img_load(config.noisy_image)) == NULL) {
         fprintf(stderr, "Failed to load noisy image or no filename given.\n");
+        return 1;
+    }
+
+    int log_create_dirs_retval = log_create_dirs(config.log_dir, vault.directory, MAX_FILENAME_LENGTH + 1);
+    if (log_create_dirs_retval != 0) {
+        fprintf(stderr, "Error initializing results directory: %s\n", strerror(log_create_dirs_retval));
+        return 1;
+    }
+
+    if ((best_circuit_file = open_log_file(config.log_dir, "best_circuit.log")) == NULL) {
+        fprintf(stderr, "Failed to open 'best_circuit.log' in results dir for writing.\n");
+        return 1;
+    }
+
+    if ((progress_log_file = open_log_file(config.log_dir, "progress.log")) == NULL) {
+        fprintf(stderr, "Failed to open 'progress.log' in results dir for writing.\n");
         return 1;
     }
 
@@ -365,9 +307,12 @@ int main(int argc, char *argv[])
         }
     #endif
 
+    printf("Configuration:\n");
+    config_save_file(stdout, &config);
+
     SLOWLOG("Algorithm: %s", config_algorithm_names[config.algorithm]);
     SLOWLOG("Stop at generation: %d", config.max_generations);
-    SLOWLOG("Initial PSNR value:           %.10g",
+    SLOWLOG("Initial \"PSNR\" value:         %.10g",
         fitness_psnr(img_original, img_noisy));
 
     DEBUGLOG("Evaluating CGP population...");
@@ -382,9 +327,9 @@ int main(int argc, char *argv[])
         cgp_population->best_fitness, pred_population->best_fitness);
 
     print_progress(cgp_population, pred_population, pred_archive);
-    save_original_image(config.results_dir, img_original);
-    save_noisy_image(config.results_dir, img_noisy);
-    save_config(config.results_dir, &config);
+    save_original_image(config.log_dir, img_original);
+    save_noisy_image(config.log_dir, img_noisy);
+    save_config(config.log_dir, &config);
 
 
     /*
@@ -403,7 +348,7 @@ int main(int argc, char *argv[])
             signal(SIGINT, sigint_handler);
             signal(SIGXCPU, sigxcpu_handler);
 
-            retval = simple_cgp_main(cgp_population, &config, &vault, img_noisy);
+            retval = simple_cgp_main(cgp_population, &config, &vault, img_noisy, progress_log_file);
             goto cleanup;
 
         case predictors:
@@ -424,6 +369,8 @@ int main(int argc, char *argv[])
                         &config,
                         &vault,
                         img_noisy,
+                        best_circuit_file,
+                        progress_log_file,
                         &finished
                     );
                 }
@@ -434,6 +381,7 @@ int main(int argc, char *argv[])
                         pred_population,
                         pred_archive,
                         &config,
+                        progress_log_file,
                         &finished
                     );
                 }
@@ -455,6 +403,9 @@ int main(int argc, char *argv[])
 
 cleanup:
 
+    // dump config once again
+    config_save_file(stdout, &config);
+
     ga_destroy_pop(cgp_population);
     ga_destroy_pop(pred_population);
     arc_destroy(cgp_archive);
@@ -465,220 +416,8 @@ cleanup:
     img_destroy(img_original);
     img_destroy(img_noisy);
 
+    fclose(best_circuit_file);
+    fclose(progress_log_file);
+
     return retval;
-}
-
-
-/******************************************************************************/
-
-
-/**
- * Simple CGP (no coevolution) main loop
- * @param  cgp_population
- * @param  config
- * @param  vault
- * @param  img_noisy Noisy image (to store filtered img to results)
- * @return Program return value
- */
-int simple_cgp_main(
-    ga_pop_t cgp_population,
-    config_t *config,
-    vault_storage_t *vault,
-    img_image_t img_noisy)
-{
-    while (cgp_population->generation < config->max_generations) {
-
-        VERBOSELOG("One iteration of CGP.");
-
-        // create children and evaluate new generation
-        ga_next_generation(cgp_population);
-
-        // log progress
-        if ((cgp_population->generation % config->log_interval) == 0) {
-            print_cgp_progress(cgp_population);
-        }
-
-        int signal = check_signals(cgp_population->generation);
-        bool store_now = (cgp_population->generation % config->vault_interval) == 0;
-
-        // store to vault
-        if (signal || store_now) {
-            print_results(cgp_population, NULL, NULL);
-            save_filtered_image(config->results_dir, cgp_population, img_noisy);
-            if (config->vault_enabled) {
-                vault_store(vault, cgp_population);
-            }
-            SLOWLOG("Current output image and state stored.");
-        }
-
-        if (signal > 0) return signal;
-    }
-
-    return 0;
-}
-
-
-
-/**
- * Coevolutionary CGP main loop
- * @param  cgp_population
- * @param  pred_population
- * @param  cgp_archive CGP archive
- * @param  pred_archive Predictors archive
- * @param  cgp_current_best Pointer to shared variable holding best CGP fitness found
- * @param  pred_current_best Pointer to shared variable holding best predictor fitness found
- * @param  config
- * @param  vault
- * @param  img_noisy Noisy image (to store filtered img to results)
- * @param  finished Pointer to shared variable indicating that the program
- *                  should terminate
- * @return Program return value
- */
-int coev_cgp_main(
-    // populations
-    ga_pop_t cgp_population,
-    ga_pop_t pred_population,
-
-    // archives
-    archive_t cgp_archive,
-    archive_t pred_archive,
-
-    // best found fitness value
-    ga_fitness_t *cgp_current_best,
-
-    // config
-    config_t *config,
-    vault_storage_t *vault,
-
-    // input
-    img_image_t img_noisy,
-
-    // status
-    bool *finished)
-{
-    while (!(*finished)) {
-        VERBOSELOG("One iteration of CGP.");
-
-        // create children and evaluate new generation
-        ga_create_children(cgp_population);
-
-        #pragma omp critical (PRED_ARCHIVE)
-        {
-            ga_evaluate_pop(cgp_population);
-        }
-
-        if (ga_is_better(cgp_population->problem_type, cgp_population->best_fitness, *cgp_current_best)) {
-            // log
-            print_cgp_progress(cgp_population);
-            log_cgp_change(*cgp_current_best, cgp_population->best_fitness);
-
-            // store and recalculate predictors fitness
-            ga_chr_t archived;
-            #pragma omp critical (CGP_ARCHIVE)
-            {
-                archived = arc_insert(cgp_archive, cgp_population->best_chromosome);
-                ga_invalidate_fitness(pred_population);
-                ga_reevaluate_chr(pred_population, arc_get(pred_archive, 0));
-            }
-
-            SLOWLOG("Predicted fitness: %.20g", cgp_population->best_fitness);
-            SLOWLOG("Real fitness: %.20g", archived->fitness);
-            *cgp_current_best = cgp_population->best_fitness;
-
-            // drop fitness values
-            ga_invalidate_fitness(pred_population);
-            ga_reevaluate_chr(pred_population, arc_get(pred_archive, 0));
-
-        }
-
-        // log progress
-        if ((cgp_population->generation % config->log_interval) == 0) {
-            print_cgp_progress(cgp_population);
-        }
-
-        int signal = check_signals(cgp_population->generation);
-        bool store_now = (cgp_population->generation % config->vault_interval) == 0;
-
-        // last generation?
-        if (cgp_population->generation >= config->max_generations) {
-            SLOWLOG("Generations limit reached (%d), terminating.", config->max_generations);
-            *finished = true;
-        }
-
-        // store to vault
-        if (*finished || signal || store_now) {
-            print_results(cgp_population, pred_population, pred_archive);
-            save_filtered_image(config->results_dir, cgp_population, img_noisy);
-            if (config->vault_enabled) {
-                // freeze predictors archive during save
-                #pragma omp critical (PRED_ARCHIVE)
-                {
-                    vault_store(vault, cgp_population);
-                }
-            }
-            SLOWLOG("Current output image and state stored.");
-        }
-
-        if (signal > 0) {
-            // stop other threads
-            *finished = true;
-            return signal;
-        }
-    }
-
-    return 0;
-}
-
-
-/**
- * Coevolutionary predictors main loop
- * @param  cgp_population
- * @param  pred_population
- * @param  pred_archive Predictors archive
- * @param  config
- * @param  finished Pointer to shared variable indicating that the program
- *                  should terminate
- */
-void coev_pred_main(
-    // populations
-    ga_pop_t cgp_population,
-    ga_pop_t pred_population,
-
-    // archive
-    archive_t pred_archive,
-
-    // config
-    config_t *config,
-
-    // status
-    bool *finished)
-{
-    while (!(*finished)) {
-        VERBOSELOG("One iteration of predictors.");
-
-        ga_create_children(pred_population);
-        #pragma omp critical (CGP_ARCHIVE)
-        {
-            ga_evaluate_pop(pred_population);
-        }
-
-        // log progress
-        if ((pred_population->generation % config->log_interval) == 0) {
-            print_pred_progress(pred_population, pred_archive);
-        }
-
-        // copy to archive
-        if (ga_is_better(pred_population->problem_type, pred_population->best_fitness, arc_get(pred_archive, 0)->fitness)) {
-            // log
-            print_pred_progress(pred_population, pred_archive);
-            log_pred_change(arc_get(pred_archive, 0)->fitness, pred_population->best_fitness);
-
-            // store and invalidate CGP fitness
-            #pragma omp critical (PRED_ARCHIVE)
-            {
-                arc_insert(pred_archive, pred_population->best_chromosome);
-                ga_invalidate_fitness(cgp_population);
-            }
-        }
-    }
 }

@@ -22,6 +22,7 @@
 
 
 #include "cgp.h"
+#include "files.h"
 
 
 #define VAULT_ERROR -10
@@ -29,7 +30,7 @@
 
 
 typedef struct {
-    char *directory;
+    const char directory[MAX_FILENAME_LENGTH + 1];
 } vault_storage_t;
 
 

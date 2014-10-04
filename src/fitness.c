@@ -247,7 +247,7 @@ ga_fitness_t fitness_eval_predictor(ga_chr_t pred_chr)
         double predicted = fitness_predict_cgp(cgp_chr, pred_chr);
         sum += fabs(cgp_chr->fitness - predicted);
     }
-    return sum;
+    return sum / _cgp_archive->stored;
 }
 
 

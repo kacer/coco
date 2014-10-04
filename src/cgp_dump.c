@@ -24,6 +24,9 @@
 #include "cgp_dump.h"
 
 
+#define FITNESS_PRECISE_FMT "%a"
+
+
 static inline const char* cgp_func_name(cgp_func_t f) {
     const char *func_names[] = {
         " FF ",     // 255
@@ -298,6 +301,12 @@ void cgp_dump_pop_compat(ga_pop_t pop, FILE *fp)
     fprintf(fp, "Chromosomes: %d\n", pop->size);
 
     for (int i = 0; i < pop->size; i++) {
-        cgp_dump_chr_compat(pop->chromosomes[i], fp);
+        ga_chr_t chr = pop->chromosomes[i];
+        if (chr->has_fitness) {
+            fprintf(fp, "Fitness: Y " FITNESS_PRECISE_FMT "\n", chr->fitness);
+        } else {
+            fprintf(fp, "Fitness: N\n");
+        }
+        cgp_dump_chr_compat(chr, fp);
     }
 }

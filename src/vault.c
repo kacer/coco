@@ -27,9 +27,6 @@
 #include "vault.h"
 
 
-#define MAX_FILENAME_LENGTH 255
-
-
 /**
  * Initialize vault storage
  * @param storage
@@ -47,15 +44,6 @@ int vault_init(vault_storage_t *storage)
 }
 
 
-int _get_dest_filename(char *buffer, int buffer_size, char *directory, int generation)
-{
-    int dirname_length = strlen(directory);
-    strncpy(buffer, directory, buffer_size);
-    snprintf(buffer + dirname_length, buffer_size - dirname_length, "/state_%08d", generation);
-    return 0;
-}
-
-
 /**
  * Store running state to vault
  * @param storage
@@ -66,10 +54,9 @@ int vault_store(vault_storage_t *storage, ga_pop_t cgp_population)
     if (storage->directory == NULL)
         return 0;
 
-    char fullname[MAX_FILENAME_LENGTH];
-    if (_get_dest_filename(fullname, MAX_FILENAME_LENGTH, storage->directory, cgp_population->generation) < 0) {
-        return VAULT_ERROR;
-    }
+    char fullname[MAX_FILENAME_LENGTH + 1];
+    snprintf(fullname, MAX_FILENAME_LENGTH + 1, "%s/state_%08d",
+        storage->directory, cgp_population->generation);
 
     FILE *fp = fopen(fullname, "w");
     if (!fp) return VAULT_ERROR;
@@ -83,16 +70,6 @@ int vault_store(vault_storage_t *storage, ga_pop_t cgp_population)
 int _file_selector(const struct dirent *entry)
 {
     return strncmp(entry->d_name, "state_", 6) == 0;
-}
-
-
-int _get_src_filename(char *buffer, int buffer_size, char *directory, char *filename)
-{
-    int dirname_length = strlen(directory);
-    strncpy(buffer, directory, buffer_size);
-    buffer[dirname_length] = '/';
-    strncpy(buffer + dirname_length + 1, filename, buffer_size - dirname_length);
-    return 0;
 }
 
 
@@ -118,10 +95,8 @@ int vault_retrieve(vault_storage_t *storage, ga_pop_t *cgp_pop_ptr)
     }
 
     char *last_state = entries[files_found - 1]->d_name;
-    char fullname[MAX_FILENAME_LENGTH];
-    if (_get_src_filename(fullname, MAX_FILENAME_LENGTH, storage->directory, last_state) < 0) {
-        return VAULT_ERROR;
-    }
+    char fullname[MAX_FILENAME_LENGTH + 1];
+    snprintf(fullname, MAX_FILENAME_LENGTH + 1, "%s/%s", storage->directory, last_state);
 
     return vault_read(fullname, cgp_pop_ptr);
 }

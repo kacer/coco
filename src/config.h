@@ -24,6 +24,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+#include "files.h"
+
 
 typedef enum
 {
@@ -33,14 +35,12 @@ typedef enum
 } algorithm_t;
 
 
-static const char *config_algorithm_names[] = {
+// multiple const to avoid "unused variable" warnings
+static const char * const config_algorithm_names[] = {
     "cgp",
     "predictors",
     "baldwin"
 };
-
-
-#define FILENAME_LENGTH 101
 
 
 typedef struct
@@ -48,8 +48,8 @@ typedef struct
     int max_generations;
     algorithm_t algorithm;
 
-    char input_image[FILENAME_LENGTH];
-    char noisy_image[FILENAME_LENGTH];
+    char input_image[MAX_FILENAME_LENGTH + 1];
+    char noisy_image[MAX_FILENAME_LENGTH + 1];
 
     int cgp_mutate_genes;
     int cgp_population_size;
@@ -62,10 +62,9 @@ typedef struct
     int pred_population_size;
 
     int log_interval;
-    char results_dir[FILENAME_LENGTH];
+    char log_dir[MAX_FILENAME_LENGTH + 1];
 
     bool vault_enabled;
-    char vault_directory[FILENAME_LENGTH];
     int vault_interval;
 
 } config_t;
@@ -113,17 +112,17 @@ static inline void print_help() {
         "    --max-generations NUM, -g NUM\n"
         "          Stop after given number of CGP generations, default is 50000\n"
         "\n"
-        "    --vault-dir DIR, -v DIR\n"
-        "          Vault directory, disabled by default\n"
+        "    --vault, -v\n"
+        "          Enable vault, it is disabled by default\n"
         "\n"
         "    --vault-interval NUM, -w NUM\n"
         "          Vault storing interval (in generations), default is 200\n"
         "\n"
-        "    --log-interval NUM, -l NUM\n"
-        "          Logging interval (in generations), default is 20\n"
+        "    --log-dir DIR, -l DIR\n"
+        "          Log (results and vault) directory, default is \"cocolog\"\n"
         "\n"
-        "    --results-dir DIR, -r DIR\n"
-        "          Results directory, default is \"results\"\n"
+        "    --log-interval NUM, -k NUM\n"
+        "          Logging interval (in generations), default is 20\n"
         "\n"
         "    --cgp-mutate NUM, -m NUM\n"
         "          Number of (max) mutated genes in CGP, default is 5\n"

@@ -28,19 +28,18 @@
 #include "config.h"
 
 
-#define OPT_ALGORITHM 'a'
-
 #define OPT_MAX_GENERATIONS 'g'
+
+#define OPT_ALGORITHM 'a'
 
 #define OPT_ORIGINAL 'i'
 #define OPT_NOISY 'n'
 
-#define OPT_VAULT_DIR 'v'
+#define OPT_VAULT_ENABLE 'v'
 #define OPT_VAULT_INTERVAL 'w'
 
-#define OPT_LOG_INTERVAL 'l'
-
-#define OPT_RESULTS_DIR 'r'
+#define OPT_LOG_DIR 'l'
+#define OPT_LOG_INTERVAL 'k'
 
 #define OPT_CGP_MUTATE 'm'
 #define OPT_CGP_POPSIZE 'p'
@@ -52,11 +51,49 @@
 
 #define OPT_HELP 'h'
 
+
+static struct option long_options[] =
+{
+    {"help", no_argument, 0, OPT_HELP},
+
+    {"max-generations", required_argument, 0, OPT_MAX_GENERATIONS},
+
+    /* Algorithm mode */
+    {"algorithm", required_argument, 0, OPT_ALGORITHM},
+
+    /* Input images */
+    {"original", required_argument, 0, OPT_ORIGINAL},
+    {"noisy", required_argument, 0, OPT_NOISY},
+
+    /* Vault */
+    {"vault", no_argument, 0, OPT_VAULT_ENABLE},
+    {"vault-interval", required_argument, 0, OPT_VAULT_INTERVAL},
+
+    /* Logging */
+    {"log-dir", required_argument, 0, OPT_LOG_DIR},
+    {"log-interval", required_argument, 0, OPT_LOG_INTERVAL},
+
+    /* CGP */
+    {"cgp-mutate", required_argument, 0, OPT_CGP_MUTATE},
+    {"cgp-population-size", required_argument, 0, OPT_CGP_POPSIZE},
+    {"cgp-archive-size", required_argument, 0, OPT_CGP_ARCSIZE},
+
+    /* Predictors */
+    {"pred-size", required_argument, 0, OPT_PRED_SIZE},
+    {"pred-mutate", required_argument, 0, OPT_PRED_MUTATE},
+    {"pred-population-size", required_argument, 0, OPT_PRED_POPSIZE},
+
+    {0, 0, 0, 0}
+};
+
+static const char *short_options = "hg:a:i:n:vw:l:k:m:p:s:S:M:P";
+
+
 #define CHECK_FILENAME_LENGTH do { \
-    if (strlen(optarg) > FILENAME_LENGTH - 1) { \
+    if (strlen(optarg) > MAX_FILENAME_LENGTH - 1) { \
         fprintf(stderr, "Option %s is too long (limit: %d chars)\n", \
             long_options[option_index].name, \
-            FILENAME_LENGTH - 1); \
+            MAX_FILENAME_LENGTH - 1); \
         return 1; \
     } \
 } while(0);
@@ -89,42 +126,6 @@ int config_load_args(int argc, char **argv, config_t *cfg)
 {
     assert(cfg != NULL);
 
-    static struct option long_options[] =
-    {
-        {"help", no_argument, 0, OPT_HELP},
-
-        {"max-generations", required_argument, 0, OPT_MAX_GENERATIONS},
-
-        /* Algorithm mode */
-        {"algorithm", required_argument, 0, OPT_ALGORITHM},
-
-        /* Input images */
-        {"original", required_argument, 0, OPT_ORIGINAL},
-        {"noisy", required_argument, 0, OPT_NOISY},
-
-        /* Vault */
-        {"vault-dir", required_argument, 0, OPT_VAULT_DIR},
-        {"vault-interval", required_argument, 0, OPT_VAULT_INTERVAL},
-
-        /* Logging */
-        {"log-interval", required_argument, 0, OPT_LOG_INTERVAL},
-        {"results-dir", required_argument, 0, OPT_RESULTS_DIR},
-
-        /* CGP */
-        {"cgp-mutate", required_argument, 0, OPT_CGP_MUTATE},
-        {"cgp-population-size", required_argument, 0, OPT_CGP_POPSIZE},
-        {"cgp-archive-size", required_argument, 0, OPT_CGP_ARCSIZE},
-
-        /* Predictors */
-        {"pred-size", required_argument, 0, OPT_PRED_SIZE},
-        {"pred-mutate", required_argument, 0, OPT_PRED_MUTATE},
-        {"pred-population-size", required_argument, 0, OPT_PRED_POPSIZE},
-
-        {0, 0, 0, 0}
-    };
-
-    static const char *short_options = "hg:a:i:n:v:w:l:r:m:p:s:S:M:P";
-
     while (1) {
         int option_index;
         int c = getopt_long(argc, argv, short_options, long_options, &option_index);
@@ -154,17 +155,15 @@ int config_load_args(int argc, char **argv, config_t *cfg)
 
             case OPT_ORIGINAL:
                 CHECK_FILENAME_LENGTH;
-                strncpy(cfg->input_image, optarg, FILENAME_LENGTH);
+                strncpy(cfg->input_image, optarg, MAX_FILENAME_LENGTH);
                 break;
 
             case OPT_NOISY:
                 CHECK_FILENAME_LENGTH;
-                strncpy(cfg->noisy_image, optarg, FILENAME_LENGTH);
+                strncpy(cfg->noisy_image, optarg, MAX_FILENAME_LENGTH);
                 break;
 
-            case OPT_VAULT_DIR:
-                CHECK_FILENAME_LENGTH;
-                strncpy(cfg->vault_directory, optarg, FILENAME_LENGTH);
+            case OPT_VAULT_ENABLE:
                 cfg->vault_enabled = true;
                 break;
 
@@ -176,9 +175,9 @@ int config_load_args(int argc, char **argv, config_t *cfg)
                 PARSE_INT(cfg->log_interval);
                 break;
 
-            case OPT_RESULTS_DIR:
+            case OPT_LOG_DIR:
                 CHECK_FILENAME_LENGTH;
-                strncpy(cfg->results_dir, optarg, FILENAME_LENGTH);
+                strncpy(cfg->log_dir, optarg, MAX_FILENAME_LENGTH);
                 break;
 
             case OPT_CGP_MUTATE:
@@ -236,15 +235,15 @@ void config_save_file(FILE *file, config_t *cfg)
     char timestr[200];
     strftime(timestr, sizeof(timestr), "%Y-%m-%d %H:%M:%S %z", localtime(&now));
 
-    fprintf(file, "; Configuration file generated on %s\n", timestr);
+    fprintf(file, "# Configuration dump (%s)\n", timestr);
     fprintf(file, "original: %s\n", cfg->input_image);
     fprintf(file, "noisy: %s\n", cfg->noisy_image);
     fprintf(file, "algorithm: %s\n", config_algorithm_names[cfg->algorithm]);
     fprintf(file, "max-generations: %d\n", cfg->max_generations);
-    fprintf(file, "vault-dir: %s\n", cfg->vault_directory);
+    fprintf(file, "vault: %s\n", cfg->vault_enabled? "yes" : "no");
     fprintf(file, "vault-interval: %d\n", cfg->vault_interval);
+    fprintf(file, "log-dir: %s\n", cfg->log_dir);
     fprintf(file, "log-interval: %d\n", cfg->log_interval);
-    fprintf(file, "results-dir: %s\n", cfg->results_dir);
     fprintf(file, "cgp-mutate: %d\n", cfg->cgp_mutate_genes);
     fprintf(file, "cgp-population-size: %d\n", cfg->cgp_population_size);
     fprintf(file, "cgp-archive-size: %d\n", cfg->cgp_archive_size);
