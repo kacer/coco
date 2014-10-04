@@ -78,7 +78,7 @@
  */
 void cgp_get_output_avx(ga_chr_t chromosome, unsigned char _inputs[32][CGP_INPUTS], unsigned char _outputs[32][CGP_OUTPUTS])
 {
-#ifdef FITNESS_AVX
+#ifdef AVX2
     assert(CGP_OUTPUTS == 1);
     assert(CGP_ROWS == 4);
     assert(CGP_LBACK == 1);

@@ -58,7 +58,7 @@
  * @param  vault_dir If not NULL, stores vault directory here
  * @param  vault_dir_buffer_size
  */
-int log_create_dirs(const char *dir, const char *vault_dir, const int vault_dir_buffer_size);
+int log_create_dirs(const char *dir, char *vault_dir, int vault_dir_buffer_size);
 
 
 /**
@@ -119,6 +119,12 @@ void log_cgp_archived(FILE *fp, ga_fitness_t predicted, ga_fitness_t real);
  * @param new_best
  */
 void log_pred_change(FILE *fp, ga_fitness_t previous_best, ga_fitness_t new_best, bool indent);
+
+
+/**
+ * Logs best circuit to file.
+ */
+void log_cgp_circuit(FILE *fp, ga_pop_t pop);
 
 
 /**

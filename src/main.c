@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
         .pred_offspring_elite = 0.25,
         .pred_offspring_combine = 0.5,
 
-        .log_interval = 20,
+        .log_interval = 0,
         .log_dir = "cocolog",
 
         .vault_enabled = false,
@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
     ga_fitness_t cgp_current_best;
 
     // log files
-    FILE *best_circuit_file;
+    char best_circuit_file_name[MAX_FILENAME_LENGTH + 1];
     FILE *progress_log_file;
 
     // application exit code
@@ -181,14 +181,14 @@ int main(int argc, char *argv[])
 
     #endif
 
-    #ifdef FITNESS_AVX
+    #ifdef AVX2
         if (can_use_intel_core_4th_gen_features()) {
             printf("AVX2 is enabled.\n");
         } else {
             printf("AVX2 is enabled, but not supported by CPU.\n");
         }
     #else
-        printf("AVX2 is disabled. Recompile with FITNESS_AVX defined to enable.\n");
+        printf("AVX2 is disabled. Recompile with -DAVX2 defined to enable.\n");
     #endif
 
 
@@ -217,15 +217,12 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if ((best_circuit_file = open_log_file(config.log_dir, "best_circuit.log")) == NULL) {
-        fprintf(stderr, "Failed to open 'best_circuit.log' in results dir for writing.\n");
-        return 1;
-    }
-
     if ((progress_log_file = open_log_file(config.log_dir, "progress.log")) == NULL) {
         fprintf(stderr, "Failed to open 'progress.log' in results dir for writing.\n");
         return 1;
     }
+
+    snprintf(best_circuit_file_name, MAX_FILENAME_LENGTH + 1, "%s/best_circuit.log", config.log_dir);
 
 
     /*
@@ -348,7 +345,14 @@ int main(int argc, char *argv[])
             signal(SIGINT, sigint_handler);
             signal(SIGXCPU, sigxcpu_handler);
 
-            retval = simple_cgp_main(cgp_population, &config, &vault, img_noisy, progress_log_file);
+            retval = simple_cgp_main(
+                cgp_population,
+                &config,
+                &vault,
+                img_noisy,
+                best_circuit_file_name,
+                progress_log_file
+            );
             goto cleanup;
 
         case predictors:
@@ -369,7 +373,7 @@ int main(int argc, char *argv[])
                         &config,
                         &vault,
                         img_noisy,
-                        best_circuit_file,
+                        best_circuit_file_name,
                         progress_log_file,
                         &finished
                     );
@@ -416,7 +420,6 @@ cleanup:
     img_destroy(img_original);
     img_destroy(img_noisy);
 
-    fclose(best_circuit_file);
     fclose(progress_log_file);
 
     return retval;

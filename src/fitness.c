@@ -164,7 +164,7 @@ ga_fitness_t fitness_eval_cgp(ga_chr_t chr)
 {
     double sum = 0;
 
-#ifdef FITNESS_AVX
+#ifdef AVX2
 
     if(can_use_intel_core_4th_gen_features()) {
         assert((_noisy_image_windows->size % 32) == 0);

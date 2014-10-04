@@ -20,9 +20,9 @@
 
 CC=gcc
 CFLAGS=-g -Wall -std=c11 -fopenmp -march=native -D_XOPEN_SOURCE=700 \
-	-DFITNESS_AVX -DDEBUG -DxVERBOSE
+	-DAVX2 -DDEBUG -DxVERBOSE
 EXECUTABLE=coco
-CMDLINE=-i images/lena_gray_256.png -n images/lena_gray_256_saltpepper_10.png -v
+CMDLINE=-i images/lena_gray_256.png -n images/lena_gray_256_saltpepper_50.png -v
 SERVER=merlin
 SERVER_LOCATION=~/coco
 SOURCES=main.c cpu.c ga.c cgp_core.c cgp_dump.c cgp_load.c cgp_avx.c \
@@ -34,6 +34,7 @@ LIBS=-lm -lc
 all: $(EXECUTABLE)
 
 run: $(EXECUTABLE)
+	rm -rf cocolog/*
 	./$(EXECUTABLE) $(CMDLINE)
 
 $(EXECUTABLE): $(OFILES)
@@ -42,6 +43,7 @@ $(EXECUTABLE): $(OFILES)
 .PHONY: clean zip tar upload start depend
 
 clean:
+	rm -rf cocolog/*
 	rm -f $(EXECUTABLE) $(EXECUTABLE).exe $(EXECUTABLE).exe.stackdump *.o
 	rm -f xwigla00.zip xwigla00.tar.gz
 

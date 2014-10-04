@@ -30,7 +30,7 @@
 
 
 typedef struct {
-    const char directory[MAX_FILENAME_LENGTH + 1];
+    char directory[MAX_FILENAME_LENGTH + 1];
 } vault_storage_t;
 
 

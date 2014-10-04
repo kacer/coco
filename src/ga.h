@@ -20,10 +20,13 @@
 
 #pragma once
 
-#include <stdbool.h>
+#include <math.h>
 #include <stdio.h>
 #include <float.h>
+#include <stdbool.h>
 
+
+static const double FITNESS_EPSILON = 1e-10;
 
 /**
  * Fitness value
@@ -255,14 +258,14 @@ void ga_invalidate_fitness(ga_pop_t pop);
 
 
 /**
- * Returns true if WHAT is better or same as COMPARED_TO
- * @param  problem_type
+ * Returns true if WHAT is "same" as COMPARED_TO.
+ * Same means that the difference is within FITNESS_EPSILON.
  * @param  what
  * @param  compared_to
  * @return
  */
-static inline bool ga_is_better_or_same(ga_problem_type_t type, ga_fitness_t what, ga_fitness_t compared_to) {
-    return (type == minimize)? what <= compared_to : what >= compared_to;
+static inline bool ga_is_same(ga_fitness_t what, ga_fitness_t compared_to) {
+    return fabs(what - compared_to) <= FITNESS_EPSILON;
 }
 
 
@@ -275,6 +278,18 @@ static inline bool ga_is_better_or_same(ga_problem_type_t type, ga_fitness_t wha
  */
 static inline bool ga_is_better(ga_problem_type_t type, ga_fitness_t what, ga_fitness_t compared_to) {
     return (type == minimize)? what < compared_to : what > compared_to;
+}
+
+
+/**
+ * Returns true if WHAT is better or same as COMPARED_TO
+ * @param  problem_type
+ * @param  what
+ * @param  compared_to
+ * @return
+ */
+static inline bool ga_is_better_or_same(ga_problem_type_t type, ga_fitness_t what, ga_fitness_t compared_to) {
+    return ga_is_better(type, what, compared_to) || ga_is_same(what, compared_to);
 }
 
 

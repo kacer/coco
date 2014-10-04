@@ -51,7 +51,7 @@ void log_entry_prolog(FILE *fp, const char *section)
  * @param  vault_dir If not NULL, stores vault directory here
  * @param  vault_dir_buffer_size
  */
-int log_create_dirs(const char *dir, const char *vault_dir, const int vault_dir_buffer_size)
+int log_create_dirs(const char *dir, char *vault_dir, int vault_dir_buffer_size)
 {
     // main directory
     int retval;
@@ -197,6 +197,20 @@ void log_pred_change(FILE *fp, ga_fitness_t previous_best, ga_fitness_t new_best
     log_entry_prolog(fp, SECTION_PRED);
     if (indent) fprintf(fp, PRED_INDENT);
     fprintf(fp, "Best predictor changed by " FITNESS_FMT "\n", new_best - previous_best);
+}
+
+
+/**
+ * Logs best circuit to file.
+ */
+void log_cgp_circuit(FILE *fp, ga_pop_t pop)
+{
+    fprintf(fp, "Generation: %d\n", pop->generation);
+    fprintf(fp, "Fitness: " FITNESS_FMT "\n\n", pop->best_fitness);
+    fprintf(fp, "CGP Viewer format:\n");
+    cgp_dump_chr(pop->best_chromosome, fp, compat);
+    fprintf(fp, "\nASCII Art:\n");
+    cgp_dump_chr(pop->best_chromosome, fp, asciiart);
 }
 
 

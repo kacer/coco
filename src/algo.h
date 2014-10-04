@@ -52,6 +52,7 @@ int simple_cgp_main(
     config_t *config,
     vault_storage_t *vault,
     img_image_t img_noisy,
+    char *best_circuit_file_name,
     FILE *log_file
 );
 
@@ -62,7 +63,6 @@ int simple_cgp_main(
  * @param  pred_population
  * @param  cgp_archive CGP archive
  * @param  pred_archive Predictors archive
- * @param  cgp_current_best Pointer to shared variable holding best CGP fitness found
  * @param  config
  * @param  vault
  * @param  img_noisy Noisy image (to store filtered img to results)
@@ -79,9 +79,6 @@ int coev_cgp_main(
     archive_t cgp_archive,
     archive_t pred_archive,
 
-    // best found fitness value
-    ga_fitness_t *cgp_current_best,
-
     // config
     config_t *config,
     vault_storage_t *vault,
@@ -90,8 +87,8 @@ int coev_cgp_main(
     img_image_t img_noisy,
 
     // log files
-    FILE *best_circuit_file,
-    FILE *progress_log_file,
+    char *best_circuit_file_name,
+    FILE *log_file,
 
     // status
     bool *finished
@@ -119,7 +116,7 @@ void coev_pred_main(
     config_t *config,
 
     // log
-    FILE *progress_log_file,
+    FILE *log_file,
 
     // status
     bool *finished
