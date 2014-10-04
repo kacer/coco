@@ -17,6 +17,7 @@
  *   \___)     (___/
  */
 
+
 #include <time.h>
 #include <errno.h>
 #include <string.h>
@@ -113,55 +114,6 @@ void log_cgp_progress(FILE *fp, ga_pop_t cgp_population)
 
 
 /**
- * Print current progress
- * @param  cgp_population
- * @param  pred_population
- * @param  pred_archive
- */
-void print_progress(ga_pop_t cgp_population, ga_pop_t pred_population,
-    archive_t pred_archive)
-{
-    log_entry_prolog(stdout, "combined");
-    printf("CGP generation %4d: best fitness " FITNESS_FMT "\t\t",
-        cgp_population->generation, cgp_population->best_fitness);
-    if (pred_population != NULL) {
-        printf("PRED generation %4d: best fitness " FITNESS_FMT "",
-            pred_population->generation, pred_population->best_fitness);
-        if (pred_archive != NULL) {
-            printf(" (archived " FITNESS_FMT ")\n", arc_get(pred_archive, 0)->fitness);
-        }
-        printf("\n");
-    }
-}
-
-
-/**
- * Print current progress and best found circuit
- * @param cgp_population
- * @param pred_population
- * @param pred_archive
- */
-void print_results(ga_pop_t cgp_population, ga_pop_t pred_population,
-    archive_t pred_archive)
-{
-    print_progress(cgp_population, pred_population, pred_archive);
-
-    if (pred_population != NULL) {
-        printf("\n"
-               "Best predictor\n"
-               "--------------\n");
-        pred_dump_chr(pred_population->best_chromosome, stdout);
-    }
-
-    printf("\n"
-           "Best circuit\n"
-           "------------\n");
-    cgp_dump_chr_asciiart(cgp_population->best_chromosome, stdout);
-    printf("\n");
-}
-
-
-/**
  * Logs that CGP best fitness has changed
  * @param previous_best
  * @param new_best
@@ -169,7 +121,9 @@ void print_results(ga_pop_t cgp_population, ga_pop_t pred_population,
 void log_cgp_change(FILE *fp, ga_fitness_t previous_best, ga_fitness_t new_best)
 {
     log_entry_prolog(fp, SECTION_CGP);
-    fprintf(fp, "Best CGP circuit changed by " FITNESS_FMT "\n", new_best - previous_best);
+    fprintf(fp, "Best CGP circuit changed by " FITNESS_FMT
+                " from " FITNESS_FMT " to " FITNESS_FMT "\n",
+                new_best - previous_best, previous_best, new_best);
 }
 
 
@@ -196,7 +150,9 @@ void log_pred_change(FILE *fp, ga_fitness_t previous_best, ga_fitness_t new_best
 {
     log_entry_prolog(fp, SECTION_PRED);
     if (indent) fprintf(fp, PRED_INDENT);
-    fprintf(fp, "Best predictor changed by " FITNESS_FMT "\n", new_best - previous_best);
+    fprintf(fp, "Best predictor changed by " FITNESS_FMT
+                " from " FITNESS_FMT " to " FITNESS_FMT "\n",
+                new_best - previous_best, previous_best, new_best);
 }
 
 

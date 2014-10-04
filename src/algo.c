@@ -157,7 +157,7 @@ int coev_cgp_main(
     // status
     bool *finished)
 {
-    ga_fitness_t cgp_current_best = cgp_population->best_fitness;
+    ga_fitness_t cgp_parent_fitness;
 
     while (!(*finished)) {
         VERBOSELOG("One iteration of CGP.");
@@ -167,6 +167,7 @@ int coev_cgp_main(
 
         #pragma omp critical (PRED_ARCHIVE)
         {
+            cgp_parent_fitness = cgp_population->best_fitness;
             ga_evaluate_pop(cgp_population);
         }
 
@@ -183,7 +184,7 @@ int coev_cgp_main(
         bool store_now = (cgp_population->generation % config->vault_interval) == 0;
 
         // whether we found better solution
-        bool is_better = ga_is_better(cgp_population->problem_type, cgp_population->best_fitness, cgp_current_best);
+        bool is_better = ga_is_better(cgp_population->problem_type, cgp_population->best_fitness, cgp_parent_fitness);
 
         // whether we should log now
         bool log_now = config->log_interval && (store_now || (cgp_population->generation % config->log_interval) == 0);
@@ -203,12 +204,12 @@ int coev_cgp_main(
                 ga_reevaluate_chr(pred_population, arc_get(pred_archive, 0));
             }
 
-            DOUBLE_LOG(log_cgp_change, log_file, cgp_current_best, cgp_population->best_fitness);
+            DOUBLE_LOG(log_cgp_change, log_file, cgp_parent_fitness, cgp_population->best_fitness);
             DOUBLE_LOG(log_cgp_archived, log_file, cgp_population->best_fitness, archived->fitness);
-            cgp_current_best = cgp_population->best_fitness;
 
             // drop fitness values
             ga_invalidate_fitness(pred_population);
+            ga_reevaluate_pop(pred_population);
             ga_reevaluate_chr(pred_population, arc_get(pred_archive, 0));
         }
 

@@ -306,7 +306,7 @@ void _ga_find_new_best(ga_pop_t pop)
  * Calculate fitness of whole population, using `ga_evaluate_chr`
  * @param chr
  */
-void _ga_evaluate_pop_simple(ga_pop_t pop)
+void ga_evaluate_pop(ga_pop_t pop)
 {
     // reevaluate population
     #pragma omp parallel for
@@ -319,55 +319,21 @@ void _ga_evaluate_pop_simple(ga_pop_t pop)
 }
 
 
-#ifdef GA_USE_PTHREAD
-
-
-    typedef struct
-    {
-        ga_pop_t pop;
-        int chr_index;
-    } _thread_job;
-
-
-    /**
-     * _cgp_evaluate_pop_pthread helper - thread source code
-     * @param chromosome to evaluate
-     */
-    void *_ga_evaluate_pop_pthread_worker(void *_job)
-    {
-        _thread_job *job = (_thread_job*) _job;
-        ga_evaluate_chr(job->pop, job->pop->chromosomes[job->chr_index]);
-        return NULL;
+/**
+ * Re-calculate fitness of whole population, using `ga_reevaluate_chr`
+ * @param chr
+ */
+void ga_reevaluate_pop(ga_pop_t pop)
+{
+    // reevaluate population
+    #pragma omp parallel for
+    for (int i = 0; i < pop->size; i++) {
+        ga_reevaluate_chr(pop, pop->chromosomes[i]);
     }
 
-
-    /**
-     * Calculate fitness of whole population, using `ga_evaluate_chr`
-     * @param chr
-     */
-    void _ga_evaluate_pop_pthread(ga_pop_t pop)
-    {
-        /* reevaluate population */
-
-        _thread_job jobs[pop->size];
-        pthread_t threads[pop->size];
-
-        for (int i = 0; i < pop->size; i++) {
-            jobs[i].pop = pop;
-            jobs[i].chr_index = i;
-            pthread_create(&threads[i], NULL, _ga_evaluate_pop_pthread_worker, (void*)&jobs[i]);
-        }
-        for (int i = 0; i < pop->size; i++) {
-            pthread_join(threads[i], NULL);
-        }
-
-        /* find new best chromosome */
-        _ga_find_new_best(pop);
-    }
-
-
-#endif /* GA_USE_PTHREAD */
-
+    /* find new best chromosome */
+    _ga_find_new_best(pop);
+}
 
 
 /**

@@ -63,11 +63,6 @@ struct archive
 
     /* genome-specific functions */
     arc_func_vect_t methods;
-
-    #ifdef _OPENMP
-        /* lock for thread synchronization */
-        omp_lock_t omp_lock;
-    #endif
 };
 typedef struct archive* archive_t;
 
@@ -153,54 +148,3 @@ static inline ga_chr_t arc_get(archive_t arc, int index)
 {
     return arc->chromosomes[arc_real_index(arc, index)];
 }
-
-
-#ifdef _OPENMP
-
-    /**
-     * Lock access to archive for other threads.
-     * Does nothing if compiled w/o OpenMP support
-     * @param arc
-     */
-    static inline void arc_lock(archive_t arc)
-    {
-        VERBOSELOG("th-%d: Locking archive at %p", omp_get_thread_num(), arc);
-        omp_set_lock(&arc->omp_lock);
-    }
-
-
-    /**
-     * Unlock access to archive for other threads.
-     * Does nothing if compiled w/o OpenMP support
-     * @param arc
-     */
-    static inline void arc_unlock(archive_t arc)
-    {
-        VERBOSELOG("th-%d: Waiting for archive at %p", omp_get_thread_num(), arc);
-        omp_unset_lock(&arc->omp_lock);
-    }
-
-#else
-
-    /**
-     * Lock access to archive for other threads.
-     * Does nothing if compiled w/o OpenMP support
-     * @param arc
-     */
-    static inline void arc_lock(archive_t arc)
-    {
-
-    }
-
-
-    /**
-     * Unlock access to archive for other threads.
-     * Does nothing if compiled w/o OpenMP support
-     * @param arc
-     */
-    static inline void arc_unlock(archive_t arc)
-    {
-
-    }
-
-#endif

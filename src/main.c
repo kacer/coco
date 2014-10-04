@@ -149,9 +149,6 @@ int main(int argc, char *argv[])
     img_image_t img_original;
     img_image_t img_noisy;
 
-    // current best fitness achieved
-    ga_fitness_t cgp_current_best;
-
     // log files
     char best_circuit_file_name[MAX_FILENAME_LENGTH + 1];
     FILE *progress_log_file;
@@ -323,7 +320,6 @@ int main(int argc, char *argv[])
     DEBUGLOG("Best fitness: CGP %.10g, PRED %.10g",
         cgp_population->best_fitness, pred_population->best_fitness);
 
-    print_progress(cgp_population, pred_population, pred_archive);
     save_original_image(config.log_dir, img_original);
     save_noisy_image(config.log_dir, img_noisy);
     save_config(config.log_dir, &config);
@@ -335,8 +331,8 @@ int main(int argc, char *argv[])
 
     DEBUGLOG("Starting the big while loop.");
 
+    // shared among threads
     bool finished = false;
-    cgp_current_best = cgp_population->best_fitness;
 
     switch (config.algorithm) {
 
@@ -369,7 +365,6 @@ int main(int argc, char *argv[])
                         pred_population,
                         cgp_archive,
                         pred_archive,
-                        &cgp_current_best,
                         &config,
                         &vault,
                         img_noisy,

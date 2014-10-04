@@ -309,30 +309,14 @@ static inline double ga_worst_fitness(ga_problem_type_t type) {
  * in single thread
  * @param chr
  */
-void _ga_evaluate_pop_simple(ga_pop_t pop);
+void ga_evaluate_pop(ga_pop_t pop);
 
 
 /**
- * Calculate fitness of whole population, using `ga_evaluate_chr`
- * using one thread per chromosome
+ * Re-calculate fitness of whole population, using `ga_reevaluate_chr`
  * @param chr
  */
-void _ga_evaluate_pop_pthread(ga_pop_t pop);
-
-
-#if !defined(_OPENMP) && defined(GA_USE_PTHREAD)
-
-    static inline void ga_evaluate_pop(ga_pop_t pop) {
-        _ga_evaluate_pop_pthread(pop);
-    }
-
-#else
-
-    static inline void ga_evaluate_pop(ga_pop_t pop) {
-        _ga_evaluate_pop_simple(pop);
-    }
-
-#endif
+void ga_reevaluate_pop(ga_pop_t pop);
 
 
 /**

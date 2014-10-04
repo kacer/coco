@@ -78,26 +78,6 @@ void log_pred_progress(FILE *fp, ga_pop_t pred_population,
 
 
 /**
- * Print current progress
- * @param  cgp_population
- * @param  pred_population
- * @param  pred_archive
- */
-void print_progress(ga_pop_t cgp_population, ga_pop_t pred_population,
-    archive_t pred_archive);
-
-
-/**
- * Print current progress and best found circuit
- * @param cgp_population
- * @param pred_population
- * @param pred_archive
- */
-void print_results(ga_pop_t cgp_population, ga_pop_t pred_population,
-    archive_t pred_archive);
-
-
-/**
  * Logs that CGP best fitness has changed
  * @param previous_best
  * @param new_best
