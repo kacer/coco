@@ -167,6 +167,8 @@ void log_cgp_circuit(FILE *fp, ga_pop_t pop)
     cgp_dump_chr(pop->best_chromosome, fp, compat);
     fprintf(fp, "\nASCII Art:\n");
     cgp_dump_chr(pop->best_chromosome, fp, asciiart);
+    fprintf(fp, "\nASCII Art without inactive blocks:\n");
+    cgp_dump_chr(pop->best_chromosome, fp, asciiart_active);
 }
 
 

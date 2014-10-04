@@ -60,7 +60,10 @@ void cgp_dump_chr(ga_chr_t chr, FILE *fp, cgp_dump_format fmt)
         cgp_dump_chr_readable(chr, fp);
 
     } else if (fmt == asciiart) {
-        cgp_dump_chr_asciiart(chr, fp);
+        cgp_dump_chr_asciiart(chr, fp, false);
+
+    } else if (fmt == asciiart_active) {
+        cgp_dump_chr_asciiart(chr, fp, true);
 
     } else {
         cgp_dump_chr_compat(chr, fp);
@@ -208,11 +211,16 @@ void cgp_dump_chr_asciiart_output(int *out_counter, ga_chr_t chr, FILE *fp)
  * @param chr
  * @param fp
 */
-void cgp_dump_chr_asciiart(ga_chr_t chr, FILE *fp)
+void cgp_dump_chr_asciiart(ga_chr_t chr, FILE *fp, bool only_active_blocks)
 {
     int in_counter = 0;
     int out_counter = 0;
     cgp_genome_t genome = (cgp_genome_t) chr->genome;
+    bool active_nodes[CGP_NODES];
+
+    if (only_active_blocks) {
+        cgp_find_active_blocks(chr, active_nodes);
+    }
 
     cgp_dump_chr_header(chr, fp);
 
@@ -231,7 +239,14 @@ void cgp_dump_chr_asciiart(ga_chr_t chr, FILE *fp)
         /* top of the blocks */
         fprintf(fp, " ");
         for (int x = 0; x < CGP_COLS; x++) {
-            fprintf(fp, "    .----.      ");
+            int i = cgp_node_index(x, y);
+
+            if (only_active_blocks && !active_nodes[i]) {
+                fprintf(fp, "                ");
+            } else {
+                fprintf(fp, "    .----.      ");
+            }
+
             if (x == CGP_COLS - 1) fprintf(fp, "|");
             else fprintf(fp, "  ");
         }
@@ -244,7 +259,13 @@ void cgp_dump_chr_asciiart(ga_chr_t chr, FILE *fp)
         for (int x = 0; x < CGP_COLS; x++) {
             int i = cgp_node_index(x, y);
             cgp_node_t *n = &(genome->nodes[i]);
-            fprintf(fp, "[%2u]>|    |>[%2u]", n->inputs[0], CGP_INPUTS + i);
+
+            if (only_active_blocks && !active_nodes[i]) {
+                fprintf(fp, "                ");
+            } else {
+                fprintf(fp, "[%2u]>|    |>[%2u]", n->inputs[0], CGP_INPUTS + i);
+            }
+
             if (x == CGP_COLS - 1) fprintf(fp, " |");
             else fprintf(fp, "  ");
         }
@@ -257,7 +278,13 @@ void cgp_dump_chr_asciiart(ga_chr_t chr, FILE *fp)
         for (int x = 0; x < CGP_COLS; x++) {
             int i = cgp_node_index(x, y);
             cgp_node_t *n = &(genome->nodes[i]);
-            fprintf(fp, "[%2u]>|%s|     ", n->inputs[1], cgp_func_name(n->function));
+
+            if (only_active_blocks && !active_nodes[i]) {
+                fprintf(fp, "                ");
+            } else {
+                fprintf(fp, "[%2u]>|%s|     ", n->inputs[1], cgp_func_name(n->function));
+            }
+
             if (x == CGP_COLS - 1) fprintf(fp, " |");
             else fprintf(fp, "  ");
         }
@@ -269,7 +296,14 @@ void cgp_dump_chr_asciiart(ga_chr_t chr, FILE *fp)
         /* bottom of the blocks */
         fprintf(fp, " ");
         for (int x = 0; x < CGP_COLS; x++) {
-            fprintf(fp, "    '----'      ");
+            int i = cgp_node_index(x, y);
+
+            if (only_active_blocks && !active_nodes[i]) {
+                fprintf(fp, "                ");
+            } else {
+                fprintf(fp, "    '----'      ");
+            }
+
             if (x == CGP_COLS - 1) fprintf(fp, "|");
             else fprintf(fp, "  ");
         }

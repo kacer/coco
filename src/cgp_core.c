@@ -325,3 +325,33 @@ void cgp_offspring(ga_pop_t pop)
         chr->has_fitness = false;
     }
 }
+
+
+/**
+ * Finds which blocks are active.
+ * @param chromosome
+ * @param active
+ */
+void cgp_find_active_blocks(ga_chr_t chromosome, bool active[CGP_NODES])
+{
+    cgp_genome_t genome = (cgp_genome_t) chromosome->genome;
+    memset(active, 0, sizeof(bool) * CGP_NODES);
+
+    // mark inputs of primary outputs as active
+    for (int i = 0; i < CGP_OUTPUTS; i++) {
+        int index = genome->outputs[i] - CGP_INPUTS;
+        active[index] = true;
+    }
+
+    // then walk nodes backwards and mark inputs of active nodes
+    // as active nodes
+    for (int i = CGP_NODES - 1; i >= 0; i--) {
+        if (!active[i]) continue;
+        cgp_node_t *n = &(genome->nodes[i]);
+
+        for (int k = 0; k < CGP_FUNC_INPUTS; k++) {
+            int index = n->inputs[k] - CGP_INPUTS;
+            active[index] = true;
+        }
+    }
+}

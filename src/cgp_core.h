@@ -195,3 +195,11 @@ static inline int cgp_node_row(int index)
 {
     return index % CGP_ROWS;
 }
+
+
+/**
+ * Finds which blocks are active.
+ * @param chromosome
+ * @param active
+ */
+void cgp_find_active_blocks(ga_chr_t chromosome, bool active[CGP_NODES]);

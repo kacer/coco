@@ -32,6 +32,7 @@
  */
 typedef enum {
     asciiart,
+    asciiart_active,
     compat,
     readable,
 } cgp_dump_format;
@@ -77,8 +78,9 @@ void cgp_dump_chr_readable(ga_chr_t chr, FILE *fp);
  *
  * @param chr
  * @param fp
+ * @param only_active_blocks Do not render inactive blocks at all
 */
-void cgp_dump_chr_asciiart(ga_chr_t chr, FILE *fp);
+void cgp_dump_chr_asciiart(ga_chr_t chr, FILE *fp, bool only_active_blocks);
 
 
 static inline int cgp_dump_chr_asciiart_width() {
