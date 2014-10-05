@@ -47,6 +47,7 @@ typedef struct
 {
     int max_generations;
     algorithm_t algorithm;
+    unsigned int random_seed;
 
     char input_image[MAX_FILENAME_LENGTH + 1];
     char noisy_image[MAX_FILENAME_LENGTH + 1];
@@ -108,6 +109,9 @@ static inline void print_help() {
         "    --algorithm ALG, -a ALG\n"
         "          Evolution algorithm selection, one of {cgp|predictors|baldwin},\n"
         "          default is \"predictors\"\n"
+        "\n"
+        "    --random-seed NUM, -r ALG\n"
+        "          PRNG seed value, default is obtained using gettimeofday() call\n"
         "\n"
         "    --max-generations NUM, -g NUM\n"
         "          Stop after given number of CGP generations, default is 50000\n"

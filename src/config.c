@@ -32,6 +32,7 @@
 #define OPT_MAX_GENERATIONS 'g'
 
 #define OPT_ALGORITHM 'a'
+#define OPT_RANDOM_SEED 'r'
 
 #define OPT_ORIGINAL 'i'
 #define OPT_NOISY 'n'
@@ -62,6 +63,9 @@ static struct option long_options[] =
     /* Algorithm mode */
     {"algorithm", required_argument, 0, OPT_ALGORITHM},
 
+    /* PRNG seed */
+    {"random-seed", required_argument, 0, OPT_RANDOM_SEED},
+
     /* Input images */
     {"original", required_argument, 0, OPT_ORIGINAL},
     {"noisy", required_argument, 0, OPT_NOISY},
@@ -87,7 +91,7 @@ static struct option long_options[] =
     {0, 0, 0, 0}
 };
 
-static const char *short_options = "hg:a:i:n:vw:l:k:m:p:s:S:M:P";
+static const char *short_options = "hg:a:r:i:n:vw:l:k:m:p:s:S:M:P";
 
 
 #define CHECK_FILENAME_LENGTH do { \
@@ -104,6 +108,16 @@ static const char *short_options = "hg:a:i:n:vw:l:k:m:p:s:S:M:P";
     (dst) = strtol(optarg, &endptr, 10); \
     if (*endptr != '\0' && endptr != optarg && errno != ERANGE) { \
         fprintf(stderr, "Option %s requires valid integer\n", \
+            long_options[option_index].name); \
+        return 1; \
+    } \
+} while(0);
+
+#define PARSE_UNSIGNED_INT(dst) do { \
+    char *endptr; \
+    (dst) = strtoul(optarg, &endptr, 10); \
+    if (*endptr != '\0' && endptr != optarg && errno != ERANGE) { \
+        fprintf(stderr, "Option %s requires valid unsigned integer\n", \
             long_options[option_index].name); \
         return 1; \
     } \
@@ -152,6 +166,10 @@ int config_load_args(int argc, char **argv, config_t *cfg)
                     fprintf(stderr, "Invalid algorithm (options: cgp, predictors, baldwin)\n");
                     return 1;
                 }
+                break;
+
+            case OPT_RANDOM_SEED:
+                PARSE_UNSIGNED_INT(cfg->random_seed);
                 break;
 
             case OPT_ORIGINAL:
@@ -240,6 +258,7 @@ void config_save_file(FILE *file, config_t *cfg)
     fprintf(file, "original: %s\n", cfg->input_image);
     fprintf(file, "noisy: %s\n", cfg->noisy_image);
     fprintf(file, "algorithm: %s\n", config_algorithm_names[cfg->algorithm]);
+    fprintf(file, "random-seed: %u\n", cfg->random_seed);
     fprintf(file, "max-generations: %d\n", cfg->max_generations);
     fprintf(file, "vault: %s\n", cfg->vault_enabled? "yes" : "no");
     fprintf(file, "vault-interval: %d\n", cfg->vault_interval);

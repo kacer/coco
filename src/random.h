@@ -23,23 +23,43 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <time.h>
+#include <sys/time.h>
 
 
-static inline void rand_init()
+/**
+ * Generates random seed using gettimeofday()
+ * @return generated seed
+ */
+static inline unsigned int rand_seed_from_time()
 {
-    srand(time(0));
+    // time() from time.h is not enough, because it can return same value in
+    // all processes started within one second
+    struct timeval time;
+    gettimeofday(&time,NULL);
+    return (time.tv_sec * 1000) + (time.tv_usec);
 }
 
-static inline void rand_init_seed(unsigned int seed)
+
+/**
+ * Initializes random seed using given value.
+ * @return used random seed
+ */
+static inline unsigned int rand_init_seed(unsigned int seed)
 {
     srand(seed);
+    return seed;
 }
 
-static inline unsigned int rnd()
+
+/**
+ * Initializes random seed using gettimeofday().
+ * @return used random seed
+ */
+static inline unsigned int rand_init()
 {
-    return rand();
+    return rand_init_seed(rand_seed_from_time());
 }
+
 
 
 /**

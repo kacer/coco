@@ -136,6 +136,9 @@ int main(int argc, char *argv[])
         .vault_interval = 200,
     };
 
+    // cannot be set in initializer
+    config.random_seed = rand_seed_from_time();
+
     // vault
     vault_storage_t vault;
 
@@ -227,7 +230,7 @@ int main(int argc, char *argv[])
      */
 
     // random number generator
-    rand_init();
+    rand_init_seed(config.random_seed);
 
     // evolution
     cgp_init(config.cgp_mutate_genes, fitness_eval_or_predict_cgp);
