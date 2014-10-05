@@ -8,6 +8,6 @@
 
 int main(int argc, char const *argv[])
 {
-    cgp_init();
+    cgp_init(0, NULL);
     cgp_deinit();
 }

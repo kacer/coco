@@ -55,7 +55,6 @@ void cgp_init(int mutation_rate, ga_fitness_func_t fitness_func)
 
     // calculate allowed values of node inputs in each column
     for (int x = 0; x < CGP_COLS; x++) {
-
         // range of outputs which can be connected to node in i-th column
         // maximum is actually by 1 larger than maximum allowed value
         // (so there is `val < maximum` in the for loop below instead of `<=`)
@@ -68,12 +67,12 @@ void cgp_init(int mutation_rate, ga_fitness_func_t fitness_func)
         _allowed_gene_vals[x].values = (int*) malloc(sizeof(int) * size);
 
         int key = 0;
-        // primary input indexes
+        // primary inputs
         for (int val = 0; val < CGP_INPUTS; val++, key++) {
             _allowed_gene_vals[x].values[key] = val;
         }
 
-        // nodes to the left output indexes
+        // nodes to the left
         for (int val = minimum; val < maximum; val++, key++) {
             _allowed_gene_vals[x].values[key] = val;
         }
@@ -204,8 +203,8 @@ void cgp_randomize_gene(cgp_genome_t genome, int gene)
     } else {
         // mutating primary output connection
         int index = gene - CGP_CHR_OUTPUTS_INDEX;
-        genome->outputs[index] = rand_range(0, CGP_INPUTS + CGP_NODES - 1);
-        TEST_RANDOMIZE_PRINTF("out 0 - %u\n", CGP_INPUTS + CGP_NODES - 1);
+        genome->outputs[index] = rand_range(CGP_INPUTS, CGP_INPUTS + CGP_NODES - 1);
+        TEST_RANDOMIZE_PRINTF("out %u - %u\n", CGP_INPUTS, CGP_INPUTS + CGP_NODES - 1);
     }
 }
 

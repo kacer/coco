@@ -11,15 +11,14 @@
 
 int main(int argc, char const *argv[])
 {
-    cgp_init();
+    cgp_init(0, NULL);
 
     cgp_genome_t genome = (cgp_genome_t) malloc(sizeof(struct cgp_genome));
     struct ga_chr chr = {
         .genome = genome
     };
 
-    cgp_init_chr(&chr);
-    cgp_deinit_chr(&chr);
+    cgp_randomize_genome(&chr);
 
     free(genome);
     cgp_deinit();

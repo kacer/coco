@@ -190,4 +190,4 @@ gene 94, node 31, gene 1, col 7
 input choice from 13
 gene 95, node 31, gene 2, col 7
 func 0 - 15
-out 0 - 40
+out 9 - 40

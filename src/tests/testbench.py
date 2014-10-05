@@ -1,4 +1,23 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Colearning in Coevolutionary Algorithms
+# Bc. Michal Wiglasz <xwigla00@stud.fit.vutbr.cz>
+#
+# Master Thesis
+# 2014/2015
+#
+# Supervisor: Ing. Michaela Šikulová <isikulova@fit.vutbr.cz>
+#
+# Faculty of Information Technologies
+# Brno University of Technology
+# http://www.fit.vutbr.cz/
+#
+# Started on 28/07/2014.
+#      _       _
+#   __(.)=   =(.)__
+#   \___)     (___/
+
 
 from __future__ import print_function
 
@@ -8,6 +27,7 @@ import argparse
 import tempfile
 import operator
 import difflib
+import string
 import sys
 import os
 import re
@@ -29,8 +49,30 @@ def red(s):
     return '\033[41m\033[37m' + s + '\033[0m'
 
 
+def split_and_filter_cflags(line):
+    return (
+        f
+        for f in re.split('[\s*,]', line.strip('\\' + string.whitespace))
+        if f != '-DAVX2'
+    )
+
+
+def split_and_filter_libs(line):
+    return re.split('[\s*,]', line.strip('\\' + string.whitespace))
+
+
+def split_and_filter_sources(line):
+    return (
+        '../' + f
+        for f in re.split('[\s*,]', line.strip('\\' + string.whitespace))
+        if f != 'main.c'
+    )
+
+
 def parse_makefile(mkfile):
+    compiler = 'gcc'
     flags = []
+    sources = ['./testbench_mock.c']
 
     with open(mkfile, 'rt') as fp:
         for line in fp:
@@ -39,22 +81,28 @@ def parse_makefile(mkfile):
             if not line:
                 continue
 
+            elif line.startswith('CC='):
+                compiler = line[3:].strip()
+
             elif line.startswith('CFLAGS='):
-                flags.extend(re.split('[\s*,]', line[7:]))
+                flags.extend(split_and_filter_cflags(line[7:]))
+                while line[-1] == '\\':
+                    line = fp.next()
+                    flags.extend(split_and_filter_cflags(line))
 
             elif line.startswith('SOURCES='):
-                func = lambda s: '../' + s
-                sources = (
-                    '../' + f
-                    for f in re.split('[\s*,]', line[8:])
-                    if f != 'main.c'
-                )
-                flags.extend(sources)
+                sources.extend(split_and_filter_sources(line[8:]))
+                while line[-1] == '\\':
+                    line = fp.next()
+                    sources.extend(split_and_filter_sources(line))
 
             elif line.startswith('LIBS='):
-                flags.extend(re.split('[\s*,]', line[5:]))
+                flags.extend(split_and_filter_libs(line[5:]))
+                while line[-1] == '\\':
+                    line = fp.next()
+                    flags.extend(split_and_filter_libs(line))
 
-    return flags
+    return compiler, flags, sources
 
 
 def main():
@@ -71,7 +119,7 @@ def main():
     verbose = args.verbose
     stop_on_failure = args.stop
 
-    gcc_flags = parse_makefile('../Makefile')
+    gcc, gcc_flags, gcc_sources = parse_makefile('../Makefile')
 
     for testfile in args.testfiles:
 
@@ -118,13 +166,14 @@ def main():
                                                  delete=False)
             binary.close()
 
-            args = [testfile] + gcc_flags + flags + ['-o', binary.name]
+            args = gcc_flags + flags + gcc_sources + [testfile, '-o', binary.name]
 
             if verbose:
                 print('Compiling %s to %s' % (testfile, binary.name))
-                print('GCC command:\ngcc', ' '.join(args))
+                print('GCC command:')
+                print('%s %s' % (gcc, ' '.join(args)))
 
-            p = subprocess.Popen(["gcc"] + args,
+            p = subprocess.Popen([gcc] + args,
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
             out, err = p.communicate()
@@ -145,8 +194,13 @@ def main():
                                  stderr=subprocess.PIPE)
             out, err = p.communicate()
 
+            if err:
+                print(red('Test %s failed (stderr non-empty)' % (testfile)))
+
+            if p.returncode != 0:
+                print(red('Test %s failed (retval = %u)' % (testfile, p.returncode)))
+
             if err or p.returncode != 0:
-                print(red('Test %s failed (stderr non-empty or retval != 0)' % (testfile)))
                 print(err, file=sys.stderr)
                 if stop_on_failure:
                     return
@@ -162,7 +216,9 @@ def main():
                 ))
                 if len(result):
                     print(red('Test %s failed (diff mismatch)' % (testfile)))
-                    #print(''.join(result), file=sys.stderr)
+                    if verbose:
+                        print(''.join(result), file=sys.stderr)
+
                     if stop_on_failure:
                         return
                     else:
@@ -171,7 +227,11 @@ def main():
             print(green('Test %s OK' % (testfile)))
 
         finally:
-            os.unlink(binary.name)
+            try:
+                os.unlink(binary.name)
+            except OSError as e:
+                if e.errno != 2:
+                    raise
 
 
 if __name__ == '__main__':
