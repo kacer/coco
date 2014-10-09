@@ -36,6 +36,23 @@ static int_array _allowed_gene_vals[CGP_COLS];
 static int _mutation_rate;
 static ga_fitness_func_t _fitness_func;
 
+#ifdef CGP_LIMIT_FUNCS
+    static int _allowed_functions_list[] = {
+        c255,
+        identity,
+        add,
+        add_sat,
+        inversion,
+        max,
+        min
+    };
+
+    static int_array _allowed_functions = {
+        .size = 7,
+        .values = _allowed_functions_list
+    };
+#endif
+
 
 #ifdef TEST_RANDOMIZE
     #define TEST_RANDOMIZE_PRINTF(...) printf(__VA_ARGS__)
@@ -191,7 +208,11 @@ void cgp_randomize_gene(cgp_genome_t genome, int gene)
 
         if (gene_index == CGP_FUNC_INPUTS) {
             // mutating function
-            genome->nodes[node_index].function = (cgp_func_t) rand_range(0, CGP_FUNC_COUNT - 1);
+            #ifdef CGP_LIMIT_FUNCS
+                genome->nodes[node_index].function = (cgp_func_t) rand_schoice(_allowed_functions.size, _allowed_functions.values);
+            #else
+                genome->nodes[node_index].function = (cgp_func_t) rand_range(0, CGP_FUNC_COUNT - 1);
+            #endif
             TEST_RANDOMIZE_PRINTF("func 0 - %u\n", CGP_FUNC_COUNT - 1);
 
         } else {
@@ -248,6 +269,9 @@ void cgp_copy_genome(void *_dst, void *_src)
 #define MIN(A, B) ((A < B) ? A : B)
 
 
+/* evaluation *****************************************************************/
+
+
 /**
  * Calculate output of given chromosome and inputs
  * @param chr
@@ -283,6 +307,7 @@ void cgp_get_output(ga_chr_t chromosome, cgp_value_t *inputs, cgp_value_t *outpu
             case avg:           Y = (A + B) >> 1;   break;
             case max:           Y = MAX(A, B);      break;
             case min:           Y = MIN(A, B);      break;
+            default:            abort();
         }
 
         inner_outputs[CGP_INPUTS + i] = Y;
@@ -300,29 +325,6 @@ void cgp_get_output(ga_chr_t chromosome, cgp_value_t *inputs, cgp_value_t *outpu
         printf("O: %u = %u\n", i, outputs[i]);
     }
 #endif
-}
-
-
-/* population *****************************************************************/
-
-
-/**
- * Create new generation
- * @param pop
- * @param mutation_rate
- */
-void cgp_offspring(ga_pop_t pop)
-{
-    ga_chr_t parent = pop->best_chromosome;
-
-    #pragma omp parallel for
-    for (int i = 0; i < pop->size; i++) {
-        if (i == pop->best_chr_index) continue;
-        ga_chr_t chr = pop->chromosomes[i];
-        ga_copy_chr(chr, parent, cgp_copy_genome);
-        cgp_mutate_chr(chr);
-        chr->has_fitness = false;
-    }
 }
 
 
@@ -352,5 +354,29 @@ void cgp_find_active_blocks(ga_chr_t chromosome, bool active[CGP_NODES])
             int index = n->inputs[k] - CGP_INPUTS;
             active[index] = true;
         }
+    }
+}
+
+
+
+/* population *****************************************************************/
+
+
+/**
+ * Create new generation
+ * @param pop
+ * @param mutation_rate
+ */
+void cgp_offspring(ga_pop_t pop)
+{
+    ga_chr_t parent = pop->best_chromosome;
+
+    #pragma omp parallel for
+    for (int i = 0; i < pop->size; i++) {
+        if (i == pop->best_chr_index) continue;
+        ga_chr_t chr = pop->chromosomes[i];
+        ga_copy_chr(chr, parent, cgp_copy_genome);
+        cgp_mutate_chr(chr);
+        chr->has_fitness = false;
     }
 }

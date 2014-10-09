@@ -37,10 +37,17 @@
 void fitness_init(img_image_t original, img_image_t noisy,
     archive_t cgp_archive, archive_t pred_archive);
 
+
 /**
  * Deinitialize fitness module internals
  */
 void fitness_deinit();
+
+
+/**
+ * Returns number of performed CGP evaluations
+ */
+long fitness_get_cgp_evals();
 
 
 /**
@@ -102,3 +109,11 @@ ga_fitness_t fitness_eval_predictor(ga_chr_t chr);
  * @return fitness value (PSNR)
  */
 ga_fitness_t fitness_psnr(img_image_t original, img_image_t filtered);
+
+
+/**
+ * Computes real PSNR value from fitness value
+ */
+static inline double fitness_to_psnr(ga_fitness_t f) {
+    return 10 * log10(f);
+}

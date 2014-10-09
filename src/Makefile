@@ -19,10 +19,10 @@
 # _XOPEN_SOURCE=700 required by scandir and alphasort from vault.c
 
 CC=gcc
-CFLAGS=-g -Wall -std=c11 -fopenmp -march=native -D_XOPEN_SOURCE=700 \
-	-DAVX2 -DDEBUG -DxVERBOSE
+CFLAGS=-g -Wall -std=c11 -fopenmp -march=native -D_XOPEN_SOURCE=700 -O2 \
+	-DxAVX2 -DDEBUG -DxVERBOSE -DCGP_LIMIT_FUNCS
 EXECUTABLE=coco
-CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_10.png -v
+CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_25.png -l ../results/SS-sp25-coev-S01-50kg-09 -g 50000 -S 0.01
 SERVER=merlin
 SERVER_LOCATION=~/coco
 SOURCES=main.c cpu.c ga.c cgp_core.c cgp_dump.c cgp_load.c cgp_avx.c \
@@ -44,6 +44,9 @@ valgrind: $(EXECUTABLE)
 $(EXECUTABLE): $(OFILES)
 	$(CC) $(CFLAGS) -o $@ $(OFILES) $(LIBS)
 
+apply: image.o ga.o cgp_core.o cgp_load.o main_apply.o
+	$(CC) $(CFLAGS) -o coco_apply image.o ga.o cgp_core.o cgp_load.o main_apply.o $(LIBS)
+
 .PHONY: clean zip tar upload start depend
 
 clean:
@@ -52,11 +55,11 @@ clean:
 	rm -f xwigla00.zip xwigla00.tar.gz
 
 tar:
-	tar czf xwigla00.tar.gz *.c *.h Makefile tests/* stb/* images/* #-C doc/ doc.pdf
+	cd .. && tar czf xwigla00.tar.gz src/*.c src/*.h src/Makefile src/tests/* src/stb/* images/* #-C doc/ doc.pdf
 
 upload: tar
-	scp xwigla00.tar.gz $(SERVER):$(SERVER_LOCATION)
-	ssh $(SERVER) "cd $(SERVER_LOCATION) && tar -xzf xwigla00.tar.gz && make"
+	scp ../xwigla00.tar.gz $(SERVER):$(SERVER_LOCATION)
+	ssh $(SERVER) "cd $(SERVER_LOCATION) && tar -xzf xwigla00.tar.gz && cd src && make"
 
 download:
 	ssh $(SERVER) "cd $(SERVER_LOCATION) && tar -czf results.tar.gz results/*.bmp"

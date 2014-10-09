@@ -62,14 +62,29 @@ int log_create_dirs(const char *dir, char *vault_dir, int vault_dir_buffer_size)
 
 
 /**
- * Print current CGP progress
+ * Logs current CGP progress
  * @param  cgp_population
  */
-void log_cgp_progress(FILE *fp, ga_pop_t cgp_population);
+void log_cgp_progress(FILE *fp, ga_pop_t cgp_population, long cgp_evals);
 
 
 /**
- * Print current predictors progress
+ * Logs that CGP has finished
+ * @param  cgp_population
+ */
+void log_cgp_finished(FILE *fp, ga_pop_t cgp_population);
+
+
+/**
+ * Logs that evolution is stored to vault + prints best fitness
+ * @param  fp
+ * @param  cgp_population
+ */
+void log_vault(FILE *fp, ga_pop_t cgp_population);
+
+
+/**
+ * Logs current predictors progress
  * @param  pred_population
  * @param  pred_archive
  */
@@ -108,6 +123,12 @@ void log_cgp_circuit(FILE *fp, ga_pop_t pop);
 
 
 /**
+ * Logs final summary
+ */
+void log_final_summary(FILE *fp, ga_pop_t cgp_population, long cgp_evals);
+
+
+/**
  * Saves original image to results directory
  * @param dir results directory
  * @param original
@@ -130,6 +151,14 @@ void save_noisy_image(const char *dir, img_image_t noisy);
  * @param noisy
  */
 void save_filtered_image(const char *dir, ga_pop_t cgp_population, img_image_t noisy);
+
+
+/**
+ * Saves best found image to results directory
+ * @param cgp_population
+ * @param noisy
+ */
+void save_best_image(const char *dir, ga_pop_t cgp_population, img_image_t noisy);
 
 
 /**

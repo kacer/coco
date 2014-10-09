@@ -65,6 +65,8 @@ archive_t arc_create(int capacity, arc_func_vect_t methods)
  */
 void arc_destroy(archive_t arc)
 {
+    if (!arc) return;
+
     for (int i = 0; i < arc->capacity; i++) {
         ga_free_chr(arc->chromosomes[i], arc->methods.free_genome);
     }

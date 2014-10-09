@@ -83,6 +83,23 @@ int img_save_bmp(img_image_t img, char const *filename);
 
 
 /**
+ * Store image to PNG file
+ * @param  img
+ * @return 0 on failure, non-zero on success
+ */
+int img_save_png(img_image_t img, char const *filename);
+
+
+/**
+ * Store image in PNG format to memory
+ * @param  img
+ * @param  len Will be filled with number of bytes returned
+ * @return NULL on failure, array of bytes on success
+ */
+unsigned char *img_save_png_to_mem(img_image_t img, int *len);
+
+
+/**
  * Clears all data associated with image from memory
  * @param img
  */
@@ -94,6 +111,17 @@ void img_destroy(img_image_t img);
  * @param img
  */
 void img_windows_destroy(img_window_array_t arr);
+
+
+/**
+ * Calculates fitness using the PSNR (peak signal-to-noise ratio) function.
+ * The higher the value, the better the filter.
+ *
+ * @param  original image
+ * @param  filtered image
+ * @return fitness value (PSNR)
+ */
+double img_psnr(img_image_t original, img_image_t filtered);
 
 
 /**

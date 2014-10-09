@@ -83,6 +83,27 @@ int img_save_bmp(img_image_t img, char const *filename) {
 
 
 /**
+ * Store image to PNG file
+ * @param  img
+ * @return 0 on failure, non-zero on success
+ */
+int img_save_png(img_image_t img, char const *filename) {
+    return stbi_write_png(filename, img->width, img->height, img->comp, img->data, 0);
+}
+
+
+/**
+ * Store image in PNG format to memory
+ * @param  img
+ * @param  len Will be filled with number of bytes returned
+ * @return NULL on failure, array of bytes on success
+ */
+unsigned char *img_save_png_to_mem(img_image_t img, int *len) {
+    return stbi_write_png_to_mem(img->data, 0, img->width, img->height, img->comp, len);
+}
+
+
+/**
  * Clears all data associated with image from memory
  * @param img
  */
@@ -161,4 +182,32 @@ img_window_array_t img_split_windows(img_image_t img) {
     }
 
     return arr;
+}
+
+
+/**
+ * Calculates fitness using the PSNR (peak signal-to-noise ratio) function.
+ * The higher the value, the better the filter.
+ *
+ * @param  original image
+ * @param  filtered image
+ * @return fitness value (PSNR)
+ */
+double img_psnr(img_image_t original, img_image_t filtered)
+{
+    assert(original->width == filtered->width);
+    assert(original->height == filtered->height);
+    assert(original->comp == filtered->comp);
+
+    double coef = 255.0 * 255.0 * original->width * original->height;
+    double sum = 0;
+
+    for (int x = 0; x < original->width; x++) {
+        for (int y = 0; y < original->height; y++) {
+            double diff = img_get_pixel(filtered, x, y) - img_get_pixel(original, x, y);
+            sum += diff * diff;
+        }
+    }
+
+    return coef / sum;
 }

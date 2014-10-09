@@ -34,15 +34,27 @@
 }
 
 
-static inline void _log_cgp(ga_pop_t cgp_population, char *best_circuit_file_name, FILE *log_file) {
-    DOUBLE_LOG(log_cgp_progress, log_file, cgp_population);
+static inline void _log_cgp(ga_pop_t cgp_population,
+    char *best_circuit_file_name_txt,
+    char *best_circuit_file_name_chr,
+    FILE *log_file)
+{
+    DOUBLE_LOG(log_cgp_progress, log_file, cgp_population, fitness_get_cgp_evals());
 
-    FILE *circuit_file = fopen(best_circuit_file_name, "w");
-    if (circuit_file) {
-        log_cgp_circuit(circuit_file, cgp_population);
-        fclose(circuit_file);
+    FILE *circuit_file_txt = fopen(best_circuit_file_name_txt, "w");
+    if (circuit_file_txt) {
+        log_cgp_circuit(circuit_file_txt, cgp_population);
+        fclose(circuit_file_txt);
     } else {
-        fprintf(stderr, "Failed to open %s!\n", best_circuit_file_name);
+        fprintf(stderr, "Failed to open %s!\n", best_circuit_file_name_txt);
+    }
+
+    FILE *circuit_file_chr = fopen(best_circuit_file_name_chr, "w");
+    if (circuit_file_chr) {
+        cgp_dump_chr_compat(cgp_population->best_chromosome, circuit_file_chr);
+        fclose(circuit_file_chr);
+    } else {
+        fprintf(stderr, "Failed to open %s!\n", best_circuit_file_name_chr);
     }
 }
 
@@ -60,14 +72,14 @@ int simple_cgp_main(
     config_t *config,
     vault_storage_t *vault,
     img_image_t img_noisy,
-    char *best_circuit_file_name,
+    char *best_circuit_file_name_txt,
+    char *best_circuit_file_name_chr,
     FILE *log_file)
 {
     ga_fitness_t cgp_current_best = ga_worst_fitness(cgp_population->problem_type);
     bool finished = false;
 
     while (!finished) {
-        VERBOSELOG("One iteration of CGP.");
 
         // create children and evaluate new generation
         ga_next_generation(cgp_population);
@@ -75,6 +87,12 @@ int simple_cgp_main(
         // last generation?
         if (cgp_population->generation >= config->max_generations) {
             printf("Generations limit reached (%d), terminating.\n", config->max_generations);
+            finished = true;
+        }
+
+        // target fitness achieved?
+        if (config->target_fitness != 0 && cgp_population->best_fitness >= config->target_fitness) {
+            printf("Target fitness reached (" FITNESS_FMT "), terminating.\n", config->target_fitness);
             finished = true;
         }
 
@@ -91,14 +109,21 @@ int simple_cgp_main(
         bool log_now = config->log_interval && (store_now || (cgp_population->generation % config->log_interval) == 0);
 
         if (is_better || log_now || signal || finished) {
-            _log_cgp(cgp_population, best_circuit_file_name, log_file);
+            _log_cgp(cgp_population, best_circuit_file_name_txt, best_circuit_file_name_chr, log_file);
+        }
+
+        if (is_better) {
+            cgp_current_best = cgp_population->best_fitness;
+
+            // save image
+            save_filtered_image(config->log_dir, cgp_population, img_noisy);
         }
 
         // store to vault
         if (finished || signal || store_now) {
 
-            // save image
-            save_filtered_image(config->log_dir, cgp_population, img_noisy);
+            // log that we are storing to vault
+            log_vault(stdout, cgp_population);
 
             // flush log file
             fflush(log_file);
@@ -107,7 +132,10 @@ int simple_cgp_main(
             if (config->vault_enabled) {
                 vault_store(vault, cgp_population);
             }
-            printf("Current output image and state stored.\n");
+        }
+
+        if (finished || signal) {
+            save_best_image(config->log_dir, cgp_population, img_noisy);
         }
 
         if (signal > 0) {
@@ -151,7 +179,8 @@ int coev_cgp_main(
     img_image_t img_noisy,
 
     // log files
-    char *best_circuit_file_name,
+    char *best_circuit_file_name_txt,
+    char *best_circuit_file_name_chr,
     FILE *log_file,
 
     // status
@@ -160,7 +189,6 @@ int coev_cgp_main(
     ga_fitness_t cgp_parent_fitness;
 
     while (!(*finished)) {
-        VERBOSELOG("One iteration of CGP.");
 
         // create children and evaluate new generation
         ga_create_children(cgp_population);
@@ -177,6 +205,12 @@ int coev_cgp_main(
             *finished = true;
         }
 
+        // target fitness achieved?
+        if (config->target_fitness != 0 && cgp_population->best_fitness >= config->target_fitness) {
+            printf("Target fitness reached (" FITNESS_FMT "), terminating.\n", config->target_fitness);
+            *finished = true;
+        }
+
         // check signals
         int signal = check_signals(cgp_population->generation);
 
@@ -190,11 +224,14 @@ int coev_cgp_main(
         bool log_now = config->log_interval && (store_now || (cgp_population->generation % config->log_interval) == 0);
 
         if (is_better || log_now || signal || *finished) {
-            _log_cgp(cgp_population, best_circuit_file_name, log_file);
+            _log_cgp(cgp_population, best_circuit_file_name_txt, best_circuit_file_name_chr, log_file);
         }
 
         // update archive if necessary
         if (is_better) {
+            // save image
+            save_filtered_image(config->log_dir, cgp_population, img_noisy);
+
             // store and recalculate predictors fitness
             ga_chr_t archived;
             #pragma omp critical (CGP_ARCHIVE)
@@ -221,8 +258,8 @@ int coev_cgp_main(
                  DOUBLE_LOG_PRED(log_pred_progress, log_file, pred_population, pred_archive);
             }
 
-            // save image
-            save_filtered_image(config->log_dir, cgp_population, img_noisy);
+            // log that we are storing to vault
+            log_vault(stdout, cgp_population);
 
             // flush log file
             fflush(log_file);
@@ -235,7 +272,11 @@ int coev_cgp_main(
                     vault_store(vault, cgp_population);
                 }
             }
-            printf("Current output image and state stored.\n");
+        }
+
+        if (*finished || signal > 0) {
+            DOUBLE_LOG(log_cgp_finished, log_file, cgp_population);
+            save_best_image(config->log_dir, cgp_population, img_noisy);
         }
 
         if (signal > 0) {
@@ -276,7 +317,6 @@ void coev_pred_main(
     bool *finished)
 {
     while (!(*finished)) {
-        VERBOSELOG("One iteration of predictors.");
 
         // next generation
         ga_create_children(pred_population);

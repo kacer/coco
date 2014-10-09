@@ -52,7 +52,8 @@ int simple_cgp_main(
     config_t *config,
     vault_storage_t *vault,
     img_image_t img_noisy,
-    char *best_circuit_file_name,
+    char *best_circuit_file_name_txt,
+    char *best_circuit_file_name_chr,
     FILE *log_file
 );
 
@@ -87,7 +88,8 @@ int coev_cgp_main(
     img_image_t img_noisy,
 
     // log files
-    char *best_circuit_file_name,
+    char *best_circuit_file_name_txt,
+    char *best_circuit_file_name_chr,
     FILE *log_file,
 
     // status

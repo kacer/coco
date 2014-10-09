@@ -34,6 +34,8 @@ static archive_t _cgp_archive;
 static archive_t _pred_archive;
 static double _psnr_coeficient;
 
+static long _cgp_evals;
+
 
 static inline double fitness_psnr_coeficient(int pixels_count)
 {
@@ -60,6 +62,7 @@ void fitness_init(img_image_t original, img_image_t noisy,
     _cgp_archive = cgp_archive;
     _pred_archive = pred_archive;
     _psnr_coeficient = fitness_psnr_coeficient(_noisy_image_windows->size);
+    _cgp_evals = 0;
 }
 
 
@@ -69,6 +72,15 @@ void fitness_init(img_image_t original, img_image_t noisy,
 void fitness_deinit()
 {
     img_windows_destroy(_noisy_image_windows);
+}
+
+
+/**
+ * Returns number of performed CGP evaluations
+ */
+long fitness_get_cgp_evals()
+{
+    return _cgp_evals;
 }
 
 
@@ -110,6 +122,8 @@ double _fitness_get_diff(ga_chr_t chr, img_window_t *w)
     cgp_value_t *inputs = w->pixels;
     cgp_value_t output_pixel;
     cgp_get_output(chr, inputs, &output_pixel);
+    #pragma omp atomic
+        _cgp_evals += 1;
     return output_pixel - img_get_pixel(_original_image, w->pos_x, w->pos_y);
 }
 
@@ -138,6 +152,8 @@ double _fitness_get_sqdiffsum_avx(ga_chr_t chr, img_window_t *w)
         double diff = output_pixel - img_get_pixel(_original_image, w[i].pos_x, w[i].pos_y);
         sum += diff * diff;
     }
+    #pragma omp atomic
+        _cgp_evals += 32;
     return sum;
 }
 
@@ -196,7 +212,7 @@ ga_fitness_t fitness_eval_cgp(ga_chr_t chr)
  */
 ga_fitness_t fitness_eval_or_predict_cgp(ga_chr_t chr)
 {
-    if (_pred_archive->stored > 0) {
+    if (_pred_archive && _pred_archive->stored > 0) {
         return fitness_predict_cgp(chr, arc_get(_pred_archive, 0));
     } else {
         return fitness_eval_cgp(chr);
@@ -248,31 +264,4 @@ ga_fitness_t fitness_eval_predictor(ga_chr_t pred_chr)
         sum += fabs(cgp_chr->fitness - predicted);
     }
     return sum / _cgp_archive->stored;
-}
-
-
-/**
- * Calculates fitness using the PSNR (peak signal-to-noise ratio) function.
- * The higher the value, the better the filter.
- *
- * @param  original image
- * @param  filtered image
- * @return fitness value (PSNR)
- */
-ga_fitness_t fitness_psnr(img_image_t original, img_image_t filtered)
-{
-    assert(original->width == filtered->width);
-    assert(original->height == filtered->height);
-    assert(original->comp == filtered->comp);
-
-    double sum = 0;
-
-    for (int x = 0; x < original->width; x++) {
-        for (int y = 0; y < original->height; y++) {
-            double diff = img_get_pixel(filtered, x, y) - img_get_pixel(original, x, y);
-            sum += diff * diff;
-        }
-    }
-
-    return _psnr_coeficient / sum;
 }

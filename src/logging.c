@@ -18,6 +18,7 @@
  */
 
 
+#include <math.h>
 #include <time.h>
 #include <errno.h>
 #include <string.h>
@@ -28,6 +29,7 @@
 #endif
 
 #include "logging.h"
+#include "fitness.h"
 
 
 /**
@@ -85,19 +87,44 @@ int log_create_dirs(const char *dir, char *vault_dir, int vault_dir_buffer_size)
 
 
 /**
- * Print current CGP progress
+ * Logs current CGP progress
  * @param  cgp_population
  */
-void log_cgp_progress(FILE *fp, ga_pop_t cgp_population)
+void log_cgp_progress(FILE *fp, ga_pop_t cgp_population, long cgp_evals)
 {
     log_entry_prolog(fp, SECTION_CGP);
-    fprintf(fp, "CGP generation %4d: best fitness " FITNESS_FMT "\n",
+    fprintf(fp, "CGP generation %4d: best fitness " FITNESS_FMT ", %ld evals\n",
+        cgp_population->generation, cgp_population->best_fitness, cgp_evals);
+}
+
+
+/**
+ * Logs that CGP has finished
+ * @param  cgp_population
+ */
+void log_cgp_finished(FILE *fp, ga_pop_t cgp_population)
+{
+    log_entry_prolog(fp, SECTION_SYS);
+    fprintf(fp, "Evolution finished. Best PSNR %.2f dB\n",
+        fitness_to_psnr(cgp_population->best_fitness));
+}
+
+
+/**
+ * Logs that evolution is stored to vault + prints best fitness
+ * @param  fp
+ * @param  cgp_population
+ */
+void log_vault(FILE *fp, ga_pop_t cgp_population)
+{
+    log_entry_prolog(fp, SECTION_SYS);
+    fprintf(fp, "Storing to vault. CGP generation %4d, best fitness " FITNESS_FMT "\n",
         cgp_population->generation, cgp_population->best_fitness);
 }
 
 
 /**
- * Print current predictors progress
+ * Logs current predictors progress
  * @param  pred_population
  * @param  pred_archive
  * @param  indent
@@ -173,6 +200,19 @@ void log_cgp_circuit(FILE *fp, ga_pop_t pop)
 
 
 /**
+ * Logs final summary
+ */
+void log_final_summary(FILE *fp, ga_pop_t cgp_population, long cgp_evals)
+{
+    fprintf(fp, "Final summary:\n\n");
+    fprintf(fp, "Generation: %d\n", cgp_population->generation);
+    fprintf(fp, "Best fitness: " FITNESS_FMT "\n", cgp_population->best_fitness);
+    fprintf(fp, "PSNR: %.2f\n", fitness_to_psnr(cgp_population->best_fitness));
+    fprintf(fp, "CGP evaluations: %ld\n", cgp_evals);
+}
+
+
+/**
  * Saves image named as filtered to results directory
  * @param cgp_population
  * @param noisy
@@ -180,8 +220,8 @@ void log_cgp_circuit(FILE *fp, ga_pop_t pop)
 void _save_filtered_image(const char *dir, img_image_t noisy, int generation)
 {
     char filename[MAX_FILENAME_LENGTH + 1];
-    snprintf(filename, MAX_FILENAME_LENGTH + 1, "%s/images/img_filtered_%08d.bmp", dir, generation);
-    img_save_bmp(noisy, filename);
+    snprintf(filename, MAX_FILENAME_LENGTH + 1, "%s/images/img_filtered_%08d.png", dir, generation);
+    img_save_png(noisy, filename);
 }
 
 
@@ -193,8 +233,22 @@ void _save_filtered_image(const char *dir, img_image_t noisy, int generation)
 void save_original_image(const char *dir, img_image_t original)
 {
     char filename[MAX_FILENAME_LENGTH + 1];
-    snprintf(filename, MAX_FILENAME_LENGTH + 1, "%s/images/img_original.bmp", dir);
-    img_save_bmp(original, filename);
+    snprintf(filename, MAX_FILENAME_LENGTH + 1, "%s/img_original.png", dir);
+    img_save_png(original, filename);
+}
+
+
+/**
+ * Saves best found image to results directory
+ * @param cgp_population
+ * @param noisy
+ */
+void save_best_image(const char *dir, ga_pop_t cgp_population, img_image_t noisy)
+{
+    img_image_t best = fitness_filter_image(cgp_population->best_chromosome);
+    char filename[MAX_FILENAME_LENGTH + 1];
+    snprintf(filename, MAX_FILENAME_LENGTH + 1, "%s/img_best.png", dir);
+    img_save_png(best, filename);
 }
 
 
@@ -205,7 +259,9 @@ void save_original_image(const char *dir, img_image_t original)
  */
 void save_noisy_image(const char *dir, img_image_t noisy)
 {
-    _save_filtered_image(dir, noisy, 0);
+    char filename[MAX_FILENAME_LENGTH + 1];
+    snprintf(filename, MAX_FILENAME_LENGTH + 1, "%s/img_noisy.png", dir);
+    img_save_png(noisy, filename);
 }
 
 
@@ -250,7 +306,7 @@ FILE *open_log_file(const char *dir, const char *file)
     FILE *fp = fopen(filename, "wt");
     if (fp) {
         log_entry_prolog(fp, SECTION_SYS);
-        fprintf(fp, "Log started.");
+        fprintf(fp, "Log started.\n");
     }
     return fp;
 }

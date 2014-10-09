@@ -272,13 +272,13 @@ void ga_invalidate_fitness(ga_pop_t pop)
 
 void _ga_find_new_best(ga_pop_t pop)
 {
-    ga_fitness_t best_fitness;
-    int best_index;
+    ga_fitness_t best_fitness = pop->chromosomes[0]->fitness;
+    int best_index = 0;
 
     /* find best fitness */
-    for (int i = 0; i < pop->size; i++) {
+    for (int i = 1; i < pop->size; i++) {
         ga_fitness_t f = pop->chromosomes[i]->fitness;
-        if (i == 0 || ga_is_better_or_same(pop->problem_type, f, best_fitness)) {
+        if (ga_is_better_or_same(pop->problem_type, f, best_fitness)) {
             best_fitness = f;
             best_index = i;
         }

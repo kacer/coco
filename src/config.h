@@ -46,6 +46,7 @@ static const char * const config_algorithm_names[] = {
 typedef struct
 {
     int max_generations;
+    double target_fitness;
     algorithm_t algorithm;
     unsigned int random_seed;
 
@@ -115,6 +116,15 @@ static inline void print_help() {
         "\n"
         "    --max-generations NUM, -g NUM\n"
         "          Stop after given number of CGP generations, default is 50000\n"
+        "\n"
+        "    --target-psnr NUM, -g NUM\n"
+        "          Stop after reaching given PSNR (0 to disable), default is 0\n"
+        "          If --target-fitness is specified, only one option is used.\n"
+        "\n"
+        "    --target-fitness NUM, -g NUM\n"
+        "          Stop after reaching given fitness (0 to disable), default is 0\n"
+        "          Fitness can be obtained from PSNR as F = 10 ^ (PSNR / 10).\n"
+        "          If --target-psnr is specified, only one option is used.\n"
         "\n"
         "    --vault, -v\n"
         "          Enable vault, it is disabled by default\n"

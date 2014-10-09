@@ -26,6 +26,9 @@
 #include <ctype.h>
 #include <signal.h>
 
+#include <sys/time.h>
+#include <sys/resource.h>
+
 #ifdef _OPENMP
   #include <omp.h>
 #endif
@@ -57,6 +60,27 @@ const int SIGINT_GENERATIONS_GAP = 1000;
 
 // special `check_signals` return value indicating first catch of SIGINT
 const int SIGINT_FIRST = -1;
+
+
+/**
+ * Calculates diff of two `struct timeval`
+ *
+ * http://www.gnu.org/software/libc/manual/html_node/Elapsed-Time.html
+ *
+ * @param  result
+ * @param  x
+ * @param  y
+ * @return
+ */
+int timeval_subtract(struct timeval *result, struct timeval *x, struct timeval *y);
+
+
+/**
+ * Prints `struct timeval` value in "12m34.567s" format
+ * @param fp
+ * @param time
+ */
+void fprint_timeval(FILE *fp, struct timeval *time);
 
 
 /**
@@ -117,6 +141,7 @@ int main(int argc, char *argv[])
     // configuration
     static config_t config = {
         .max_generations = 50000,
+        .target_fitness = 0,
         .algorithm = predictors,
 
         .cgp_mutate_genes = 5,
@@ -144,20 +169,25 @@ int main(int argc, char *argv[])
 
     // populations and archives
     ga_pop_t cgp_population;
-    ga_pop_t pred_population;
-    archive_t cgp_archive;
-    archive_t pred_archive;
+    ga_pop_t pred_population = NULL;
+    archive_t cgp_archive = NULL;
+    archive_t pred_archive = NULL;
 
     // images
     img_image_t img_original;
     img_image_t img_noisy;
 
     // log files
-    char best_circuit_file_name[MAX_FILENAME_LENGTH + 1];
+    char best_circuit_file_name_txt[MAX_FILENAME_LENGTH + 1];
+    char best_circuit_file_name_chr[MAX_FILENAME_LENGTH + 1];
     FILE *progress_log_file;
 
     // application exit code
     int retval = 0;
+
+    // resource usage
+    struct rusage resource_usage;
+    struct timeval usertime_start, usertime_end;
 
 
     /*
@@ -222,7 +252,9 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    snprintf(best_circuit_file_name, MAX_FILENAME_LENGTH + 1, "%s/best_circuit.log", config.log_dir);
+
+    snprintf(best_circuit_file_name_txt, MAX_FILENAME_LENGTH + 1, "%s/best_circuit.txt", config.log_dir);
+    snprintf(best_circuit_file_name_chr, MAX_FILENAME_LENGTH + 1, "%s/best_circuit.chr", config.log_dir);
 
 
     /*
@@ -234,45 +266,48 @@ int main(int argc, char *argv[])
 
     // evolution
     cgp_init(config.cgp_mutate_genes, fitness_eval_or_predict_cgp);
-    int img_size = img_original->width * img_original->height;
-    pred_init(
-        img_size - 1,  // max gene value
-        config.pred_size * img_size,   // max genome length
-        config.pred_size * img_size,   // initial genome length
-        config.pred_mutation_rate,     // % of mutated genes
-        config.pred_offspring_elite,   // % of elite children
-        config.pred_offspring_combine  // % of "crossovered" children
-    );
 
     // vault
     if (config.vault_enabled) {
         vault_init(&vault);
     }
 
-    // CGP archive
-    arc_func_vect_t arc_cgp_methods = {
-        .alloc_genome = cgp_alloc_genome,
-        .free_genome = cgp_free_genome,
-        .copy_genome = cgp_copy_genome,
-        .fitness = fitness_eval_cgp,
-    };
-    cgp_archive = arc_create(config.cgp_archive_size, arc_cgp_methods);
-    if (cgp_archive == NULL) {
-        fprintf(stderr, "Failed to initialize CGP archive.\n");
-        return 1;
-    }
+    // predictors population and CGP archive
+    if (true || config.algorithm != simple_cgp) {
+        int img_size = img_original->width * img_original->height;
+        pred_init(
+            img_size - 1,  // max gene value
+            config.pred_size * img_size,   // max genome length
+            config.pred_size * img_size,   // initial genome length
+            config.pred_mutation_rate,     // % of mutated genes
+            config.pred_offspring_elite,   // % of elite children
+            config.pred_offspring_combine  // % of "crossovered" children
+        );
 
-    // predictor archive
-    arc_func_vect_t arc_pred_methods = {
-        .alloc_genome = pred_alloc_genome,
-        .free_genome = pred_free_genome,
-        .copy_genome = pred_copy_genome,
-        .fitness = NULL,
-    };
-    pred_archive = arc_create(1, arc_pred_methods);
-    if (pred_archive == NULL) {
-        fprintf(stderr, "Failed to initialize predictors archive.\n");
-        return 1;
+        arc_func_vect_t arc_cgp_methods = {
+            .alloc_genome = cgp_alloc_genome,
+            .free_genome = cgp_free_genome,
+            .copy_genome = cgp_copy_genome,
+            .fitness = fitness_eval_cgp,
+        };
+        cgp_archive = arc_create(config.cgp_archive_size, arc_cgp_methods);
+        if (cgp_archive == NULL) {
+            fprintf(stderr, "Failed to initialize CGP archive.\n");
+            return 1;
+        }
+
+        // predictor archive
+        arc_func_vect_t arc_pred_methods = {
+            .alloc_genome = pred_alloc_genome,
+            .free_genome = pred_free_genome,
+            .copy_genome = pred_copy_genome,
+            .fitness = NULL,
+        };
+        pred_archive = arc_create(1, arc_pred_methods);
+        if (pred_archive == NULL) {
+            fprintf(stderr, "Failed to initialize predictors archive.\n");
+            return 1;
+        }
     }
 
     // fitness function
@@ -310,18 +345,24 @@ int main(int argc, char *argv[])
     SLOWLOG("Algorithm: %s", config_algorithm_names[config.algorithm]);
     SLOWLOG("Stop at generation: %d", config.max_generations);
     SLOWLOG("Initial \"PSNR\" value:         %.10g",
-        fitness_psnr(img_original, img_noisy));
+        img_psnr(img_original, img_noisy));
 
     DEBUGLOG("Evaluating CGP population...");
     ga_evaluate_pop(cgp_population);
-    arc_insert(cgp_archive, cgp_population->best_chromosome);
 
-    DEBUGLOG("Evaluating PRED population...");
-    ga_evaluate_pop(pred_population);
-    arc_insert(pred_archive, pred_population->best_chromosome);
+    if (config.algorithm != simple_cgp) {
+        arc_insert(cgp_archive, cgp_population->best_chromosome);
 
-    DEBUGLOG("Best fitness: CGP %.10g, PRED %.10g",
-        cgp_population->best_fitness, pred_population->best_fitness);
+        DEBUGLOG("Evaluating PRED population...");
+        ga_evaluate_pop(pred_population);
+        arc_insert(pred_archive, pred_population->best_chromosome);
+
+        DEBUGLOG("Best fitness: CGP %.10g, PRED %.10g",
+            cgp_population->best_fitness, pred_population->best_fitness);
+
+    } else {
+        DEBUGLOG("Best fitness: %.10g", cgp_population->best_fitness);
+    }
 
     save_original_image(config.log_dir, img_original);
     save_noisy_image(config.log_dir, img_noisy);
@@ -333,6 +374,10 @@ int main(int argc, char *argv[])
      */
 
     DEBUGLOG("Starting the big while loop.");
+
+    getrusage(RUSAGE_SELF, &resource_usage);
+    usertime_start = resource_usage.ru_utime;
+
 
     // shared among threads
     bool finished = false;
@@ -349,10 +394,11 @@ int main(int argc, char *argv[])
                 &config,
                 &vault,
                 img_noisy,
-                best_circuit_file_name,
+                best_circuit_file_name_txt,
+                best_circuit_file_name_chr,
                 progress_log_file
             );
-            goto cleanup;
+            goto done;
 
         case predictors:
             #pragma omp parallel sections num_threads(2)
@@ -371,7 +417,8 @@ int main(int argc, char *argv[])
                         &config,
                         &vault,
                         img_noisy,
-                        best_circuit_file_name,
+                        best_circuit_file_name_txt,
+                        best_circuit_file_name_chr,
                         progress_log_file,
                         &finished
                     );
@@ -388,7 +435,7 @@ int main(int argc, char *argv[])
                     );
                 }
             }
-            goto cleanup;
+            goto done;
 
         default:
             fprintf(stderr, "Algorithm '%s' is not supported yet.\n",
@@ -399,19 +446,58 @@ int main(int argc, char *argv[])
 
 
     /*
-        Clean-up
+        Dump summary and clean-up
      */
 
 
-cleanup:
+done:
+
+    // dump evolution summary
+    getrusage(RUSAGE_SELF, &resource_usage);
+    usertime_end = resource_usage.ru_utime;
+
+    struct timeval usertime_diff;
+    timeval_subtract(&usertime_diff, &usertime_end, &usertime_start);
+
+    log_final_summary(stdout, cgp_population, fitness_get_cgp_evals());
+    fprintf(stdout, "\nTime in user mode:");
+    fprintf(stdout, "\n- start: ");
+    fprint_timeval(stdout, &usertime_start);
+    fprintf(stdout, "\n- end:   ");
+    fprint_timeval(stdout, &usertime_end);
+    fprintf(stdout, "\n- diff:  ");
+    fprint_timeval(stdout, &usertime_diff);
+    fprintf(stdout, "\n");
+
+    FILE *summary_file;
+    if ((summary_file = open_log_file(config.log_dir, "summary.log")) == NULL) {
+        fprintf(stderr, "Failed to open 'summary.log' in results dir for writing.\n");
+
+    } else {
+
+
+        log_final_summary(summary_file, cgp_population, fitness_get_cgp_evals());
+
+        fprintf(summary_file, "\nTime in user mode:");
+        fprintf(summary_file, "\n- start: ");
+        fprint_timeval(summary_file, &usertime_start);
+        fprintf(summary_file, "\n- end:   ");
+        fprint_timeval(summary_file, &usertime_end);
+        fprintf(summary_file, "\n- diff:  ");
+        fprint_timeval(summary_file, &usertime_diff);
+        fprintf(summary_file, "\n");
+    }
 
     // dump config once again
     config_save_file(stdout, &config);
 
     ga_destroy_pop(cgp_population);
-    ga_destroy_pop(pred_population);
-    arc_destroy(cgp_archive);
-    arc_destroy(pred_archive);
+
+    if (config.algorithm != simple_cgp) {
+        ga_destroy_pop(pred_population);
+        arc_destroy(cgp_archive);
+        arc_destroy(pred_archive);
+    }
     cgp_deinit();
     fitness_deinit();
 
@@ -421,4 +507,58 @@ cleanup:
     fclose(progress_log_file);
 
     return retval;
+}
+
+
+/**
+ * Calculates difference of two `struct timeval` values
+ *
+ * http://www.gnu.org/software/libc/manual/html_node/Elapsed-Time.html
+ *
+ * @param  result
+ * @param  x
+ * @param  y
+ * @return 1 if the difference is negative, otherwise 0.
+ */
+int timeval_subtract(struct timeval *result, struct timeval *x, struct timeval *y)
+{
+    /* Perform the carry for the later subtraction by updating y. */
+    if (x->tv_usec < y->tv_usec) {
+        int nsec = (y->tv_usec - x->tv_usec) / 1000000 + 1;
+        y->tv_usec -= 1000000 * nsec;
+        y->tv_sec += nsec;
+    }
+    if (x->tv_usec - y->tv_usec > 1000000) {
+        int nsec = (x->tv_usec - y->tv_usec) / 1000000;
+        y->tv_usec += 1000000 * nsec;
+        y->tv_sec -= nsec;
+    }
+
+    /* Compute the time remaining to wait.
+     tv_usec is certainly positive. */
+    result->tv_sec = x->tv_sec - y->tv_sec;
+    result->tv_usec = x->tv_usec - y->tv_usec;
+
+    /* Return 1 if result is negative. */
+    return x->tv_sec < y->tv_sec;
+}
+
+
+/**
+ * Prints `struct timeval` value in "12m34.567s" format
+ * @param fp
+ * @param time
+ */
+void fprint_timeval(FILE *fp, struct timeval *time)
+{
+    long minutes = time->tv_sec / 60;
+    long seconds = time->tv_sec % 60;
+    long microseconds = time->tv_usec;
+
+    if (microseconds < 0) {
+        microseconds = 1 - microseconds;
+        seconds--;
+    }
+
+    fprintf(fp, "%ldm%ld.%06lds", minutes, seconds, microseconds);
 }

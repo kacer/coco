@@ -18,6 +18,7 @@
  */
 
 
+#include <math.h>
 #include <time.h>
 #include <stdlib.h>
 #include <string.h>
@@ -26,10 +27,19 @@
 #include <ctype.h>
 #include <errno.h>
 
+#ifdef _OPENMP
+    #include <omp.h>
+#endif
+
 #include "config.h"
+#include "cpu.h"
+#include "cgp_config.h"
+#include "logging.h"  /* for FITNESS_FMT */
 
 
 #define OPT_MAX_GENERATIONS 'g'
+#define OPT_TARGET_PSNR 't'
+#define OPT_TARGET_FITNESS 'f'
 
 #define OPT_ALGORITHM 'a'
 #define OPT_RANDOM_SEED 'r'
@@ -59,6 +69,8 @@ static struct option long_options[] =
     {"help", no_argument, 0, OPT_HELP},
 
     {"max-generations", required_argument, 0, OPT_MAX_GENERATIONS},
+    {"target-psnr", required_argument, 0, OPT_TARGET_PSNR},
+    {"target-fitness", required_argument, 0, OPT_TARGET_FITNESS},
 
     /* Algorithm mode */
     {"algorithm", required_argument, 0, OPT_ALGORITHM},
@@ -91,7 +103,7 @@ static struct option long_options[] =
     {0, 0, 0, 0}
 };
 
-static const char *short_options = "hg:a:r:i:n:vw:l:k:m:p:s:S:M:P";
+static const char *short_options = "hg:t:f:a:r:i:n:vw:l:k:m:p:s:S:M:P";
 
 
 #define CHECK_FILENAME_LENGTH do { \
@@ -146,6 +158,8 @@ int config_load_args(int argc, char **argv, config_t *cfg)
         int c = getopt_long(argc, argv, short_options, long_options, &option_index);
         if (c == - 1) break;
 
+        double target_psnr;
+
         switch (c) {
             case OPT_HELP:
                 print_help();
@@ -153,6 +167,15 @@ int config_load_args(int argc, char **argv, config_t *cfg)
 
             case OPT_MAX_GENERATIONS:
                 PARSE_INT(cfg->max_generations);
+                break;
+
+            case OPT_TARGET_PSNR:
+                PARSE_DOUBLE(target_psnr);
+                cfg->target_fitness = pow(10, (target_psnr / 10));
+                break;
+
+            case OPT_TARGET_FITNESS:
+                PARSE_DOUBLE(cfg->target_fitness);
                 break;
 
             case OPT_ALGORITHM:
@@ -260,6 +283,7 @@ void config_save_file(FILE *file, config_t *cfg)
     fprintf(file, "algorithm: %s\n", config_algorithm_names[cfg->algorithm]);
     fprintf(file, "random-seed: %u\n", cfg->random_seed);
     fprintf(file, "max-generations: %d\n", cfg->max_generations);
+    fprintf(file, "target_fitness: " FITNESS_FMT "\n", cfg->target_fitness);
     fprintf(file, "vault: %s\n", cfg->vault_enabled? "yes" : "no");
     fprintf(file, "vault-interval: %d\n", cfg->vault_interval);
     fprintf(file, "log-dir: %s\n", cfg->log_dir);
@@ -270,4 +294,31 @@ void config_save_file(FILE *file, config_t *cfg)
     fprintf(file, "pred-size: %.5g\n", cfg->pred_size);
     fprintf(file, "pred-mutate: %.5g\n", cfg->pred_mutation_rate);
     fprintf(file, "pred-population-size: %d\n", cfg->pred_population_size);
+    fprintf(file, "\n");
+    fprintf(file, "# Compiler flags\n");
+    fprintf(file, "# CGP_COLS: %d\n", CGP_COLS);
+    fprintf(file, "# CGP_ROWS: %d\n", CGP_ROWS);
+    fprintf(file, "# CGP_INPUTS: %d\n", CGP_INPUTS);
+    fprintf(file, "# CGP_OUTPUTS: %d\n", CGP_OUTPUTS);
+    fprintf(file, "# CGP_LBACK: %d\n", CGP_LBACK);
+    #ifdef CGP_LIMIT_FUNCS
+        fprintf(file, "# CGP_LIMIT_FUNCS: yes\n");
+    #else
+        fprintf(file, "# CGP_LIMIT_FUNCS: no\n");
+    #endif
+    fprintf(file, "#\n");
+    fprintf(file, "# System\n");
+    #ifdef _OPENMP
+        fprintf(file, "# OpenMP: yes\n");
+        fprintf(file, "# OpenMP CPUs: %d\n", omp_get_num_procs());
+        fprintf(file, "# OpenMP max threads: %d\n", omp_get_max_threads());
+    #else
+        fprintf(file, "# OpenMP: no\n");
+    #endif
+    #ifdef AVX2
+        fprintf(file, "# AVX2: yes\n");
+        fprintf(file, "# AVX2 supported in CPU: %s\n", can_use_intel_core_4th_gen_features()? "yes" : "no");
+    #else
+        fprintf(file, "# AVX2: no\n");
+    #endif
 }
