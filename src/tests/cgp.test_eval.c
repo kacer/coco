@@ -1,6 +1,7 @@
 /**
  * Tests CGP evaluation = calculation of the outputs.
  * Compile with -DTEST_EVAL
+ * Source files cgp_core.c cgp_dump.c ga.c
  */
 
 #include <stdlib.h>
@@ -35,7 +36,7 @@ int main(int argc, char const *argv[])
     // define outputs
     genome->outputs[0] = 13;
 
-    cgp_dump_chr_asciiart(&chr, stdout);
+    cgp_dump_chr_asciiart(&chr, stdout, false);
     putchar('\n');
     cgp_get_output(&chr, inputs, outputs);
 

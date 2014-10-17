@@ -186,6 +186,40 @@ img_window_array_t img_split_windows(img_image_t img) {
 
 
 /**
+ * Splits image into windows, suitably for SIMD processing
+ * @param  filename
+ * @return 0 on success
+ */
+int img_split_windows_simd(img_image_t img, img_pixel_t *out[WINDOW_SIZE])
+{
+    for (int i = 0; i < WINDOW_SIZE; i++) {
+        out[i] = (img_pixel_t*) malloc(sizeof(img_pixel_t) * img->width * img->height);
+        if (out[i] == NULL) {
+            // TODO: dealloc
+            return -1;
+        }
+    }
+
+    for (int x = 0; x < img->width; x++) {
+        for (int y = 0; y < img->height; y++) {
+            int index = img_pixel_index(img, x, y);
+            out[0][index] = img->data[get_neighbour_index(x, y, img->width, img->height, -1, -1)];
+            out[1][index] = img->data[get_neighbour_index(x, y, img->width, img->height,  0, -1)];
+            out[2][index] = img->data[get_neighbour_index(x, y, img->width, img->height, +1, -1)];
+            out[3][index] = img->data[get_neighbour_index(x, y, img->width, img->height, -1,  0)];
+            out[4][index] = img->data[get_neighbour_index(x, y, img->width, img->height,  0,  0)];
+            out[5][index] = img->data[get_neighbour_index(x, y, img->width, img->height, +1,  0)];
+            out[6][index] = img->data[get_neighbour_index(x, y, img->width, img->height, -1, +1)];
+            out[7][index] = img->data[get_neighbour_index(x, y, img->width, img->height,  0, +1)];
+            out[8][index] = img->data[get_neighbour_index(x, y, img->width, img->height, +1, +1)];
+        }
+    }
+
+    return 0;
+}
+
+
+/**
  * Calculates fitness using the PSNR (peak signal-to-noise ratio) function.
  * The higher the value, the better the filter.
  *

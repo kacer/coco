@@ -26,10 +26,12 @@
 #include "cpu.h"
 #include "fitness.h"
 #include "cgp_avx.h"
+#include "cgp_sse.h"
 
 
 static img_image_t _original_image;
 static img_window_array_t _noisy_image_windows;
+static img_pixel_t *_noisy_image_simd[WINDOW_SIZE];
 static archive_t _cgp_archive;
 static archive_t _pred_archive;
 static double _psnr_coeficient;
@@ -63,6 +65,10 @@ void fitness_init(img_image_t original, img_image_t noisy,
     _pred_archive = pred_archive;
     _psnr_coeficient = fitness_psnr_coeficient(_noisy_image_windows->size);
     _cgp_evals = 0;
+
+    #if defined(AVX) || defined(SSE2)
+        img_split_windows_simd(noisy, _noisy_image_simd);
+    #endif
 }
 
 
@@ -158,6 +164,40 @@ double _fitness_get_sqdiffsum_avx(ga_chr_t chr, img_window_t *w)
 }
 
 
+/**
+ * Calculates difference between original and filtered pixel
+ *
+ * @param  chr
+ * @param  w
+ * @return
+ */
+double _fitness_get_sqdiffsum_sse(ga_chr_t chr, int offset)
+{
+    __m128i_aligned sse_inputs[CGP_INPUTS];
+    __m128i_aligned sse_outputs[CGP_OUTPUTS];
+
+    for (int i = 0; i < CGP_INPUTS; i++) {
+        sse_inputs[i] = _mm_load_si128((__m128i*)(&_noisy_image_simd[i][offset]));
+    }
+
+    cgp_get_output_sse(chr, sse_inputs, sse_outputs);
+
+    // compute  difference in one go
+    __m128i sse_diff = _mm_sub_epi8(sse_outputs[0], *(__m128i*)(&_original_image->data[offset]));
+    unsigned char *diff_ptr = (unsigned char*) &sse_diff;
+
+    // store
+    double sum = 0;
+    for (int i = 0; i < 16; i++) {
+        int diff = diff_ptr[i];
+        sum += diff * diff;
+    }
+    #pragma omp atomic
+        _cgp_evals += 16;
+    return sum;
+}
+
+
 double _fitness_get_sqdiffsum_scalar(ga_chr_t chr)
 {
     double sum = 0;
@@ -181,7 +221,6 @@ ga_fitness_t fitness_eval_cgp(ga_chr_t chr)
     double sum = 0;
 
 #ifdef AVX2
-
     if(can_use_intel_core_4th_gen_features()) {
         assert((_noisy_image_windows->size % 32) == 0);
         for (int i = 0; i < _noisy_image_windows->size; i += 32) {
@@ -190,16 +229,23 @@ ga_fitness_t fitness_eval_cgp(ga_chr_t chr)
             sum += subsum;
         }
 
-    } else {
-        sum = _fitness_get_sqdiffsum_scalar(chr);
+        return _psnr_coeficient / sum;
     }
-
-#else
-
-    sum = _fitness_get_sqdiffsum_scalar(chr);
-
 #endif
 
+#ifdef SSE2
+    if(can_use_sse2()) {
+        assert((_noisy_image_windows->size % 16) == 0);
+        for (int i = 0; i < _noisy_image_windows->size; i += 16) {
+            double subsum = _fitness_get_sqdiffsum_sse(chr, i);
+            sum += subsum;
+        }
+
+        return _psnr_coeficient / sum;
+    }
+#endif
+
+    sum = _fitness_get_sqdiffsum_scalar(chr);
     return _psnr_coeficient / sum;
 }
 

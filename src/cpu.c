@@ -38,6 +38,16 @@ int check_4th_gen_intel_core_features()
     return _may_i_use_cpu_feature( the_4th_gen_features );
 }
 
+int check_sse4_1()
+{
+    return _may_i_use_cpu_feature(_FEATURE_SSE4_1);
+}
+
+int check_sse2()
+{
+    return _may_i_use_cpu_feature(_FEATURE_SSE2);
+}
+
 #else /* non-Intel compiler */
 
 #include <stdint.h>
@@ -47,31 +57,31 @@ int check_4th_gen_intel_core_features()
 
 void run_cpuid(uint32_t eax, uint32_t ecx, uint32_t* abcd)
 {
-#if defined(_MSC_VER)
-    __cpuidex(abcd, eax, ecx);
-#else
-    uint32_t ebx, edx;
-# if defined( __i386__ ) && defined ( __PIC__ )
-     /* in case of PIC under 32-bit EBX cannot be clobbered */
-    __asm__ ( "movl %%ebx, %%edi \n\t cpuid \n\t xchgl %%ebx, %%edi" : "=D" (ebx),
-# else
-    #pragma GCC diagnostic ignored "-Wuninitialized"
-    __asm__ ( "cpuid" : "+b" (ebx),
-# endif
-              "+a" (eax), "+c" (ecx), "=d" (edx) );
-    abcd[0] = eax; abcd[1] = ebx; abcd[2] = ecx; abcd[3] = edx;
-#endif
+    #if defined(_MSC_VER)
+        __cpuidex(abcd, eax, ecx);
+    #else
+        uint32_t ebx, edx;
+    # if defined( __i386__ ) && defined ( __PIC__ )
+         /* in case of PIC under 32-bit EBX cannot be clobbered */
+        __asm__ ( "movl %%ebx, %%edi \n\t cpuid \n\t xchgl %%ebx, %%edi" : "=D" (ebx),
+    # else
+        #pragma GCC diagnostic ignored "-Wuninitialized"
+        __asm__ ( "cpuid" : "+b" (ebx),
+    # endif
+                  "+a" (eax), "+c" (ecx), "=d" (edx) );
+        abcd[0] = eax; abcd[1] = ebx; abcd[2] = ecx; abcd[3] = edx;
+    #endif
 }
 
 int check_xcr0_ymm()
 {
-    uint32_t xcr0;
-#if defined(_MSC_VER)
-    xcr0 = (uint32_t)_xgetbv(0);  /* min VS2010 SP1 compiler is required */
-#else
-    __asm__ ("xgetbv" : "=a" (xcr0) : "c" (0) : "%edx" );
-#endif
-    return ((xcr0 & 6) == 6); /* checking if xmm and ymm state are enabled in XCR0 */
+        uint32_t xcr0;
+    #if defined(_MSC_VER)
+        xcr0 = (uint32_t)_xgetbv(0);  /* min VS2010 SP1 compiler is required */
+    #else
+        __asm__ ("xgetbv" : "=a" (xcr0) : "c" (0) : "%edx" );
+    #endif
+        return ((xcr0 & 6) == 6); /* checking if xmm and ymm state are enabled in XCR0 */
 }
 
 
@@ -106,6 +116,41 @@ int check_4th_gen_intel_core_features()
     return 1;
 }
 
+/**
+ * Checks whether current CPU supports SSE4.1 instruction set
+ *
+ * Source:
+ *     http://stackoverflow.com/questions/6121792/how-to-check-if-a-cpu-supports-the-sse3-instruction-set
+ *     http://stackoverflow.com/a/7495023
+ */
+int check_sse4_1()
+{
+    uint32_t abcd[4];
+    uint32_t sse4_1_mask = (1 << 19);
+
+    run_cpuid(1, 0, abcd);
+    /* CPUID.(EAX=01H, ECX=0H):ECX.SSE41[bit 19]==1 */
+    return (abcd[2] & sse4_1_mask) != 0;
+}
+
+
+/**
+ * Checks whether current CPU supports SSE2 instruction set
+ *
+ * Source:
+ *     http://stackoverflow.com/questions/6121792/how-to-check-if-a-cpu-supports-the-sse3-instruction-set
+ *     http://stackoverflow.com/a/7495023
+ */
+int check_sse2()
+{
+    uint32_t abcd[4];
+    uint32_t sse2_mask = (1 << 26);
+
+    run_cpuid(1, 0, abcd);
+    /* CPUID.(EAX=01H, ECX=0H):EDX.SSE2[bit 26]==1 */
+    return (abcd[3] & sse2_mask) != 0;
+}
+
 #endif /* non-Intel compiler */
 
 
@@ -120,4 +165,22 @@ int can_use_intel_core_4th_gen_features()
         the_4th_gen_features_available = check_4th_gen_intel_core_features();
 
     return the_4th_gen_features_available;
+}
+
+
+/**
+ * Checks whether current CPU supports SSE4.1 instruction set
+ */
+int can_use_sse4_1()
+{
+    return check_sse4_1();
+}
+
+
+/**
+ * Checks whether current CPU supports SSE2 instruction set
+ */
+int can_use_sse2()
+{
+    return check_sse2();
 }

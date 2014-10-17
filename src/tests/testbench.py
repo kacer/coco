@@ -113,11 +113,14 @@ def main():
                         help='Do not use valgrind')
     parser.add_argument('--verbose', '-v', action='store_true',
                         help='Do not use valgrind')
+    parser.add_argument('--ignore-gcc-warnings', '-w', action='store_true',
+                        help='Ignore GCC warnings')
     parser.add_argument('--stop', '-s', action='store_true',
                         help='Stop on first failure')
     args = parser.parse_args()
     verbose = args.verbose
     stop_on_failure = args.stop
+    ignore_gcc_warnings = args.ignore_gcc_warnings
 
     gcc, gcc_flags, gcc_sources = parse_makefile('../Makefile')
 
@@ -153,6 +156,9 @@ def main():
                 if line.startswith('Compile with'):
                     flags.extend(re.split('[\s*,]', line[13:]))
 
+                if line.startswith('Source files'):
+                    gcc_sources = list(split_and_filter_sources(line[13:]))
+
                 elif line.startswith('"Stand-alone" test executable'):
                     use_diff = False
 
@@ -177,9 +183,20 @@ def main():
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
             out, err = p.communicate()
-            if err or p.returncode != 0:
-                print(red('Test %s failed to compile' % (testfile)))
+            gcc_failed = False
+            if p.returncode != 0:
+                print(red('Test %s failed to compile (retval = %u)' % (testfile, p.returncode)))
+                gcc_failed = True
+
+            if err != 0:
+                if p.returncode == 0 and ignore_gcc_warnings:
+                    print(yellow('Test %s compiled with warnings' % (testfile)))
+                else:
+                    print(red('Test %s failed to compile (stderr non-empty)' % (testfile)))
+                    gcc_failed = True
                 print(err, file=sys.stderr)
+
+            if gcc_failed:
                 if stop_on_failure:
                     return
                 else:

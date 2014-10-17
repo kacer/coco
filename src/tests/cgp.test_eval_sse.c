@@ -1,6 +1,7 @@
 /**
  * Tests CGP evaluation = calculation of the outputs.
- * Compile with -DTEST_EVAL_AVX
+ * Compile with -DTEST_EVAL_SSE2 -DSSE2
+ * Source files cgp_core.c cgp_dump.c cgp_sse.c cpu.c ga.c
  */
 
 #include <stdlib.h>
@@ -9,7 +10,7 @@
 
 #include "../cpu.h"
 #include "../cgp.h"
-#include "../cgp_avx.h"
+#include "../cgp_sse.h"
 
 
 
@@ -18,18 +19,36 @@
 #define in16 in4, in4, in4, in4
 #define in32 in16, in16
 
+#define rep4(x) (x), (x), (x), (x)
+#define rep16(x) rep4((x)), rep4((x)), rep4((x)), rep4((x))
+
 
 int main(int argc, char const *argv[])
 {
     // pre-flight check
-    if (!can_use_intel_core_4th_gen_features()) {
-        fprintf(stderr, "%s", "AVX2 not supported.\n");
+    if (!can_use_sse4_1()) {
+        fprintf(stderr, "%s", "SSE4.1 is not supported.\n");
         exit(1);
     }
 
+    unsigned char _inputs[CGP_INPUTS][16] = {
+        {rep16(0)},
+        {rep16(1)},
+        {rep16(2)},
+        {rep16(3)},
+        {rep16(4)},
+        {rep16(5)},
+        {rep16(6)},
+        {rep16(7)},
+        {rep16(8)},
+    };
 
-    cgp_value_t inputs[32][CGP_INPUTS] = {in32};
-    cgp_value_t outputs[32][CGP_OUTPUTS] = {};
+    __m128i_aligned inputs[CGP_INPUTS];
+    __m128i_aligned outputs[CGP_OUTPUTS];
+
+    for (int i = 0; i < CGP_INPUTS; i++) {
+        inputs[i] = _mm_load_si128((__m128i*)(&_inputs[i]));
+    };
 
     cgp_init(0, NULL);
 
@@ -54,7 +73,7 @@ int main(int argc, char const *argv[])
 
     cgp_dump_chr_asciiart(&chr, stdout, false);
     putchar('\n');
-    cgp_get_output_avx(&chr, inputs, outputs);
+    cgp_get_output_sse(&chr, inputs, outputs);
 
     free(genome);
     cgp_deinit();

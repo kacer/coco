@@ -221,6 +221,15 @@ int main(int argc, char *argv[])
         printf("AVX2 is disabled. Recompile with -DAVX2 defined to enable.\n");
     #endif
 
+    #ifdef SSE2
+        if (can_use_sse2()) {
+            printf("SSE2 is enabled.\n");
+        } else {
+            printf("SSE2 is enabled, but not supported by CPU.\n");
+        }
+    #else
+        printf("SSE2 is disabled. Recompile with -DSSE2 defined to enable.\n");
+    #endif
 
     /*
         Load configuration and images and init log directory and files
