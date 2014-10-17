@@ -20,15 +20,17 @@
 
 CC=gcc
 CFLAGS=-g -Wall -std=c11 -fopenmp -march=native -D_XOPEN_SOURCE=700 -O2 \
-	-DSSE2 -DxAVX2 -DDEBUG -DxVERBOSE -DCGP_LIMIT_FUNCS -DxTEST_EVAL_SSE2
+	-DSSE2 -DxAVX2 -DDEBUG -DxVERBOSE -DCGP_LIMIT_FUNCS
 EXECUTABLE=coco
 CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_10.png -a cgp -g 5000
 SERVER=merlin
 SERVER_LOCATION=~/coco
 SOURCES=main.c cpu.c ga.c cgp_core.c cgp_dump.c cgp_load.c cgp_avx.c cgp_sse.c \
-	predictors.c image.c fitness.c vault.c archive.c config.c logging.c algo.c
+	predictors.c image.c fitness.c fitness_avx.c fitness_sse.c vault.c \
+	archive.c config.c logging.c algo.c
 OFILES= main.o cpu.o ga.o cgp_core.o cgp_dump.o cgp_load.o cgp_avx.o cgp_sse.o \
-	predictors.o image.o fitness.o vault.o archive.o config.o logging.o algo.o
+	predictors.o image.o fitness.o fitness_avx.o fitness_sse.o vault.o \
+	archive.o config.o logging.o algo.o
 LIBS=-lm -lc
 
 all: $(EXECUTABLE)
@@ -69,11 +71,21 @@ download:
 start:
 	ssh $(SERVER) "$(SERVER_LOCATION)/$(EXECUTABLE) $(CMDLINE)"
 
+# AVX2 support
+
 cgp_avx.o: cgp_avx.c
 	$(CC) $(CFLAGS) -mavx2 -c $< -o $@
 
+fitness_avx.o: fitness_avx.c
+	$(CC) $(CFLAGS) -mavx2 -c $< -o $@
+
+# SSE2 support
+
 cgp_sse.o: cgp_sse.c
-	$(CC) $(CFLAGS) -msse4.1 -c $< -o $@
+	$(CC) $(CFLAGS) -msse2 -c $< -o $@
+
+fitness_sse.o: fitness_sse.c
+	$(CC) $(CFLAGS) -msse2 -c $< -o $@
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@

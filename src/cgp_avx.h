@@ -20,7 +20,12 @@
 
 #pragma once
 
+#include <immintrin.h>
+
 #include "cgp_core.h"
+
+
+typedef __m256i __m256i_aligned __attribute__ ((aligned (32)));
 
 
 /**
@@ -29,4 +34,4 @@
  * @param inputs
  * @param outputs
  */
-void cgp_get_output_avx(ga_chr_t chromosome, unsigned char _inputs[32][CGP_INPUTS], unsigned char _outputs[32][CGP_OUTPUTS]);
+void cgp_get_output_avx(ga_chr_t chromosome, __m256i_aligned inputs[CGP_INPUTS], __m256i_aligned outputs[CGP_OUTPUTS]);

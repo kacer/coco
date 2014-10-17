@@ -321,4 +321,10 @@ void config_save_file(FILE *file, config_t *cfg)
     #else
         fprintf(file, "# AVX2: no\n");
     #endif
+    #ifdef SSE2
+        fprintf(file, "# SSE2: yes\n");
+        fprintf(file, "# SSE2 supported in CPU: %s\n", can_use_sse2()? "yes" : "no");
+    #else
+        fprintf(file, "# SSE2: no\n");
+    #endif
 }

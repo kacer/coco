@@ -26,8 +26,8 @@
 int main(int argc, char const *argv[])
 {
     // pre-flight check
-    if (!can_use_sse4_1()) {
-        fprintf(stderr, "%s", "SSE4.1 is not supported.\n");
+    if (!can_use_sse2()) {
+        fprintf(stderr, "%s", "SSE2 is not supported.\n");
         exit(1);
     }
 

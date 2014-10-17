@@ -1,6 +1,7 @@
 /**
  * Tests CGP evaluation = calculation of the outputs.
- * Compile with -DTEST_EVAL_AVX
+ * Compile with -DTEST_EVAL_AVX -DAVX2
+ * Source files cgp_core.c cgp_dump.c cgp_avx.c cpu.c ga.c
  */
 
 #include <stdlib.h>
@@ -18,6 +19,10 @@
 #define in16 in4, in4, in4, in4
 #define in32 in16, in16
 
+#define rep4(x) (x), (x), (x), (x)
+#define rep16(x) rep4((x)), rep4((x)), rep4((x)), rep4((x))
+#define rep32(x) rep16((x)), rep16((x))
+
 
 int main(int argc, char const *argv[])
 {
@@ -28,8 +33,24 @@ int main(int argc, char const *argv[])
     }
 
 
-    cgp_value_t inputs[32][CGP_INPUTS] = {in32};
-    cgp_value_t outputs[32][CGP_OUTPUTS] = {};
+    unsigned char _inputs[CGP_INPUTS][32] = {
+        {rep32(0)},
+        {rep32(1)},
+        {rep32(2)},
+        {rep32(3)},
+        {rep32(4)},
+        {rep32(5)},
+        {rep32(6)},
+        {rep32(7)},
+        {rep32(8)},
+    };
+
+    __m256i_aligned inputs[CGP_INPUTS];
+    __m256i_aligned outputs[CGP_OUTPUTS];
+
+    for (int i = 0; i < CGP_INPUTS; i++) {
+        inputs[i] = _mm256_load_si256((__m256i*)(&_inputs[i]));
+    };
 
     cgp_init(0, NULL);
 

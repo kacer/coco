@@ -117,3 +117,38 @@ ga_fitness_t fitness_psnr(img_image_t original, img_image_t filtered);
 static inline double fitness_to_psnr(ga_fitness_t f) {
     return 10 * log10(f);
 }
+
+
+
+/**
+ * Calculates difference between original and filtered pixel using SSE2
+ * instructions.
+ *
+ * One call equals 16 CGP evaluations.
+ *
+ * @param  chr
+ * @param  w
+ * @return
+ */
+double _fitness_get_sqdiffsum_sse(
+    img_image_t _original_image,
+    img_pixel_t *_noisy_image_simd[WINDOW_SIZE],
+    ga_chr_t chr,
+    int offset);
+
+
+/**
+ * Calculates difference between original and filtered pixel using AVX2
+ * instructions.
+ *
+ * One call equals 32 CGP evaluations.
+ *
+ * @param  chr
+ * @param  w
+ * @return
+ */
+double _fitness_get_sqdiffsum_avx(
+    img_image_t _original_image,
+    img_pixel_t *_noisy_image_simd[WINDOW_SIZE],
+    ga_chr_t chr,
+    int offset);

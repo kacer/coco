@@ -25,9 +25,6 @@
 
 #include "cpu.h"
 #include "fitness.h"
-#include "cgp_avx.h"
-#include "cgp_sse.h"
-
 
 static img_image_t _original_image;
 static img_window_array_t _noisy_image_windows;
@@ -134,70 +131,6 @@ double _fitness_get_diff(ga_chr_t chr, img_window_t *w)
 }
 
 
-/**
- * Calculates difference between original and filtered pixel
- *
- * @param  chr
- * @param  w
- * @return
- */
-double _fitness_get_sqdiffsum_avx(ga_chr_t chr, img_window_t *w)
-{
-    cgp_value_t inputs[32][CGP_INPUTS] __attribute__ ((aligned (32)));
-    for (int i = 0; i < 32; i++) {
-        memcpy(inputs[i], w[i].pixels, sizeof(cgp_value_t) * CGP_INPUTS);
-    }
-
-    cgp_value_t outputs[32][1] __attribute__ ((aligned (32)));
-
-    cgp_get_output_avx(chr, inputs, outputs);
-
-    double sum = 0;
-    for (int i = 0; i < 32; i++) {
-        cgp_value_t output_pixel = outputs[i][0];
-        double diff = output_pixel - img_get_pixel(_original_image, w[i].pos_x, w[i].pos_y);
-        sum += diff * diff;
-    }
-    #pragma omp atomic
-        _cgp_evals += 32;
-    return sum;
-}
-
-
-/**
- * Calculates difference between original and filtered pixel
- *
- * @param  chr
- * @param  w
- * @return
- */
-double _fitness_get_sqdiffsum_sse(ga_chr_t chr, int offset)
-{
-    __m128i_aligned sse_inputs[CGP_INPUTS];
-    __m128i_aligned sse_outputs[CGP_OUTPUTS];
-
-    for (int i = 0; i < CGP_INPUTS; i++) {
-        sse_inputs[i] = _mm_load_si128((__m128i*)(&_noisy_image_simd[i][offset]));
-    }
-
-    cgp_get_output_sse(chr, sse_inputs, sse_outputs);
-
-    // compute  difference in one go
-    __m128i sse_diff = _mm_sub_epi8(sse_outputs[0], *(__m128i*)(&_original_image->data[offset]));
-    unsigned char *diff_ptr = (unsigned char*) &sse_diff;
-
-    // store
-    double sum = 0;
-    for (int i = 0; i < 16; i++) {
-        int diff = diff_ptr[i];
-        sum += diff * diff;
-    }
-    #pragma omp atomic
-        _cgp_evals += 16;
-    return sum;
-}
-
-
 double _fitness_get_sqdiffsum_scalar(ga_chr_t chr)
 {
     double sum = 0;
@@ -224,10 +157,14 @@ ga_fitness_t fitness_eval_cgp(ga_chr_t chr)
     if(can_use_intel_core_4th_gen_features()) {
         assert((_noisy_image_windows->size % 32) == 0);
         for (int i = 0; i < _noisy_image_windows->size; i += 32) {
-            img_window_t *w = &_noisy_image_windows->windows[i];
-            double subsum = _fitness_get_sqdiffsum_avx(chr, w);
+            fprintf(stderr, "%d\n", i);
+            double subsum = _fitness_get_sqdiffsum_avx(_original_image, _noisy_image_simd, chr, i);
             sum += subsum;
+            #pragma omp atomic
+                _cgp_evals += 32;
         }
+
+        fprintf(stderr, "%lf\n", _psnr_coeficient / sum);
 
         return _psnr_coeficient / sum;
     }
@@ -237,8 +174,10 @@ ga_fitness_t fitness_eval_cgp(ga_chr_t chr)
     if(can_use_sse2()) {
         assert((_noisy_image_windows->size % 16) == 0);
         for (int i = 0; i < _noisy_image_windows->size; i += 16) {
-            double subsum = _fitness_get_sqdiffsum_sse(chr, i);
+            double subsum = _fitness_get_sqdiffsum_sse(_original_image, _noisy_image_simd, chr, i);
             sum += subsum;
+            #pragma omp atomic
+                _cgp_evals += 16;
         }
 
         return _psnr_coeficient / sum;
@@ -277,13 +216,13 @@ ga_fitness_t fitness_predict_cgp(ga_chr_t cgp_chr, ga_chr_t pred_chr)
     pred_genome_t predictor = (pred_genome_t) pred_chr->genome;
 
     // PSNR coefficcient is different here (less pixels are used)
-    double coef = fitness_psnr_coeficient(predictor->used_genes);
+    double coef = fitness_psnr_coeficient(predictor->used_pixels);
     double sum = 0;
 
-    for (int i = 0; i < predictor->used_genes; i++) {
+    for (int i = 0; i < predictor->used_pixels; i++) {
 
         // fetch window specified by predictor
-        pred_gene_t index = predictor->genes[i];
+        pred_gene_t index = predictor->pixels[i];
         assert(index < _noisy_image_windows->size);
         img_window_t *w = &_noisy_image_windows->windows[index];
 

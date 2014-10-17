@@ -87,7 +87,7 @@ void cgp_get_output_sse(ga_chr_t chromosome,
     register __m128i current0, current1, current2, current3;
 
     // 0xFF constant
-    static __m128i FF __attribute__ ((aligned (16)));
+    static __m128i_aligned FF;
     FF = _mm_set1_epi8(0xFF);
 
     cgp_genome_t genome = (cgp_genome_t) chromosome->genome;
