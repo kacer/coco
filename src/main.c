@@ -153,6 +153,7 @@ int main(int argc, char *argv[])
         .pred_population_size = 10,
         .pred_offspring_elite = 0.25,
         .pred_offspring_combine = 0.5,
+        .pred_genome_type = permuted,
 
         .log_interval = 0,
         .log_dir = "cocolog",
@@ -235,29 +236,41 @@ int main(int argc, char *argv[])
         Load configuration and images and init log directory and files
      */
 
-    if (config_load_args(argc, argv, &config) != 0) {
+    bool config_ok = true;
+    config_retval_t cfg_status = config_load_args(argc, argv, &config);
+
+    if (cfg_status == cfg_err) {
         fprintf(stderr, "Failed to load configuration.\n");
+        config_ok = false;
+
+    } else if (cfg_status == cfg_help) {
         return 1;
     }
 
     if ((img_original = img_load(config.input_image)) == NULL) {
         fprintf(stderr, "Failed to load original image or no filename given.\n");
-        return 1;
+        config_ok = false;
     }
 
     if ((img_noisy = img_load(config.noisy_image)) == NULL) {
         fprintf(stderr, "Failed to load noisy image or no filename given.\n");
-        return 1;
+        config_ok = false;
     }
 
     int log_create_dirs_retval = log_create_dirs(config.log_dir, vault.directory, MAX_FILENAME_LENGTH + 1);
     if (log_create_dirs_retval != 0) {
         fprintf(stderr, "Error initializing results directory: %s\n", strerror(log_create_dirs_retval));
-        return 1;
+        config_ok = false;
     }
 
     if ((progress_log_file = open_log_file(config.log_dir, "progress.log")) == NULL) {
         fprintf(stderr, "Failed to open 'progress.log' in results dir for writing.\n");
+        config_ok = false;
+    }
+
+
+    if (!config_ok) {
+        fprintf(stderr, "Run %s --help or %s -h to see available options.\n", argv[0], argv[0]);
         return 1;
     }
 
@@ -282,7 +295,7 @@ int main(int argc, char *argv[])
     }
 
     // predictors population and CGP archive
-    if (true || config.algorithm != simple_cgp) {
+    if (config.algorithm != simple_cgp) {
         int img_size = img_original->width * img_original->height;
         pred_init(
             img_size - 1,  // max gene value
@@ -290,7 +303,8 @@ int main(int argc, char *argv[])
             config.pred_size * img_size,   // initial genome length
             config.pred_mutation_rate,     // % of mutated genes
             config.pred_offspring_elite,   // % of elite children
-            config.pred_offspring_combine  // % of "crossovered" children
+            config.pred_offspring_combine, // % of "crossovered" children
+            repeated //(config.algorithm == baldwin)? repeated : permuted  // genome type
         );
 
         arc_func_vect_t arc_cgp_methods = {
@@ -332,7 +346,16 @@ int main(int argc, char *argv[])
 
     } else {
         cgp_population = cgp_init_pop(config.cgp_population_size);
-        pred_population = pred_init_pop(config.pred_population_size);
+        if (cgp_population == NULL) {
+            fprintf(stderr, "Failed to initialize CGP population.\n");
+        }
+
+        if (config.algorithm != simple_cgp) {
+            pred_population = pred_init_pop(config.pred_population_size);
+            if (pred_population == NULL) {
+                fprintf(stderr, "Failed to initialize predictors population.\n");
+            }
+        }
     }
 
 

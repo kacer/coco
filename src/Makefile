@@ -19,10 +19,10 @@
 # _XOPEN_SOURCE=700 required by scandir and alphasort from vault.c
 
 CC=gcc
-CFLAGS=-g -Wall -std=c11 -fopenmp -march=native -D_XOPEN_SOURCE=700 -O2 \
+CFLAGS=-g -Wall -std=c11 -fopenmp -march=native -D_XOPEN_SOURCE=700 \
 	-DSSE2 -DxAVX2 -DDEBUG -DxVERBOSE -DCGP_LIMIT_FUNCS
 EXECUTABLE=coco
-CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_10.png -a cgp -g 5000
+CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_10.png -g 5000 -a cgp
 SERVER=merlin
 SERVER_LOCATION=~/coco
 SOURCES=main.c cpu.c ga.c cgp_core.c cgp_dump.c cgp_load.c cgp_avx.c cgp_sse.c \

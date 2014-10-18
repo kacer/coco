@@ -25,13 +25,30 @@
 
 
 typedef unsigned int pred_gene_t;
-typedef unsigned int pred_index_t;
 typedef pred_gene_t* pred_gene_array_t;
 
+
+typedef enum {
+    permuted,
+    repeated,
+} pred_genome_type_t;
+
+
 struct pred_genome {
-    pred_index_t used_genes;
-    pred_gene_array_t genes;
-    bool *used_values;
+    /* genotype */
+    pred_gene_array_t _genes;
+
+    /*
+        for permuted genotype: which gene values were already used?
+        for repeated genotype: used to generate phenotype to avoid duplicities
+    */
+    bool *_used_values;
+
+    /* how many pixels are in the phenotype */
+    unsigned int used_pixels;
+
+    /* phenotype */
+    unsigned int *pixels;
 };
 typedef struct pred_genome* pred_genome_t;
 
@@ -39,9 +56,9 @@ typedef struct pred_genome* pred_genome_t;
 /**
  * Initialize predictor internals
  */
-void pred_init(pred_gene_t max_gene_value, pred_index_t max_genome_length,
-    pred_index_t initial_genome_length, float mutation_rate,
-    float offspring_elite, float offspring_combine);
+void pred_init(pred_gene_t max_gene_value, unsigned int max_genome_length,
+    unsigned int initial_genome_length, float mutation_rate,
+    float offspring_elite, float offspring_combine, pred_genome_type_t type);
 
 
 /**
@@ -69,6 +86,12 @@ void pred_free_genome(void *genome);
 
 
 /**
+ * Recalculates phenotype for repeated genotype
+ */
+void pred_calculate_phenotype(pred_genome_t genome);
+
+
+/**
  * Initializes predictor genome to random values
  * @param chromosome
  */
@@ -86,6 +109,9 @@ void pred_copy_genome(void *_dst, void *_src);
 
 /**
  * Genome mutation function
+ *
+ * Recalculates phenotype if necessary
+ *
  * @param  genes
  * @return
  */
@@ -112,3 +138,16 @@ void pred_dump_chr(ga_chr_t chr, FILE *fp);
  * Dump predictor chromosome to file
  */
 void pred_dump_pop(ga_pop_t pop, FILE *fp);
+
+
+/**
+ * Sets current genome length.
+ * @param new_length
+ */
+void pred_set_length(int new_length);
+
+
+/**
+ * Returns current genome length.
+ */
+int pred_get_length();

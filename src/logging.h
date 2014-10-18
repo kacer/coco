@@ -113,7 +113,8 @@ void log_cgp_archived(FILE *fp, ga_fitness_t predicted, ga_fitness_t real);
  * @param previous_best
  * @param new_best
  */
-void log_pred_change(FILE *fp, ga_fitness_t previous_best, ga_fitness_t new_best, bool indent);
+void log_pred_change(FILE *fp, ga_fitness_t previous_best,
+    ga_fitness_t new_best, pred_genome_t new_genome, bool indent);
 
 
 /**

@@ -337,7 +337,12 @@ void coev_pred_main(
         // update archive if necessary
         if (is_better) {
             // log
-            DOUBLE_LOG_PRED(log_pred_change, log_file, arc_get(pred_archive, 0)->fitness, pred_population->best_fitness);
+            DOUBLE_LOG_PRED(
+                log_pred_change,
+                log_file,
+                arc_get(pred_archive, 0)->fitness,
+                pred_population->best_fitness,
+                (pred_genome_t) pred_population->best_chromosome->genome);
 
             // store and invalidate CGP fitness
             #pragma omp critical (PRED_ARCHIVE)

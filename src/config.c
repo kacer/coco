@@ -60,6 +60,7 @@
 #define OPT_PRED_SIZE 'S'
 #define OPT_PRED_MUTATE 'M'
 #define OPT_PRED_POPSIZE 'P'
+#define OPT_PRED_TYPE 'R'
 
 #define OPT_HELP 'h'
 
@@ -99,11 +100,12 @@ static struct option long_options[] =
     {"pred-size", required_argument, 0, OPT_PRED_SIZE},
     {"pred-mutate", required_argument, 0, OPT_PRED_MUTATE},
     {"pred-population-size", required_argument, 0, OPT_PRED_POPSIZE},
+    {"pred-type", required_argument, 0, OPT_PRED_TYPE},
 
     {0, 0, 0, 0}
 };
 
-static const char *short_options = "hg:t:f:a:r:i:n:vw:l:k:m:p:s:S:M:P";
+static const char *short_options = "hg:t:f:a:r:i:n:vw:l:k:m:p:s:S:M:P:R:";
 
 
 #define CHECK_FILENAME_LENGTH do { \
@@ -149,9 +151,12 @@ static const char *short_options = "hg:t:f:a:r:i:n:vw:l:k:m:p:s:S:M:P";
 /**
  * Load configuration from command line
  */
-int config_load_args(int argc, char **argv, config_t *cfg)
+config_retval_t config_load_args(int argc, char **argv, config_t *cfg)
 {
     assert(cfg != NULL);
+
+    bool algorithm_specified = false;
+    bool pred_type_specified = false;
 
     while (1) {
         int option_index;
@@ -163,7 +168,7 @@ int config_load_args(int argc, char **argv, config_t *cfg)
         switch (c) {
             case OPT_HELP:
                 print_help();
-                return 1;
+                return cfg_help;
 
             case OPT_MAX_GENERATIONS:
                 PARSE_INT(cfg->max_generations);
@@ -185,10 +190,15 @@ int config_load_args(int argc, char **argv, config_t *cfg)
                     cfg->algorithm = predictors;
                 } else if (strcmp(optarg, "baldwin") == 0) {
                     cfg->algorithm = baldwin;
+                    if (pred_type_specified && cfg->pred_genome_type != repeated) {
+                        fprintf(stderr, "Cannot combine baldwin and permuted genotype.\n");
+                        return cfg_err;
+                    }
                 } else {
                     fprintf(stderr, "Invalid algorithm (options: cgp, predictors, baldwin)\n");
-                    return 1;
+                    return cfg_err;
                 }
+                algorithm_specified = true;
                 break;
 
             case OPT_RANDOM_SEED:
@@ -252,13 +262,29 @@ int config_load_args(int argc, char **argv, config_t *cfg)
                 PARSE_INT(cfg->pred_population_size);
                 break;
 
+            case OPT_PRED_TYPE:
+                if (strcmp(optarg, "permuted") == 0) {
+                    cfg->pred_genome_type = permuted;
+                    if (algorithm_specified && cfg->algorithm == baldwin) {
+                        fprintf(stderr, "Cannot combine baldwin and permuted genotype.\n");
+                        return cfg_err;
+                    }
+                } else if (strcmp(optarg, "repeated") == 0) {
+                    cfg->pred_genome_type = repeated;
+                } else {
+                    fprintf(stderr, "Invalid predictor type (options: permuted, repeated)\n");
+                    return cfg_err;
+                }
+                pred_type_specified = true;
+                break;
+
             default:
-                return 1;
+                return cfg_err;
 
         }
     }
 
-    return 0;
+    return cfg_ok;
 }
 
 
@@ -294,6 +320,7 @@ void config_save_file(FILE *file, config_t *cfg)
     fprintf(file, "pred-size: %.5g\n", cfg->pred_size);
     fprintf(file, "pred-mutate: %.5g\n", cfg->pred_mutation_rate);
     fprintf(file, "pred-population-size: %d\n", cfg->pred_population_size);
+    fprintf(file, "pred-type: %s\n", cfg->pred_genome_type == permuted? "permuted" : "repeated");
     fprintf(file, "\n");
     fprintf(file, "# Compiler flags\n");
     fprintf(file, "# CGP_COLS: %d\n", CGP_COLS);

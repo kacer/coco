@@ -72,6 +72,7 @@ def split_and_filter_sources(line):
 def parse_makefile(mkfile):
     compiler = 'gcc'
     flags = []
+    libs = []
     sources = ['./testbench_mock.c']
 
     with open(mkfile, 'rt') as fp:
@@ -97,12 +98,12 @@ def parse_makefile(mkfile):
                     sources.extend(split_and_filter_sources(line))
 
             elif line.startswith('LIBS='):
-                flags.extend(split_and_filter_libs(line[5:]))
+                libs.extend(split_and_filter_libs(line[5:]))
                 while line[-1] == '\\':
                     line = fp.next()
-                    flags.extend(split_and_filter_libs(line))
+                    libs.extend(split_and_filter_libs(line))
 
-    return compiler, flags, sources
+    return compiler, flags, sources, libs
 
 
 def main():
@@ -122,7 +123,7 @@ def main():
     stop_on_failure = args.stop
     ignore_gcc_warnings = args.ignore_gcc_warnings
 
-    gcc, gcc_flags, gcc_sources = parse_makefile('../Makefile')
+    gcc, gcc_flags, gcc_sources, gcc_libs = parse_makefile('../Makefile')
 
     for testfile in args.testfiles:
 
@@ -172,7 +173,7 @@ def main():
                                                  delete=False)
             binary.close()
 
-            args = gcc_flags + flags + gcc_sources + [testfile, '-o', binary.name]
+            args = gcc_flags + flags + gcc_sources + [testfile, '-o', binary.name] + gcc_libs
 
             if verbose:
                 print('Compiling %s to %s' % (testfile, binary.name))

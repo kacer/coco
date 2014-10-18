@@ -86,15 +86,41 @@ int log_create_dirs(const char *dir, char *vault_dir, int vault_dir_buffer_size)
 }
 
 
+void _evals_readable(char *buf, int bufsize, long cgp_evals)
+{
+    char *suffix = "";
+    double evals = cgp_evals;
+    if (evals > 1000) {
+        evals /= 1000;
+        suffix = "k";
+    }
+    if (evals > 1000) {
+        evals /= 1000;
+        suffix = "M";
+    }
+    if (evals > 1000) {
+        evals /= 1000;
+        suffix = "G";
+    }
+    if (evals > 1000) {
+        evals /= 1000;
+        suffix = "T";
+    }
+    snprintf(buf, bufsize, "%.2lf %s", evals, suffix);
+}
+
+
 /**
  * Logs current CGP progress
  * @param  cgp_population
  */
 void log_cgp_progress(FILE *fp, ga_pop_t cgp_population, long cgp_evals)
 {
+    char human_evals[50];
+    _evals_readable(human_evals, 50, cgp_evals);
     log_entry_prolog(fp, SECTION_CGP);
-    fprintf(fp, "CGP generation %4d: best fitness " FITNESS_FMT ", %ld evals\n",
-        cgp_population->generation, cgp_population->best_fitness, cgp_evals);
+    fprintf(fp, "CGP generation %4d: best fitness " FITNESS_FMT ", %ld evals (%s)\n",
+        cgp_population->generation, cgp_population->best_fitness, cgp_evals, human_evals);
 }
 
 
@@ -173,13 +199,18 @@ void log_cgp_archived(FILE *fp, ga_fitness_t predicted, ga_fitness_t real)
  * @param previous_best
  * @param new_best
  */
-void log_pred_change(FILE *fp, ga_fitness_t previous_best, ga_fitness_t new_best, bool indent)
+void log_pred_change(FILE *fp, ga_fitness_t previous_best,
+    ga_fitness_t new_best, pred_genome_t new_genome, bool indent)
 {
     log_entry_prolog(fp, SECTION_PRED);
     if (indent) fprintf(fp, PRED_INDENT);
     fprintf(fp, "Best predictor changed by " FITNESS_FMT
-                " from " FITNESS_FMT " to " FITNESS_FMT "\n",
-                new_best - previous_best, previous_best, new_best);
+                " from " FITNESS_FMT " to " FITNESS_FMT " using %u/%u pixels\n",
+                new_best - previous_best,
+                previous_best,
+                new_best,
+                new_genome->used_pixels,
+                pred_get_length());
 }
 
 
@@ -249,6 +280,7 @@ void save_best_image(const char *dir, ga_pop_t cgp_population, img_image_t noisy
     char filename[MAX_FILENAME_LENGTH + 1];
     snprintf(filename, MAX_FILENAME_LENGTH + 1, "%s/img_best.png", dir);
     img_save_png(best, filename);
+    img_destroy(best);
 }
 
 
