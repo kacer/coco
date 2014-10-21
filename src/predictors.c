@@ -299,7 +299,9 @@ void _find_elites(ga_pop_t pop, int count, enum _offspring_op ops[])
         }
 
         // mark best found as elite
-        ops[best_index] = keep_intact;
+        if (best_index >= 0) {
+            ops[best_index] = keep_intact;
+        }
     }
 }
 
