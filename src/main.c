@@ -149,11 +149,14 @@ int main(int argc, char *argv[])
         .cgp_archive_size = 10,
 
         .pred_size = 0.25,
+        .pred_initial_size = 0,
         .pred_mutation_rate = 0.05,
         .pred_population_size = 10,
         .pred_offspring_elite = 0.25,
         .pred_offspring_combine = 0.5,
         .pred_genome_type = permuted,
+
+        .bw_interval = 0,
 
         .log_interval = 0,
         .log_dir = "cocolog",
@@ -182,13 +185,14 @@ int main(int argc, char *argv[])
     char best_circuit_file_name_txt[MAX_FILENAME_LENGTH + 1];
     char best_circuit_file_name_chr[MAX_FILENAME_LENGTH + 1];
     FILE *progress_log_file;
+    FILE *cgp_history_log_file;
 
     // application exit code
     int retval = 0;
 
     // resource usage
     struct rusage resource_usage;
-    struct timeval usertime_start, usertime_end;
+    struct timeval usertime_start, usertime_end, wallclock_start, wallclock_end;
 
 
     /*
@@ -263,17 +267,25 @@ int main(int argc, char *argv[])
         config_ok = false;
     }
 
-    if ((progress_log_file = open_log_file(config.log_dir, "progress.log")) == NULL) {
+    if ((progress_log_file = open_log_file(config.log_dir, "progress.log", true)) == NULL) {
         fprintf(stderr, "Failed to open 'progress.log' in results dir for writing.\n");
         config_ok = false;
     }
 
+    if ((cgp_history_log_file = init_cgp_history_file(config.log_dir, "cgp_history.csv")) == NULL) {
+        fprintf(stderr, "Failed to open 'cgp_history.csv' in results dir for writing.\n");
+        config_ok = false;
+    }
+
+    if (config.pred_initial_size > config.pred_size) {
+        fprintf(stderr, "Predictors' initial size cannot be larger than their full size\n");
+        config_ok = false;
+    }
 
     if (!config_ok) {
         fprintf(stderr, "Run %s --help or %s -h to see available options.\n", argv[0], argv[0]);
         return 1;
     }
-
 
     snprintf(best_circuit_file_name_txt, MAX_FILENAME_LENGTH + 1, "%s/best_circuit.txt", config.log_dir);
     snprintf(best_circuit_file_name_chr, MAX_FILENAME_LENGTH + 1, "%s/best_circuit.chr", config.log_dir);
@@ -297,10 +309,12 @@ int main(int argc, char *argv[])
     // predictors population and CGP archive
     if (config.algorithm != simple_cgp) {
         int img_size = img_original->width * img_original->height;
+        int pred_max_size = config.pred_size * img_size;
+        int pred_initial_size = config.pred_initial_size? (config.pred_initial_size * img_size) : pred_max_size;
         pred_init(
             img_size - 1,  // max gene value
-            config.pred_size * img_size,   // max genome length
-            config.pred_size * img_size,   // initial genome length
+            pred_max_size,                 // max genome length
+            pred_initial_size,             // initial genome length
             config.pred_mutation_rate,     // % of mutated genes
             config.pred_offspring_elite,   // % of elite children
             config.pred_offspring_combine, // % of "crossovered" children
@@ -335,7 +349,6 @@ int main(int argc, char *argv[])
 
     // fitness function
     fitness_init(img_original, img_noisy, cgp_archive, pred_archive);
-
 
     /*
         Populations recovery / initialization
@@ -385,6 +398,8 @@ int main(int argc, char *argv[])
     if (config.algorithm != simple_cgp) {
         arc_insert(cgp_archive, cgp_population->best_chromosome);
 
+        DEBUGLOG("Archive: %d", cgp_archive->stored);
+
         DEBUGLOG("Evaluating PRED population...");
         ga_evaluate_pop(pred_population);
         arc_insert(pred_archive, pred_population->best_chromosome);
@@ -409,7 +424,12 @@ int main(int argc, char *argv[])
 
     getrusage(RUSAGE_SELF, &resource_usage);
     usertime_start = resource_usage.ru_utime;
+    gettimeofday(&wallclock_start, NULL);
 
+
+    // install signal handlers
+    signal(SIGINT, sigint_handler);
+    signal(SIGXCPU, sigxcpu_handler);
 
     // shared among threads
     bool finished = false;
@@ -417,31 +437,31 @@ int main(int argc, char *argv[])
     switch (config.algorithm) {
 
         case simple_cgp:
-            // install signal handlers
-            signal(SIGINT, sigint_handler);
-            signal(SIGXCPU, sigxcpu_handler);
-
-            retval = simple_cgp_main(
+            retval = cgp_main(
+                config.algorithm,
                 cgp_population,
+                NULL,
+                NULL,
+                NULL,
                 &config,
                 &vault,
                 img_noisy,
                 best_circuit_file_name_txt,
                 best_circuit_file_name_chr,
-                progress_log_file
+                progress_log_file,
+                cgp_history_log_file,
+                &finished
             );
             goto done;
 
         case predictors:
+        case baldwin:
             #pragma omp parallel sections num_threads(2)
             {
                 #pragma omp section
                 {
-                    // install signal handlers only in this thread
-                    signal(SIGINT, sigint_handler);
-                    signal(SIGXCPU, sigxcpu_handler);
-
-                    retval = coev_cgp_main(
+                    retval = cgp_main(
+                        config.algorithm,
                         cgp_population,
                         pred_population,
                         cgp_archive,
@@ -452,12 +472,14 @@ int main(int argc, char *argv[])
                         best_circuit_file_name_txt,
                         best_circuit_file_name_chr,
                         progress_log_file,
+                        cgp_history_log_file,
                         &finished
                     );
                 }
                 #pragma omp section
                 {
-                    coev_pred_main(
+                    pred_main(
+                        config.algorithm,
                         cgp_population,
                         pred_population,
                         pred_archive,
@@ -470,7 +492,7 @@ int main(int argc, char *argv[])
             goto done;
 
         default:
-            fprintf(stderr, "Algorithm '%s' is not supported yet.\n",
+            fprintf(stderr, "Algorithm '%s' is not supported.\n",
                 config_algorithm_names[config.algorithm]);
             return -1;
 
@@ -494,7 +516,6 @@ done:
         fprintf(stderr, "Failed to open 'summary.log' in results dir for writing.\n");
 
     } else {
-
         log_final_summary(summary_file, cgp_population, fitness_get_cgp_evals());
         fprintf(summary_file, "\n");
         log_time(summary_file, &usertime_start, &usertime_end, &wallclock_start, &wallclock_end);

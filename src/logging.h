@@ -28,6 +28,7 @@
 #include "files.h"
 #include "config.h"
 #include "archive.h"
+#include "baldwin.h"
 #include "fitness.h"
 #include "predictors.h"
 
@@ -37,6 +38,7 @@
 #define SECTION_CGP "cgp"
 #define SECTION_PRED "prd"
 #define SECTION_SYS "sys"
+#define SECTION_BALDWIN "bwn"
 
 /* predictors log to second column */
 #define PRED_INDENT "                                                        "
@@ -177,6 +179,34 @@ void save_config(const char *dir, config_t *config);
  * @return
  */
 FILE *open_log_file(const char *dir, const char *file, bool log_start);
+
+
+/**
+ * Initializes CGP history CSV file and writes header to it
+ * @param  dir
+ * @param  file
+ * @return fp
+ */
+FILE *init_cgp_history_file(const char *dir, const char *file);
+
+
+/**
+ * Log CGP history entry in CSV format
+ * @param fp
+ * @param hist
+ * @param cgp_evals
+ * @param pred_length
+ */
+void log_cgp_history(FILE *fp, bw_history_entry_t *hist, long cgp_evals, int pred_length);
+
+
+/**
+ * Log that predictors' length has changed
+ * @param fp
+ * @param old_length
+ * @param new_length
+ */
+void log_predictors_length_change(FILE *fp, int old_length, int new_length);
 
 
 /**

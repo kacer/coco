@@ -92,6 +92,12 @@ void pred_calculate_phenotype(pred_genome_t genome);
 
 
 /**
+ * Recalculates phenotype for repeated genotype in whole population
+ */
+void pred_pop_calculate_phenotype(ga_pop_t pop);
+
+
+/**
  * Initializes predictor genome to random values
  * @param chromosome
  */

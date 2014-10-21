@@ -67,11 +67,14 @@ typedef struct
     int cgp_archive_size;
 
     float pred_size;
+    float pred_initial_size;
     float pred_mutation_rate;
     float pred_offspring_elite;
     float pred_offspring_combine;
     int pred_population_size;
     pred_genome_type_t pred_genome_type;
+
+    int bw_interval;
 
     int log_interval;
     char log_dir[MAX_FILENAME_LENGTH + 1];
@@ -164,13 +167,16 @@ static inline void print_help() {
         "    --pred-size NUM, -S NUM\n"
         "          Predictor size (in percent), default is 0.25.\n"
         "\n"
+        "    --pred-initial-size NUM, -I NUM\n"
+        "          Predictor initial size (in percent), default is same as predictor size.\n"
+        "\n"
         "    --pred-mutate NUM, -M NUM\n"
         "          Predictor mutation rate (in percent), default is 0.05.\n"
         "\n"
         "    --pred-population-size NUM, -P NUM\n"
         "          Predictors population size, default is 10.\n"
         "\n"
-        "    --pred-type TYPE, -R TYPE\n"
+        "    --pred-type TYPE, -T TYPE\n"
         "          Predictor genome type, one of {permuted|repeated}\n"
         "          Default is \"permuted\" for coevolution and \"repeated\" for baldwin.\n"
         "          - permuted: No value can be repeated in genotype, phenotype equals\n"
@@ -178,6 +184,11 @@ static inline void print_help() {
         "          - repeated: No limitations on genotype, duplicities are eliminated\n"
         "                      during phenotype construction. Typically, phenotype is\n"
         "                      shorter than genotype."
+        "\n"
+        "    --baldwin-interval NUM, -b NUM\n"
+        "          Minimal interval of evolution parameters update in \"baldwin\" mode\n"
+        "          Default is \"0\" which means, that parameters are updated only if.\n"
+        "          CGP fitness changes.\n"
     );
 }
 

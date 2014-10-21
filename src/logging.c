@@ -346,6 +346,64 @@ FILE *open_log_file(const char *dir, const char *file, bool log_start)
 
 
 /**
+ * Initializes CGP history CSV file and writes header to it
+ * @param  dir
+ * @param  file
+ * @return fp
+ */
+FILE *init_cgp_history_file(const char *dir, const char *file)
+{
+    FILE *fp = open_log_file(dir, file, false);
+    if (!fp) return NULL;
+
+    fprintf(fp,
+        "generation,fitness,cgp_evals,pred_length,"
+        "velocity,delta_generation,delta_fitness,delta_velocity"
+        "\n");
+
+    return fp;
+}
+
+
+/**
+ * Log CGP history entry in CSV format
+ * @param fp
+ * @param hist
+ * @param cgp_evals
+ * @param pred_length
+ */
+void log_cgp_history(FILE *fp, bw_history_entry_t *hist, long cgp_evals, int pred_length)
+{
+    fprintf(fp, "%d,", hist->generation);
+    fprintf(fp, FITNESS_FMT ",", hist->fitness);
+    fprintf(fp, "%ld,", cgp_evals);
+    fprintf(fp, "%d,", pred_length);
+
+    fprintf(fp, "%10g,", hist->velocity);
+
+    fprintf(fp, "%d,", hist->delta_generation);
+    fprintf(fp, FITNESS_FMT ",", hist->delta_fitness);
+    fprintf(fp, "%10g\n", hist->delta_velocity);
+}
+
+
+/**
+ * Log that predictors' length has changed
+ * @param fp
+ * @param old_length
+ * @param new_length
+ */
+void log_predictors_length_change(FILE *fp, int old_length, int new_length)
+{
+    log_entry_prolog(fp, SECTION_BALDWIN);
+    fprintf(fp, "Predictor length changed by %d from %d to %d\n",
+                new_length - old_length,
+                old_length,
+                new_length);
+}
+
+
+/**
  * Calculates difference of two `struct timeval` values
  *
  * http://www.gnu.org/software/libc/manual/html_node/Elapsed-Time.html

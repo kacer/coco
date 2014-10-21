@@ -22,15 +22,15 @@ CC=gcc
 CFLAGS=-g -Wall -std=c11 -fopenmp -march=native -D_XOPEN_SOURCE=700 \
 	-DSSE2 -DxAVX2 -DDEBUG -DxVERBOSE -DCGP_LIMIT_FUNCS
 EXECUTABLE=coco
-CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_10.png -g 5000 -a cgp
+CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_25.png -g 50000 -a baldwin -S 100 -I 0.25 -b 100
 SERVER=merlin
 SERVER_LOCATION=~/coco
 SOURCES=main.c cpu.c ga.c cgp_core.c cgp_dump.c cgp_load.c cgp_avx.c cgp_sse.c \
 	predictors.c image.c fitness.c fitness_avx.c fitness_sse.c vault.c \
-	archive.c config.c logging.c algo.c
+	archive.c config.c logging.c algo.c baldwin.c
 OFILES= main.o cpu.o ga.o cgp_core.o cgp_dump.o cgp_load.o cgp_avx.o cgp_sse.o \
 	predictors.o image.o fitness.o fitness_avx.o fitness_sse.o vault.o \
-	archive.o config.o logging.o algo.o
+	archive.o config.o logging.o algo.o baldwin.o
 LIBS=-lm -lc
 
 all: $(EXECUTABLE)

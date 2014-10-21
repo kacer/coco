@@ -115,7 +115,6 @@ void* pred_alloc_genome()
             which values has been used in phenotype)
      */
     genome->_used_values = (bool*) malloc(sizeof(bool) * (_max_gene_value + 1));
-    printf("init: %p, %p\n", genome, genome->_used_values);
     if (genome->_used_values == NULL) {
         free(genome->_genes);
         free(genome);
@@ -182,6 +181,18 @@ void pred_calculate_phenotype(pred_genome_t genome)
     }
 
     genome->used_pixels = pheno_index;
+}
+
+
+/**
+ * Recalculates phenotype for repeated genotype in whole population
+ */
+void pred_pop_calculate_phenotype(ga_pop_t pop)
+{
+    for (int i = 0; i < pop->size; i++) {
+        pred_genome_t genome = (pred_genome_t) pop->chromosomes[i]->genome;
+        pred_calculate_phenotype(genome);
+    }
 }
 
 
@@ -529,7 +540,12 @@ void pred_dump_pop(ga_pop_t pop, FILE *fp)
  */
 void pred_set_length(int new_length)
 {
-    _current_genome_length = new_length;
+    if (new_length > _max_genome_length) {
+        _current_genome_length = _max_genome_length;
+
+    } else if (new_length > 0) {
+        _current_genome_length = new_length;
+    }
 }
 
 

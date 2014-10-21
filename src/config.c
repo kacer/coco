@@ -58,9 +58,12 @@
 #define OPT_CGP_ARCSIZE 's'
 
 #define OPT_PRED_SIZE 'S'
+#define OPT_PRED_INITIAL_SIZE 'I'
 #define OPT_PRED_MUTATE 'M'
 #define OPT_PRED_POPSIZE 'P'
-#define OPT_PRED_TYPE 'R'
+#define OPT_PRED_TYPE 'T'
+
+#define OPT_BALDWIN_INTERVAL 'b'
 
 #define OPT_HELP 'h'
 
@@ -98,14 +101,18 @@ static struct option long_options[] =
 
     /* Predictors */
     {"pred-size", required_argument, 0, OPT_PRED_SIZE},
+    {"pred-initial-size", required_argument, 0, OPT_PRED_INITIAL_SIZE},
     {"pred-mutate", required_argument, 0, OPT_PRED_MUTATE},
     {"pred-population-size", required_argument, 0, OPT_PRED_POPSIZE},
     {"pred-type", required_argument, 0, OPT_PRED_TYPE},
 
+    /* Baldwin */
+    {"baldwin-interval", required_argument, 0, OPT_BALDWIN_INTERVAL},
+
     {0, 0, 0, 0}
 };
 
-static const char *short_options = "hg:t:f:a:r:i:n:vw:l:k:m:p:s:S:M:P:R:";
+static const char *short_options = "hg:t:f:a:r:i:n:vw:l:k:m:p:s:S:I:M:P:T:b:";
 
 
 #define CHECK_FILENAME_LENGTH do { \
@@ -251,6 +258,13 @@ config_retval_t config_load_args(int argc, char **argv, config_t *cfg)
                 }
                 break;
 
+            case OPT_PRED_INITIAL_SIZE:
+                PARSE_DOUBLE(cfg->pred_initial_size);
+                if (cfg->pred_initial_size > 1) {
+                    cfg->pred_initial_size /= 100.0;
+                }
+                break;
+
             case OPT_PRED_MUTATE:
                 PARSE_DOUBLE(cfg->pred_mutation_rate);
                 if (cfg->pred_mutation_rate > 1) {
@@ -276,6 +290,10 @@ config_retval_t config_load_args(int argc, char **argv, config_t *cfg)
                     return cfg_err;
                 }
                 pred_type_specified = true;
+                break;
+
+            case OPT_BALDWIN_INTERVAL:
+                PARSE_INT(cfg->bw_interval);
                 break;
 
             default:
@@ -304,23 +322,31 @@ void config_save_file(FILE *file, config_t *cfg)
     strftime(timestr, sizeof(timestr), "%Y-%m-%d %H:%M:%S %z", localtime(&now));
 
     fprintf(file, "# Configuration dump (%s)\n", timestr);
+    fprintf(file, "\n");
     fprintf(file, "original: %s\n", cfg->input_image);
     fprintf(file, "noisy: %s\n", cfg->noisy_image);
     fprintf(file, "algorithm: %s\n", config_algorithm_names[cfg->algorithm]);
     fprintf(file, "random-seed: %u\n", cfg->random_seed);
     fprintf(file, "max-generations: %d\n", cfg->max_generations);
     fprintf(file, "target_fitness: " FITNESS_FMT "\n", cfg->target_fitness);
+    fprintf(file, "\n");
     fprintf(file, "vault: %s\n", cfg->vault_enabled? "yes" : "no");
     fprintf(file, "vault-interval: %d\n", cfg->vault_interval);
+    fprintf(file, "\n");
     fprintf(file, "log-dir: %s\n", cfg->log_dir);
     fprintf(file, "log-interval: %d\n", cfg->log_interval);
+    fprintf(file, "\n");
     fprintf(file, "cgp-mutate: %d\n", cfg->cgp_mutate_genes);
     fprintf(file, "cgp-population-size: %d\n", cfg->cgp_population_size);
     fprintf(file, "cgp-archive-size: %d\n", cfg->cgp_archive_size);
+    fprintf(file, "\n");
     fprintf(file, "pred-size: %.5g\n", cfg->pred_size);
+    fprintf(file, "pred-initial-size: %.5g\n", cfg->pred_initial_size);
     fprintf(file, "pred-mutate: %.5g\n", cfg->pred_mutation_rate);
     fprintf(file, "pred-population-size: %d\n", cfg->pred_population_size);
     fprintf(file, "pred-type: %s\n", cfg->pred_genome_type == permuted? "permuted" : "repeated");
+    fprintf(file, "\n");
+    fprintf(file, "baldwin-interval: %d\n", cfg->bw_interval);
     fprintf(file, "\n");
     fprintf(file, "# Compiler flags\n");
     fprintf(file, "# CGP_COLS: %d\n", CGP_COLS);
