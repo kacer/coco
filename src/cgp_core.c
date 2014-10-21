@@ -373,8 +373,8 @@ void cgp_offspring(ga_pop_t pop)
 
     #pragma omp parallel for
     for (int i = 0; i < pop->size; i++) {
-        if (i == pop->best_chr_index) continue;
         ga_chr_t chr = pop->chromosomes[i];
+        if (chr == parent) continue;
         ga_copy_chr(chr, parent, cgp_copy_genome);
         cgp_mutate_chr(chr);
         chr->has_fitness = false;
