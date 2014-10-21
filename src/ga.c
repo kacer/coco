@@ -275,7 +275,7 @@ void _ga_find_new_best(ga_pop_t pop)
     ga_fitness_t best_fitness = pop->chromosomes[0]->fitness;
     int best_index = 0;
 
-    /* find best fitness */
+    // find best fitness
     for (int i = 1; i < pop->size; i++) {
         ga_fitness_t f = pop->chromosomes[i]->fitness;
         if (ga_is_better_or_same(pop->problem_type, f, best_fitness)) {

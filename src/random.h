@@ -35,7 +35,7 @@ static inline unsigned int rand_seed_from_time()
     // time() from time.h is not enough, because it can return same value in
     // all processes started within one second
     struct timeval time;
-    gettimeofday(&time,NULL);
+    gettimeofday(&time, NULL);
     return (time.tv_sec * 1000) + (time.tv_usec);
 }
 
