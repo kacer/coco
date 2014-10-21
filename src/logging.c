@@ -329,16 +329,117 @@ void save_config(const char *dir, config_t *config)
  * Open specified file for writing. Caller is responsible for closing.
  * @param  dir
  * @param  file
+ * @param  log_start whether to insert initial log message
  * @return
  */
-FILE *open_log_file(const char *dir, const char *file)
+FILE *open_log_file(const char *dir, const char *file, bool log_start)
 {
     char filename[MAX_FILENAME_LENGTH + 1];
     snprintf(filename, MAX_FILENAME_LENGTH + 1, "%s/%s", dir, file);
     FILE *fp = fopen(filename, "wt");
-    if (fp) {
+    if (fp && log_start) {
         log_entry_prolog(fp, SECTION_SYS);
         fprintf(fp, "Log started.\n");
     }
     return fp;
+}
+
+
+/**
+ * Calculates difference of two `struct timeval` values
+ *
+ * http://www.gnu.org/software/libc/manual/html_node/Elapsed-Time.html
+ *
+ * @param  result
+ * @param  x
+ * @param  y
+ * @return 1 if the difference is negative, otherwise 0.
+ */
+int timeval_subtract(struct timeval *result, struct timeval *x, struct timeval *y)
+{
+    /* Perform the carry for the later subtraction by updating y. */
+    if (x->tv_usec < y->tv_usec) {
+        int nsec = (y->tv_usec - x->tv_usec) / 1000000 + 1;
+        y->tv_usec -= 1000000 * nsec;
+        y->tv_sec += nsec;
+    }
+    if (x->tv_usec - y->tv_usec > 1000000) {
+        int nsec = (x->tv_usec - y->tv_usec) / 1000000;
+        y->tv_usec += 1000000 * nsec;
+        y->tv_sec -= nsec;
+    }
+
+    /* Compute the time remaining to wait.
+     tv_usec is certainly positive. */
+    result->tv_sec = x->tv_sec - y->tv_sec;
+    result->tv_usec = x->tv_usec - y->tv_usec;
+
+    /* Return 1 if result is negative. */
+    return x->tv_sec < y->tv_sec;
+}
+
+
+/**
+ * Prints `struct timeval` value in "12m34.567s" format
+ * @param fp
+ * @param time
+ */
+void fprint_timeval(FILE *fp, struct timeval *time)
+{
+    long minutes = time->tv_sec / 60;
+    long seconds = time->tv_sec % 60;
+    long microseconds = time->tv_usec;
+
+    if (microseconds < 0) {
+        microseconds = 1 - microseconds;
+        seconds--;
+    }
+
+    fprintf(fp, "%ldm%ld.%06lds", minutes, seconds, microseconds);
+}
+
+
+/**
+ * Logs spent time
+ * @param fp
+ * @param usertime_start
+ * @param usertime_end
+ * @param wallclock_start
+ * @param wallclock_end
+ */
+void log_time(FILE *fp, struct timeval *usertime_start,
+    struct timeval *usertime_end, struct timeval *wallclock_start,
+    struct timeval *wallclock_end)
+{
+    struct timeval usertime_diff;
+    timeval_subtract(&usertime_diff, usertime_end, usertime_start);
+
+    struct timeval wallclock_diff;
+    timeval_subtract(&wallclock_diff, wallclock_end, wallclock_start);
+
+    struct tm tmp;
+    char time_string[40];
+
+    fprintf(fp, "Time in user mode:");
+    fprintf(fp, "\n- start: ");
+    fprint_timeval(fp, usertime_start);
+    fprintf(fp, "\n- end:   ");
+    fprint_timeval(fp, usertime_end);
+    fprintf(fp, "\n- diff:  ");
+    fprint_timeval(fp, &usertime_diff);
+    fprintf(fp, "\n");
+
+    fprintf(fp, "\nWall clock:");
+
+    localtime_r(&wallclock_start->tv_sec, &tmp);
+    strftime(time_string, sizeof(time_string), "%Y-%m-%d %H:%M:%S", &tmp);
+    fprintf(fp, "\n- start: %s", time_string);
+
+    localtime_r(&wallclock_end->tv_sec, &tmp);
+    strftime(time_string, sizeof(time_string), "%Y-%m-%d %H:%M:%S", &tmp);
+    fprintf(fp, "\n- end: %s", time_string);
+
+    fprintf(fp, "\n- diff:  ");
+    fprint_timeval(fp, &wallclock_diff);
+    fprintf(fp, "\n");
 }

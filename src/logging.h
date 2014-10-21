@@ -21,6 +21,7 @@
 #pragma once
 
 #include <stdio.h>
+#include <sys/time.h>
 
 #include "cgp.h"
 #include "image.h"
@@ -172,6 +173,20 @@ void save_config(const char *dir, config_t *config);
  * Open specified file for writing. Caller is responsible for closing.
  * @param  dir
  * @param  file
+ * @param  log_start whether to insert initial log message
  * @return
  */
-FILE *open_log_file(const char *dir, const char *file);
+FILE *open_log_file(const char *dir, const char *file, bool log_start);
+
+
+/**
+ * Logs spent time
+ * @param fp
+ * @param usertime_start
+ * @param usertime_end
+ * @param wallclock_start
+ * @param wallclock_end
+ */
+void log_time(FILE *fp, struct timeval *usertime_start,
+    struct timeval *usertime_end, struct timeval *wallclock_start,
+    struct timeval *wallclock_end);

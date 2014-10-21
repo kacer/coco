@@ -487,40 +487,23 @@ done:
     // dump evolution summary
     getrusage(RUSAGE_SELF, &resource_usage);
     usertime_end = resource_usage.ru_utime;
-
-    struct timeval usertime_diff;
-    timeval_subtract(&usertime_diff, &usertime_end, &usertime_start);
-
-    log_final_summary(stdout, cgp_population, fitness_get_cgp_evals());
-    fprintf(stdout, "\nTime in user mode:");
-    fprintf(stdout, "\n- start: ");
-    fprint_timeval(stdout, &usertime_start);
-    fprintf(stdout, "\n- end:   ");
-    fprint_timeval(stdout, &usertime_end);
-    fprintf(stdout, "\n- diff:  ");
-    fprint_timeval(stdout, &usertime_diff);
-    fprintf(stdout, "\n");
+    gettimeofday(&wallclock_end, NULL);
 
     FILE *summary_file;
-    if ((summary_file = open_log_file(config.log_dir, "summary.log")) == NULL) {
+    if ((summary_file = open_log_file(config.log_dir, "summary.log", false)) == NULL) {
         fprintf(stderr, "Failed to open 'summary.log' in results dir for writing.\n");
 
     } else {
 
-
         log_final_summary(summary_file, cgp_population, fitness_get_cgp_evals());
-
-        fprintf(summary_file, "\nTime in user mode:");
-        fprintf(summary_file, "\n- start: ");
-        fprint_timeval(summary_file, &usertime_start);
-        fprintf(summary_file, "\n- end:   ");
-        fprint_timeval(summary_file, &usertime_end);
-        fprintf(summary_file, "\n- diff:  ");
-        fprint_timeval(summary_file, &usertime_diff);
         fprintf(summary_file, "\n");
+        log_time(summary_file, &usertime_start, &usertime_end, &wallclock_start, &wallclock_end);
     }
 
-    // dump config once again
+    log_final_summary(stdout, cgp_population, fitness_get_cgp_evals());
+    printf("\n");
+    log_time(stdout, &usertime_start, &usertime_end, &wallclock_start, &wallclock_end);
+    printf("\n");
     config_save_file(stdout, &config);
 
     ga_destroy_pop(cgp_population);
@@ -542,55 +525,3 @@ done:
 }
 
 
-/**
- * Calculates difference of two `struct timeval` values
- *
- * http://www.gnu.org/software/libc/manual/html_node/Elapsed-Time.html
- *
- * @param  result
- * @param  x
- * @param  y
- * @return 1 if the difference is negative, otherwise 0.
- */
-int timeval_subtract(struct timeval *result, struct timeval *x, struct timeval *y)
-{
-    /* Perform the carry for the later subtraction by updating y. */
-    if (x->tv_usec < y->tv_usec) {
-        int nsec = (y->tv_usec - x->tv_usec) / 1000000 + 1;
-        y->tv_usec -= 1000000 * nsec;
-        y->tv_sec += nsec;
-    }
-    if (x->tv_usec - y->tv_usec > 1000000) {
-        int nsec = (x->tv_usec - y->tv_usec) / 1000000;
-        y->tv_usec += 1000000 * nsec;
-        y->tv_sec -= nsec;
-    }
-
-    /* Compute the time remaining to wait.
-     tv_usec is certainly positive. */
-    result->tv_sec = x->tv_sec - y->tv_sec;
-    result->tv_usec = x->tv_usec - y->tv_usec;
-
-    /* Return 1 if result is negative. */
-    return x->tv_sec < y->tv_sec;
-}
-
-
-/**
- * Prints `struct timeval` value in "12m34.567s" format
- * @param fp
- * @param time
- */
-void fprint_timeval(FILE *fp, struct timeval *time)
-{
-    long minutes = time->tv_sec / 60;
-    long seconds = time->tv_sec % 60;
-    long microseconds = time->tv_usec;
-
-    if (microseconds < 0) {
-        microseconds = 1 - microseconds;
-        seconds--;
-    }
-
-    fprintf(fp, "%ldm%ld.%06lds", minutes, seconds, microseconds);
-}
