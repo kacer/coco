@@ -341,7 +341,10 @@ void cgp_find_active_blocks(ga_chr_t chromosome, bool active[CGP_NODES])
     // mark inputs of primary outputs as active
     for (int i = 0; i < CGP_OUTPUTS; i++) {
         int index = genome->outputs[i] - CGP_INPUTS;
-        active[index] = true;
+        // index may be negative (primary input), so do the check...
+        if (index >= 0) {
+            active[index] = true;
+        }
     }
 
     // then walk nodes backwards and mark inputs of active nodes
@@ -352,7 +355,10 @@ void cgp_find_active_blocks(ga_chr_t chromosome, bool active[CGP_NODES])
 
         for (int k = 0; k < CGP_FUNC_INPUTS; k++) {
             int index = n->inputs[k] - CGP_INPUTS;
-            active[index] = true;
+            // index may be negative (primary input), so do the check...
+            if (index >= 0) {
+                active[index] = true;
+            }
         }
     }
 }
