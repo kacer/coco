@@ -109,13 +109,11 @@ int cgp_main(
 
     while (!(*finished)) {
 
-        // create children and evaluate new generation
-        ga_create_children(cgp_population);
-
         #pragma omp critical (PRED_ARCHIVE)
         {
             cgp_parent_fitness = cgp_population->best_fitness;
-            ga_evaluate_pop(cgp_population);
+            // create children and evaluate new generation
+            ga_next_generation(cgp_population);
         }
 
         // last generation?
@@ -177,19 +175,17 @@ int cgp_main(
                 #pragma omp critical (CGP_ARCHIVE)
                 {
                     archived = arc_insert(cgp_archive, cgp_population->best_chromosome);
-                    ga_invalidate_fitness(pred_population);
-                    ga_reevaluate_chr(pred_population, arc_get(pred_archive, 0));
+                    ga_reevaluate_pop(pred_population);
+                    #pragma omp critical (PRED_ARCHIVE)
+                    {
+                        ga_reevaluate_chr(pred_population, arc_get(pred_archive, 0));
+                    }
                 }
 
                 predicted_fitness = cgp_population->best_fitness;
                 real_fitness = archived->fitness;
 
                 DOUBLE_LOG(log_cgp_archived, log_file, predicted_fitness, real_fitness);
-
-                // drop fitness values
-                ga_invalidate_fitness(pred_population);
-                ga_reevaluate_pop(pred_population);
-                ga_reevaluate_chr(pred_population, arc_get(pred_archive, 0));
             }
         }
 
@@ -263,15 +259,6 @@ int cgp_main(
             // flush log files
             fflush(log_file);
             fflush(history_file);
-
-            // store to vault
-            if (config->vault_enabled) {
-                // freeze predictors during save
-                #pragma omp critical (PRED_LOOP)
-                {
-                    vault_store(vault, cgp_population);
-                }
-            }
         }
 
         if (*finished || signal > 0) {
@@ -322,11 +309,9 @@ void pred_main(
 {
     while (!(*finished)) {
 
-        // next generation
-        ga_create_children(pred_population);
         #pragma omp critical (CGP_ARCHIVE)
         {
-            ga_evaluate_pop(pred_population);
+            ga_next_generation(pred_population);
         }
 
         // If evolution params should be changed now, do it
@@ -347,11 +332,20 @@ void pred_main(
 
                         // recalculate predictors' phenotypes
                         pred_pop_calculate_phenotype(pred_population);
-                        pred_calculate_phenotype(arc_get(pred_archive, 0)->genome);
+                        #pragma omp critical (PRED_ARCHIVE)
+                        {
+                            pred_calculate_phenotype(arc_get(pred_archive, 0)->genome);
+                        }
 
                         // reevaluate predictors
-                        ga_evaluate_pop(pred_population);
-                        ga_reevaluate_chr(pred_population, arc_get(pred_archive, 0));
+                        #pragma omp critical (CGP_ARCHIVE)
+                        {
+                            ga_reevaluate_pop(pred_population);
+                            #pragma omp critical (PRED_ARCHIVE)
+                            {
+                                ga_reevaluate_chr(pred_population, arc_get(pred_archive, 0));
+                            }
+                        }
                     }
 
                     // no lock on CGP population here, it should not matter
@@ -360,33 +354,6 @@ void pred_main(
                 }
             }
         }
-
-        /*
-            if (result.predictor_length_changed) {
-                DOUBLE_LOG(log_predictors_length_change, log_file,
-                    result.old_predictor_length, result.new_predictor_length);
-
-                // recalculate predictors' phenotypes
-                pred_pop_calculate_phenotype(pred_population);
-                pred_calculate_phenotype(arc_get(pred_archive, 0)->genome);
-
-                // reevaluate predictors
-                ga_evaluate_pop(pred_population);
-                ga_reevaluate_chr(pred_population, arc_get(pred_archive, 0));
-
-                // update predictors archive
-                if (ga_is_better(
-                    pred_population->problem_type,
-                    pred_population->best_fitness,
-                    arc_get(pred_archive, 0)->fitness))
-                {
-                    arc_insert(pred_archive, pred_population->best_chromosome);
-                }
-
-                // reevaluate CGP
-                ga_reevaluate_pop(cgp_population);
-            }
-        */
 
        // log progress
        bool is_better = ga_is_better(pred_population->problem_type, pred_population->best_fitness, arc_get(pred_archive, 0)->fitness);
