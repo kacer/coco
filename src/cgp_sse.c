@@ -117,6 +117,9 @@ void cgp_get_output_sse(ga_chr_t chromosome,
             int idx = cgp_node_index(x, y);
             cgp_node_t *n = &(genome->nodes[idx]);
 
+            // skip inactive blocks
+            if (!n->is_active) continue;
+
             register __m128i A;
             register __m128i B;
             register __m128i Y;

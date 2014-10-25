@@ -111,6 +111,9 @@ void cgp_get_output_avx(ga_chr_t chromosome,
             int idx = cgp_node_index(x, y);
             cgp_node_t *n = &(genome->nodes[idx]);
 
+            // skip inactive blocks
+            if (!n->is_active) continue;
+
             register __m256i A;
             register __m256i B;
             register __m256i Y;

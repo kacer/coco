@@ -297,6 +297,10 @@ void cgp_get_output(ga_chr_t chromosome, cgp_value_t *inputs, cgp_value_t *outpu
 
     for (int i = 0; i < CGP_NODES; i++) {
         cgp_node_t *n = &(genome->nodes[i]);
+
+        // skip inactive blocks
+        if (!n->is_active) continue;
+
         cgp_value_t A = inner_outputs[n->inputs[0]];
         cgp_value_t B = inner_outputs[n->inputs[1]];
         cgp_value_t Y;
