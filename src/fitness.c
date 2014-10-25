@@ -140,8 +140,6 @@ int _fitness_get_diff(ga_chr_t chr, img_window_t *w)
     cgp_value_t *inputs = w->pixels;
     cgp_value_t output_pixel;
     cgp_get_output(chr, inputs, &output_pixel);
-    #pragma omp atomic
-        _cgp_evals += 1;
     return output_pixel - img_get_pixel(_original_image, w->pos_x, w->pos_y);
 }
 
@@ -154,6 +152,8 @@ double _fitness_get_sqdiffsum_scalar(ga_chr_t chr)
         double diff = _fitness_get_diff(chr, w);
         sum += diff * diff;
     }
+    #pragma omp atomic
+        _cgp_evals += _noisy_image_windows->size;
     return sum;
 }
 
@@ -255,6 +255,9 @@ double _fitness_predict_cgp_scalar(ga_chr_t cgp_chr, ga_chr_t pred_chr)
         int diff = _fitness_get_diff(cgp_chr, w);
         sum += diff * diff;
     }
+
+    #pragma omp atomic
+        _cgp_evals += predictor->used_pixels;
 
     return sum;
 }
