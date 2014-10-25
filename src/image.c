@@ -192,8 +192,12 @@ img_window_array_t img_split_windows(img_image_t img) {
  */
 int img_split_windows_simd(img_image_t img, img_pixel_t *out[WINDOW_SIZE])
 {
+    // align length to 256bits
+    int size = img->width * img->height;
+    int padding = 32 - (size % 32);
+
     for (int i = 0; i < WINDOW_SIZE; i++) {
-        out[i] = (img_pixel_t*) malloc(sizeof(img_pixel_t) * img->width * img->height);
+        out[i] = (img_pixel_t*) malloc(sizeof(img_pixel_t) * (size + padding));
         if (out[i] == NULL) {
             // TODO: dealloc
             return -1;
@@ -213,6 +217,11 @@ int img_split_windows_simd(img_image_t img, img_pixel_t *out[WINDOW_SIZE])
             out[7][index] = img->data[get_neighbour_index(x, y, img->width, img->height,  0, +1)];
             out[8][index] = img->data[get_neighbour_index(x, y, img->width, img->height, +1, +1)];
         }
+    }
+
+    // set padding bits to zero
+    for (int i = 0; i < 9; i++) {
+        memset(&(out[i][size]), 0, sizeof(img_pixel_t) * padding);
     }
 
     return 0;

@@ -76,7 +76,6 @@ img_window_array_t img_split_windows(img_image_t img);
 
 /**
  * Splits image into windows, suitably for SIMD processing
- * @param  filename
  * @return
  */
 int img_split_windows_simd(img_image_t img, img_pixel_t *out[WINDOW_SIZE]);
