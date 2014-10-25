@@ -57,12 +57,21 @@ struct archive
     /* stored items - ring buffer */
     ga_chr_t *chromosomes;
 
+    /* items fitness before reevaluation */
+    ga_fitness_t *original_fitness;
+
     /* pointer to beginning of ring buffer - where new item will be
        stored */
     int pointer;
 
     /* genome-specific functions */
     arc_func_vect_t methods;
+
+    /* best stored item ever */
+    ga_chr_t best_chromosome_ever;
+
+    /* problem type to determine best item */
+    ga_problem_type_t problem_type;
 };
 typedef struct archive* archive_t;
 
@@ -72,9 +81,10 @@ typedef struct archive* archive_t;
  *
  * @param  size Archive size
  * @param  problem-specific genome function pointers
+ * @param  problem type - used to compare new chromosomes with best found
  * @return pointer to created archive
  */
-archive_t arc_create(int capacity, arc_func_vect_t methods);
+archive_t arc_create(int capacity, arc_func_vect_t methods, ga_problem_type_t problem_type);
 
 
 /**
@@ -131,7 +141,9 @@ void arc_omp_read_leave(archive_t arc);
 static inline int arc_real_index(archive_t arc, int index)
 {
     if (arc->stored < arc->capacity) {
-        return index;
+        int real = index % arc->stored;
+        if (real < 0) real += arc->stored;
+        return real;
 
     } else {
         int real = (arc->pointer + index) % arc->capacity;
@@ -147,4 +159,13 @@ static inline int arc_real_index(archive_t arc, int index)
 static inline ga_chr_t arc_get(archive_t arc, int index)
 {
     return arc->chromosomes[arc_real_index(arc, index)];
+}
+
+
+/**
+ * Returns original fitness of item stored on given index
+ */
+static inline ga_fitness_t arc_get_original_fitness(archive_t arc, int index)
+{
+    return arc->original_fitness[arc_real_index(arc, index)];
 }

@@ -19,12 +19,12 @@
 # _XOPEN_SOURCE=700 required by scandir and alphasort from vault.c
 
 CC=gcc
-CFLAGS=-g -Wall -std=c11 -fopenmp -march=native -D_XOPEN_SOURCE=700 \
+CFLAGS=-g -Wall -std=c11 -fopenmp -D_XOPEN_SOURCE=700 \
 	-DSSE2 -DxAVX2 -DDEBUG -DxVERBOSE -DCGP_LIMIT_FUNCS
 EXECUTABLE=coco
-CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_25.png -g 50000 -a baldwin -S 100 -I 0.25 -b 100
-SERVER=merlin
-SERVER_LOCATION=~/coco
+CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_25.png -g 10000 -a baldwin -S 100 -I 25
+ANSELM_HOST=anselm
+ANSELM_PATH=~/xwigla00
 SOURCES=main.c cpu.c ga.c cgp_core.c cgp_dump.c cgp_load.c cgp_avx.c cgp_sse.c \
 	predictors.c image.c fitness.c fitness_avx.c fitness_sse.c vault.c \
 	archive.c config.c logging.c algo.c baldwin.c
@@ -39,9 +39,13 @@ run: $(EXECUTABLE)
 	rm -rf cocolog/*
 	./$(EXECUTABLE) $(CMDLINE)
 
+minirun: $(EXECUTABLE)
+	rm -rf cocolog/*
+	./$(EXECUTABLE) -i ../images/10x10.png -n ../images/10x10_sp25.png -a baldwin -g 10000 -S 100 -I 0.5
+
 valgrind: $(EXECUTABLE)
 	rm -rf cocolog/*
-	valgrind --track-origins=yes ./$(EXECUTABLE) $(CMDLINE)
+	valgrind --track-origins=yes --log-file="valgrind.log" ./$(EXECUTABLE) $(CMDLINE)
 
 $(EXECUTABLE): $(OFILES)
 	$(CC) $(CFLAGS) -o $@ $(OFILES) $(LIBS)
@@ -49,7 +53,7 @@ $(EXECUTABLE): $(OFILES)
 apply: image.o ga.o cgp_core.o cgp_load.o main_apply.o
 	$(CC) $(CFLAGS) -o coco_apply image.o ga.o cgp_core.o cgp_load.o main_apply.o $(LIBS)
 
-.PHONY: clean zip tar upload start depend
+.PHONY: clean zip tar upload start depend anselm
 
 clean:
 	rm -rf cocolog/*
@@ -57,16 +61,18 @@ clean:
 	rm -f xwigla00.zip xwigla00.tar.gz
 
 tar:
-	cd .. && tar czf xwigla00.tar.gz src/*.c src/*.h src/Makefile src/tests/* src/stb/* images/* #-C doc/ doc.pdf
+	cd .. && tar czf xwigla00.tar.gz src/*.c src/*.h src/Makefile src/tests/* src/stb/* # images/* #-C doc/ doc.pdf
 
-upload: tar
-	scp ../xwigla00.tar.gz $(SERVER):$(SERVER_LOCATION)
-	ssh $(SERVER) "cd $(SERVER_LOCATION) && tar -xzf xwigla00.tar.gz && cd src && make"
+anselmup: tar
+	scp ../xwigla00.tar.gz $(ANSELM_HOST):$(ANSELM_PATH)
+	ssh $(ANSELM_HOST) "cd $(ANSELM_PATH) && tar -xzvf xwigla00.tar.gz && cd src && module load gcc/4.9.0 && make clean all"
 
-download:
-	ssh $(SERVER) "cd $(SERVER_LOCATION) && tar -czf results.tar.gz results/*.bmp"
-	scp $(SERVER):$(SERVER_LOCATION)/results.tar.gz .
-	tar -xzf results.tar.gz
+anselmrun:
+	ssh $(ANSELM_HOST) "cd $(ANSELM_PATH) && qsub bwnI25.sh && qsub bwnI50.sh && qsub bwnI75.sh"
+
+anselmdown:
+	ssh $(ANSELM_HOST) "cd $(ANSELM_PATH) && tar -czvf results.tar.gz --exclude='img_filtered_*.png' results/"
+	scp $(ANSELM_HOST):$(ANSELM_PATH)/results.tar.gz ../
 
 start:
 	ssh $(SERVER) "$(SERVER_LOCATION)/$(EXECUTABLE) $(CMDLINE)"

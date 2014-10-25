@@ -144,7 +144,7 @@ void log_cgp_finished(FILE *fp, ga_pop_t cgp_population)
 void log_vault(FILE *fp, ga_pop_t cgp_population)
 {
     log_entry_prolog(fp, SECTION_SYS);
-    fprintf(fp, "Storing to vault. CGP generation %4d, best fitness " FITNESS_FMT "\n",
+    fprintf(fp, "Storing state. CGP generation %4d, best fitness " FITNESS_FMT "\n",
         cgp_population->generation, cgp_population->best_fitness);
 }
 
@@ -177,6 +177,20 @@ void log_cgp_change(FILE *fp, ga_fitness_t previous_best, ga_fitness_t new_best)
     fprintf(fp, "Best CGP circuit changed by " FITNESS_FMT
                 " from " FITNESS_FMT " to " FITNESS_FMT "\n",
                 new_best - previous_best, previous_best, new_best);
+}
+
+
+/**
+ * Logs CGP history entry
+ * @param history
+ */
+void log_bw_history_entry(FILE *fp, bw_history_entry_t *history)
+{
+    log_entry_prolog(fp, SECTION_CGP);
+    fprintf(fp, "CGP velocity %.5lf (" FITNESS_FMT " / %d)\n",
+        history->velocity,
+        history->delta_fitness,
+        history->delta_generation);
 }
 
 
@@ -357,8 +371,12 @@ FILE *init_cgp_history_file(const char *dir, const char *file)
     if (!fp) return NULL;
 
     fprintf(fp,
-        "generation,fitness,cgp_evals,pred_length,"
-        "velocity,delta_generation,delta_fitness,delta_velocity"
+        "generation,"
+        "predicted_fitness,real_fitness,inaccuracy (pred/real),best_fitness_ever,"
+        "active_predictor_fitness,pred_length,pred_used_length,"
+        "cgp_evals,"
+        "velocity,"
+        "delta_generation,delta_fitness,delta_velocity"
         "\n");
 
     return fp;
@@ -371,13 +389,21 @@ FILE *init_cgp_history_file(const char *dir, const char *file)
  * @param hist
  * @param cgp_evals
  * @param pred_length
+ * @param pred_used_length
+ * @param best_ever
  */
-void log_cgp_history(FILE *fp, bw_history_entry_t *hist, long cgp_evals, int pred_length)
+void log_cgp_history(FILE *fp, bw_history_entry_t *hist, long cgp_evals,
+    int pred_length, int pred_used_length, ga_fitness_t best_ever)
 {
     fprintf(fp, "%d,", hist->generation);
+    fprintf(fp, FITNESS_FMT ",", hist->predicted_fitness);
     fprintf(fp, FITNESS_FMT ",", hist->fitness);
-    fprintf(fp, "%ld,", cgp_evals);
+    fprintf(fp, FITNESS_FMT ",", hist->predicted_fitness / hist->fitness);
+    fprintf(fp, FITNESS_FMT ",", best_ever);
+    fprintf(fp, FITNESS_FMT ",", hist->active_predictor_fitness);
     fprintf(fp, "%d,", pred_length);
+    fprintf(fp, "%d,", pred_used_length);
+    fprintf(fp, "%ld,", cgp_evals);
 
     fprintf(fp, "%10g,", hist->velocity);
 

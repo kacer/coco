@@ -84,7 +84,7 @@ ga_pop_t pred_init_pop(int pop_size)
     };
 
     /* initialize GA */
-    ga_pop_t pop = ga_create_pop(pop_size, minimize, methods);
+    ga_pop_t pop = ga_create_pop(pop_size, PRED_PROBLEM_TYPE, methods);
     if (pop != NULL) {
         ga_init_pop(pop);
     }

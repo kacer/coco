@@ -63,9 +63,18 @@
 #define OPT_PRED_POPSIZE 'P'
 #define OPT_PRED_TYPE 'T'
 
-#define OPT_BALDWIN_INTERVAL 'b'
 
 #define OPT_HELP 'h'
+
+#define OPT_BW_INTERVAL 'b'
+#define OPT_BW_INACCURACY_TOLERANCE 1000
+#define OPT_BW_INACCURACY_COEF      1001
+#define OPT_BW_ZERO_EPSILON         1002
+#define OPT_BW_SLOW_THRESHOLD       1003
+#define OPT_BW_ZERO_COEF            1004
+#define OPT_BW_DECREASE_COEF        1005
+#define OPT_BW_INCREASE_SLOW_COEF   1006
+#define OPT_BW_INCREASE_FAST_COEF   1007
 
 
 static struct option long_options[] =
@@ -107,7 +116,15 @@ static struct option long_options[] =
     {"pred-type", required_argument, 0, OPT_PRED_TYPE},
 
     /* Baldwin */
-    {"baldwin-interval", required_argument, 0, OPT_BALDWIN_INTERVAL},
+    {"bw-interval", required_argument, 0, OPT_BW_INTERVAL},
+    {"bw-inac-tol", required_argument, 0, OPT_BW_INACCURACY_TOLERANCE},
+    {"bw-inac-coef", required_argument, 0, OPT_BW_INACCURACY_COEF},
+    {"bw-zero-eps", required_argument, 0, OPT_BW_ZERO_EPSILON},
+    {"bw-slow-thr", required_argument, 0, OPT_BW_SLOW_THRESHOLD},
+    {"bw-zero-coef", required_argument, 0, OPT_BW_ZERO_COEF},
+    {"bw-decr-coef", required_argument, 0, OPT_BW_DECREASE_COEF},
+    {"bw-slow-coef", required_argument, 0, OPT_BW_INCREASE_SLOW_COEF},
+    {"bw-fast-coef", required_argument, 0, OPT_BW_INCREASE_FAST_COEF},
 
     {0, 0, 0, 0}
 };
@@ -292,8 +309,40 @@ config_retval_t config_load_args(int argc, char **argv, config_t *cfg)
                 pred_type_specified = true;
                 break;
 
-            case OPT_BALDWIN_INTERVAL:
+            case OPT_BW_INTERVAL:
                 PARSE_INT(cfg->bw_interval);
+                break;
+
+            case OPT_BW_INACCURACY_TOLERANCE:
+                PARSE_DOUBLE(cfg->bw_config.inaccuracy_tolerance);
+                break;
+
+            case OPT_BW_INACCURACY_COEF:
+                PARSE_DOUBLE(cfg->bw_config.inaccuracy_coef);
+                break;
+
+            case OPT_BW_ZERO_EPSILON:
+                PARSE_DOUBLE(cfg->bw_config.zero_epsilon);
+                break;
+
+            case OPT_BW_SLOW_THRESHOLD:
+                PARSE_DOUBLE(cfg->bw_config.slow_threshold);
+                break;
+
+            case OPT_BW_ZERO_COEF:
+                PARSE_DOUBLE(cfg->bw_config.zero_coef);
+                break;
+
+            case OPT_BW_DECREASE_COEF:
+                PARSE_DOUBLE(cfg->bw_config.decrease_coef);
+                break;
+
+            case OPT_BW_INCREASE_SLOW_COEF:
+                PARSE_DOUBLE(cfg->bw_config.increase_slow_coef);
+                break;
+
+            case OPT_BW_INCREASE_FAST_COEF:
+                PARSE_DOUBLE(cfg->bw_config.increase_fast_coef);
                 break;
 
             default:
@@ -346,7 +395,26 @@ void config_save_file(FILE *file, config_t *cfg)
     fprintf(file, "pred-population-size: %d\n", cfg->pred_population_size);
     fprintf(file, "pred-type: %s\n", cfg->pred_genome_type == permuted? "permuted" : "repeated");
     fprintf(file, "\n");
-    fprintf(file, "baldwin-interval: %d\n", cfg->bw_interval);
+    fprintf(file, "bw-interval: %d\n", cfg->bw_interval);
+    fprintf(file, "bw-inac-tol: %.5g\n", cfg->bw_config.inaccuracy_tolerance);
+    fprintf(file, "bw-inac-coef: %.5g\n", cfg->bw_config.inaccuracy_coef);
+    fprintf(file, "bw-zero-eps: %.5g\n", cfg->bw_config.zero_epsilon);
+    fprintf(file, "bw-slow-thr: %.5g\n", cfg->bw_config.slow_threshold);
+    fprintf(file, "bw-zero-coef: %.5g\n", cfg->bw_config.zero_coef);
+    fprintf(file, "bw-decr-coef: %.5g\n", cfg->bw_config.decrease_coef);
+    fprintf(file, "bw-slow-coef: %.5g\n", cfg->bw_config.increase_slow_coef);
+    fprintf(file, "bw-fast-coef: %.5g\n", cfg->bw_config.increase_fast_coef);
+    fprintf(file, "# baldwin-len=%d,zeroeps=%g,slowthr=%g,steady=%g,dec=%g,slow=%g,fast=%g,inthr=%g,incoef=%g\n",
+        BW_HISTORY_LENGTH,
+        cfg->bw_config.zero_epsilon,
+        cfg->bw_config.slow_threshold,
+        cfg->bw_config.zero_coef,
+        cfg->bw_config.decrease_coef,
+        cfg->bw_config.increase_slow_coef,
+        cfg->bw_config.increase_fast_coef,
+        cfg->bw_config.inaccuracy_tolerance,
+        cfg->bw_config.inaccuracy_coef
+    );
     fprintf(file, "\n");
     fprintf(file, "# Compiler flags\n");
     fprintf(file, "# CGP_COLS: %d\n", CGP_COLS);

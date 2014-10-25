@@ -24,6 +24,9 @@
 #include "ga.h"
 
 
+static const ga_problem_type_t PRED_PROBLEM_TYPE = minimize;
+
+
 typedef unsigned int pred_gene_t;
 typedef pred_gene_t* pred_gene_array_t;
 

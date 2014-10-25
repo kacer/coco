@@ -23,22 +23,28 @@
 
 #include "ga.h"
 
-
-// velocity thresholds
 #define BW_HISTORY_LENGTH 7
-#define BW_ZERO 0.001
-#define BW_SLOW 5
 
-// predictors change according to velocity - in percent
-#define BW_STEADY_COEF 93
-#define BW_DECREASE_COEF 97
-#define BW_INCREASE_SLOW_COEF 103
-#define BW_INCREASE_FAST_COEF 100
+typedef struct {
+    double inaccuracy_tolerance;
+    double inaccuracy_coef;
+
+    double zero_epsilon;
+    double slow_threshold;
+
+    double zero_coef;
+    double decrease_coef;
+    double increase_slow_coef;
+    double increase_fast_coef;
+} bw_config_t;
 
 
 typedef struct {
     int generation;
     int delta_generation;
+
+    ga_fitness_t predicted_fitness;
+    ga_fitness_t active_predictor_fitness;
 
     ga_fitness_t fitness;
     ga_fitness_t delta_fitness;
@@ -68,6 +74,13 @@ typedef struct {
 } bw_update_t;
 
 
+typedef struct {
+    bw_history_t history;
+    bool apply_now;
+    int last_applied_generation;
+} bw_state_t;
+
+
 /**
  * Initializes history data structure
  * @param history
@@ -79,11 +92,14 @@ void bw_init_history(bw_history_t *history);
  * Adds entry to history
  * @param  history
  * @param  generation
- * @param  fitness
+ * @param  real_fitness
+ * @param  predicted_fitness
+ * @param  active_predictor_fitness
  * @return pointer to newly inserted entry
  */
 bw_history_entry_t *bw_add_history(bw_history_t *history, int generation,
-    ga_fitness_t fitness);
+    ga_fitness_t real_fitness, ga_fitness_t predicted_fitness,
+    ga_fitness_t active_predictor_fitness);
 
 
 /**
@@ -114,16 +130,16 @@ static inline bw_history_entry_t *bw_get(bw_history_t *history, int index)
 
 
 /**
+ * Updates evolution parameters according to history
+ * @param  history
+ * @return Info about what has been changed and how
+ */
+void bw_update_params(bw_config_t *config, bw_history_t *history, bw_update_t *result);
+
+
+/**
  * Dumps history to file as ASCII art
  * @param fp
  * @param history
  */
 void bw_dump_history_asciiart(FILE *fp, bw_history_t *history);
-
-
-/**
- * Updates evolution parameters according to history
- * @param  history
- * @return Info about what has been changed and how
- */
-void bw_update_params(bw_history_t *history, bw_update_t *result);

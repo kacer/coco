@@ -25,6 +25,7 @@
 #include <stdbool.h>
 
 #include "files.h"
+#include "baldwin.h"
 #include "predictors.h"
 
 
@@ -75,6 +76,7 @@ typedef struct
     pred_genome_type_t pred_genome_type;
 
     int bw_interval;
+    bw_config_t bw_config;
 
     int log_interval;
     char log_dir[MAX_FILENAME_LENGTH + 1];
@@ -86,7 +88,7 @@ typedef struct
 
 
 static inline void print_help() {
-    puts(
+    fputs(
         "Colearning in Coevolutionary Algorithms\n"
         "Bc. Michal Wiglasz <xwigla00@stud.fit.vutbr.cz>\n"
         "\n"
@@ -189,7 +191,27 @@ static inline void print_help() {
         "          Minimal interval of evolution parameters update in \"baldwin\" mode\n"
         "          Default is \"0\" which means, that parameters are updated only if.\n"
         "          CGP fitness changes.\n"
-    );
+        "\n"
+        "Baldwin algorithm options (with those default values):\n"
+        "    --bw-inac-tol  1.5\n"
+        "    --bw-inac-coef 3.0\n"
+        "\n"
+        "    --bw-zero-eps  0.0\n"
+        "    --bw-zero-coef 1.0\n"
+        "\n"
+        "    --bw-decr-coef 0.93\n"
+        "\n"
+        "    --bw-slow-thr  0.97\n"
+        "    --bw-slow-coef 1.03\n"
+        "    --bw-fast-coef 1.00\n"
+        "\n"
+        "Baldwin rules are (processed in this order):\n"
+        "    (f_pred / f_real) > inac_tol   --->  len = len * inac_coef\n"
+        "    velocity <= zero_eps           --->  len = len * zero_coef\n"
+        "    velocity < 0                   --->  len = len * decr_coef\n"
+        "    velocity < slow_thr            --->  len = len * slow_coef\n"
+        "    velocity > slow_thr            --->  len = len * fast_coef\n"
+    , stdout);  // this comma is ugly, I know
 }
 
 

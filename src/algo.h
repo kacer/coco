@@ -26,6 +26,7 @@
 #include "image.h"
 #include "config.h"
 #include "archive.h"
+#include "baldwin.h"
 #include "predictors.h"
 
 
@@ -60,7 +61,6 @@ int simple_cgp_main(
 
 /**
  * CGP main loop
- * @param  mode
  * @param  cgp_population
  * @param  pred_population
  * @param  cgp_archive CGP archive
@@ -68,6 +68,7 @@ int simple_cgp_main(
  * @param  config
  * @param  vault
  * @param  img_noisy Noisy image (to store filtered img to results)
+ * @param  baldwin_state Colearning state and sync info
  * @param  best_circuit_file_name_txt File for storing best circuit in readable format
  * @param  best_circuit_file_name_chr File for storing best circuit in CGPViewer format
  * @param  log_file Genral log file
@@ -77,9 +78,6 @@ int simple_cgp_main(
  * @return Program return value
  */
 int cgp_main(
-    // mode
-    algorithm_t mode,
-
     // populations
     ga_pop_t cgp_population,
     ga_pop_t pred_population,
@@ -95,6 +93,9 @@ int cgp_main(
     // input
     img_image_t img_noisy,
 
+    // baldwin
+    bw_state_t *baldwin_state,
+
     // log files
     char *best_circuit_file_name_txt,
     char *best_circuit_file_name_chr,
@@ -108,18 +109,15 @@ int cgp_main(
 
 /**
  * Coevolutionary predictors main loop
- * @param  mode
  * @param  cgp_population
  * @param  pred_population
  * @param  pred_archive Predictors archive
  * @param  config
+ * @param  baldwin_state Colearning state and sync info
  * @param  finished Pointer to shared variable indicating that the program
  *                  should terminate
  */
 void pred_main(
-    // mode
-    algorithm_t mode,
-
     // populations
     ga_pop_t cgp_population,
     ga_pop_t pred_population,
@@ -129,6 +127,9 @@ void pred_main(
 
     // config
     config_t *config,
+
+    // baldwin
+    bw_state_t *baldwin_state,
 
     // log
     FILE *log_file,

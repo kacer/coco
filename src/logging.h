@@ -104,6 +104,13 @@ void log_cgp_change(FILE *fp, ga_fitness_t previous_best, ga_fitness_t new_best)
 
 
 /**
+ * Logs CGP history entry
+ * @param history
+ */
+void log_bw_history_entry(FILE *fp, bw_history_entry_t *history);
+
+
+/**
  * Logs that CGP was moved to archive
  * @param predicted
  * @param real
@@ -196,8 +203,11 @@ FILE *init_cgp_history_file(const char *dir, const char *file);
  * @param hist
  * @param cgp_evals
  * @param pred_length
+ * @param pred_used_length
+ * @param best_ever
  */
-void log_cgp_history(FILE *fp, bw_history_entry_t *hist, long cgp_evals, int pred_length);
+void log_cgp_history(FILE *fp, bw_history_entry_t *hist, long cgp_evals,
+    int pred_length, int pred_used_length, ga_fitness_t best_ever);
 
 
 /**
@@ -220,3 +230,10 @@ void log_predictors_length_change(FILE *fp, int old_length, int new_length);
 void log_time(FILE *fp, struct timeval *usertime_start,
     struct timeval *usertime_end, struct timeval *wallclock_start,
     struct timeval *wallclock_end);
+
+
+/**
+ * Logs magic baldwin string
+ * @param fp
+ */
+void log_baldwin_magic_string(FILE *fp);

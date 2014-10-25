@@ -29,9 +29,10 @@
  *
  * @param  size Archive size
  * @param  problem-specific genome function pointers
+ * @param  problem type - used to compare new chromosomes with best found
  * @return pointer to created archive
  */
-archive_t arc_create(int capacity, arc_func_vect_t methods)
+archive_t arc_create(int capacity, arc_func_vect_t methods, ga_problem_type_t problem_type)
 {
     archive_t arc = (archive_t) malloc(sizeof(struct archive));
     if (arc == NULL) {
@@ -39,6 +40,26 @@ archive_t arc_create(int capacity, arc_func_vect_t methods)
     }
 
     ga_chr_t *items = (ga_chr_t*) malloc(sizeof(ga_chr_t) * capacity);
+    if (items == NULL) {
+        free(arc);
+        return NULL;
+    }
+
+    ga_fitness_t *original_fitness = (ga_fitness_t*) malloc(sizeof(ga_fitness_t) * capacity);
+    if (original_fitness == NULL) {
+        free(items);
+        free(arc);
+        return NULL;
+    }
+
+    ga_chr_t best_ever = ga_alloc_chr(methods.alloc_genome);
+    if (best_ever == NULL) {
+        free(original_fitness);
+        free(items);
+        free(arc);
+        return NULL;
+    }
+    best_ever->has_fitness = false;
 
     for (int i = 0; i < capacity; i++) {
         items[i] = ga_alloc_chr(methods.alloc_genome);
@@ -52,10 +73,13 @@ archive_t arc_create(int capacity, arc_func_vect_t methods)
     }
 
     arc->chromosomes = items;
+    arc->best_chromosome_ever = best_ever;
+    arc->original_fitness = original_fitness;
     arc->capacity = capacity;
     arc->stored = 0;
     arc->pointer = 0;
     arc->methods = methods;
+    arc->problem_type = problem_type;
     return arc;
 }
 
@@ -90,16 +114,20 @@ ga_chr_t arc_insert(archive_t arc, ga_chr_t chr)
 {
     ga_chr_t dst = arc->chromosomes[arc->pointer];
     ga_copy_chr(dst, chr, arc->methods.copy_genome);
-
-    if (arc->stored < arc->capacity) {
-        arc->stored++;
-    }
-    arc->pointer = (arc->pointer + 1) % arc->capacity;
+    arc->original_fitness[arc->pointer] = chr->has_fitness? chr->fitness : 0;
 
     if (arc->methods.fitness != NULL) {
         dst->fitness = arc->methods.fitness(dst);
         dst->has_fitness = true;
     }
 
+    if (arc->stored == 0 || ga_is_better(arc->problem_type, dst->fitness, arc->best_chromosome_ever->fitness)) {
+        ga_copy_chr(arc->best_chromosome_ever, dst, arc->methods.copy_genome);
+    }
+
+    if (arc->stored < arc->capacity) {
+        arc->stored++;
+    }
+    arc->pointer = (arc->pointer + 1) % arc->capacity;
     return dst;
 }

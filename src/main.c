@@ -133,38 +133,49 @@ int check_signals(int current_generation)
 }
 
 
+// configuration
+static config_t config = {
+    .max_generations = 50000,
+    .target_fitness = 0,
+    .algorithm = predictors,
+
+    .cgp_mutate_genes = 5,
+    .cgp_population_size = 8,
+    .cgp_archive_size = 10,
+
+    .pred_size = 0.25,
+    .pred_initial_size = 0,
+    .pred_mutation_rate = 0.05,
+    .pred_population_size = 10,
+    .pred_offspring_elite = 0.25,
+    .pred_offspring_combine = 0.5,
+    .pred_genome_type = permuted,
+
+    .bw_interval = 0,
+    .bw_config = {
+        .inaccuracy_tolerance = 1.5,
+        .inaccuracy_coef = 3.0,
+        .zero_epsilon = 0.0,
+        .slow_threshold = 1.0,
+        .zero_coef = 0.93,
+        .decrease_coef = 0.97,
+        .increase_slow_coef = 1.03,
+        .increase_fast_coef = 1.00,
+    },
+
+    .log_interval = 0,
+    .log_dir = "cocolog",
+
+    .vault_enabled = false,
+    .vault_interval = 200,
+};
+
+
 /******************************************************************************/
 
 
 int main(int argc, char *argv[])
 {
-    // configuration
-    static config_t config = {
-        .max_generations = 50000,
-        .target_fitness = 0,
-        .algorithm = predictors,
-
-        .cgp_mutate_genes = 5,
-        .cgp_population_size = 8,
-        .cgp_archive_size = 10,
-
-        .pred_size = 0.25,
-        .pred_initial_size = 0,
-        .pred_mutation_rate = 0.05,
-        .pred_population_size = 10,
-        .pred_offspring_elite = 0.25,
-        .pred_offspring_combine = 0.5,
-        .pred_genome_type = permuted,
-
-        .bw_interval = 0,
-
-        .log_interval = 0,
-        .log_dir = "cocolog",
-
-        .vault_enabled = false,
-        .vault_interval = 200,
-    };
-
     // cannot be set in initializer
     config.random_seed = rand_seed_from_time();
 
@@ -176,6 +187,10 @@ int main(int argc, char *argv[])
     ga_pop_t pred_population = NULL;
     archive_t cgp_archive = NULL;
     archive_t pred_archive = NULL;
+
+    // baldwin
+    bw_state_t baldwin_state = {};
+    bw_init_history(&baldwin_state.history);
 
     // images
     img_image_t img_original;
@@ -327,7 +342,7 @@ int main(int argc, char *argv[])
             .copy_genome = cgp_copy_genome,
             .fitness = fitness_eval_cgp,
         };
-        cgp_archive = arc_create(config.cgp_archive_size, arc_cgp_methods);
+        cgp_archive = arc_create(config.cgp_archive_size, arc_cgp_methods, CGP_PROBLEM_TYPE);
         if (cgp_archive == NULL) {
             fprintf(stderr, "Failed to initialize CGP archive.\n");
             return 1;
@@ -340,7 +355,7 @@ int main(int argc, char *argv[])
             .copy_genome = pred_copy_genome,
             .fitness = NULL,
         };
-        pred_archive = arc_create(1, arc_pred_methods);
+        pred_archive = arc_create(1, arc_pred_methods, PRED_PROBLEM_TYPE);
         if (pred_archive == NULL) {
             fprintf(stderr, "Failed to initialize predictors archive.\n");
             return 1;
@@ -355,7 +370,7 @@ int main(int argc, char *argv[])
      */
 
     if (config.vault_enabled && vault_retrieve(&vault, &cgp_population) == 0) {
-        SLOWLOG("Population retrieved from vault.");
+        printf("Population retrieved from vault.\n");
 
     } else {
         cgp_population = cgp_init_pop(config.cgp_population_size);
@@ -387,9 +402,9 @@ int main(int argc, char *argv[])
     printf("Configuration:\n");
     config_save_file(stdout, &config);
 
-    SLOWLOG("Algorithm: %s", config_algorithm_names[config.algorithm]);
-    SLOWLOG("Stop at generation: %d", config.max_generations);
-    SLOWLOG("Initial \"PSNR\" value:         %.10g",
+    printf("Algorithm: %s\n", config_algorithm_names[config.algorithm]);
+    printf("Stop at generation: %d\n", config.max_generations);
+    printf("Initial \"PSNR\" value:         %.10g\n",
         img_psnr(img_original, img_noisy));
 
     DEBUGLOG("Evaluating CGP population...");
@@ -438,7 +453,6 @@ int main(int argc, char *argv[])
 
         case simple_cgp:
             retval = cgp_main(
-                config.algorithm,
                 cgp_population,
                 NULL,
                 NULL,
@@ -446,6 +460,7 @@ int main(int argc, char *argv[])
                 &config,
                 &vault,
                 img_noisy,
+                NULL,
                 best_circuit_file_name_txt,
                 best_circuit_file_name_chr,
                 progress_log_file,
@@ -461,7 +476,6 @@ int main(int argc, char *argv[])
                 #pragma omp section
                 {
                     retval = cgp_main(
-                        config.algorithm,
                         cgp_population,
                         pred_population,
                         cgp_archive,
@@ -469,6 +483,7 @@ int main(int argc, char *argv[])
                         &config,
                         &vault,
                         img_noisy,
+                        &baldwin_state,
                         best_circuit_file_name_txt,
                         best_circuit_file_name_chr,
                         progress_log_file,
@@ -479,11 +494,11 @@ int main(int argc, char *argv[])
                 #pragma omp section
                 {
                     pred_main(
-                        config.algorithm,
                         cgp_population,
                         pred_population,
                         pred_archive,
                         &config,
+                        &baldwin_state,
                         progress_log_file,
                         &finished
                     );
@@ -495,7 +510,6 @@ int main(int argc, char *argv[])
             fprintf(stderr, "Algorithm '%s' is not supported.\n",
                 config_algorithm_names[config.algorithm]);
             return -1;
-
     }
 
 

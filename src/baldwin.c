@@ -55,20 +55,25 @@ void bw_init_history(bw_history_t *history)
  * Adds entry to history
  * @param  history
  * @param  generation
- * @param  fitness
+ * @param  real_fitness
+ * @param  predicted_fitness
+ * @param  active_predictor_fitness
  * @return pointer to newly inserted entry
  */
 bw_history_entry_t *bw_add_history(bw_history_t *history, int generation,
-    ga_fitness_t fitness)
+    ga_fitness_t real_fitness, ga_fitness_t predicted_fitness,
+    ga_fitness_t active_predictor_fitness)
 {
     bw_history_entry_t *prev = bw_get(history, -1);
     bw_history_entry_t *new = &history->log[history->pointer];
 
     new->generation = generation;
-    new->fitness = fitness;
+    new->fitness = real_fitness;
+    new->predicted_fitness = predicted_fitness;
+    new->active_predictor_fitness = active_predictor_fitness;
 
     new->delta_generation = generation - prev->generation;
-    new->delta_fitness = fitness - prev->fitness;
+    new->delta_fitness = new->fitness - prev->fitness;
 
     new->velocity = new->delta_fitness / new->delta_generation;
     new->delta_velocity = new->velocity - prev->velocity;
@@ -83,6 +88,57 @@ bw_history_entry_t *bw_add_history(bw_history_t *history, int generation,
     history->pointer = (history->pointer + 1) % BW_HISTORY_LENGTH;
 
     return new;
+}
+
+
+/**
+ * Updates evolution parameters according to history
+ * @param  history
+ * @return Info about what has been changed and how
+ */
+void bw_update_params(bw_config_t *config, bw_history_t *history, bw_update_t *result)
+{
+    bw_history_entry_t *last = bw_get(history, -1);
+    double velocity = last->velocity;
+
+    int old_length = pred_get_length();
+    result->old_predictor_length = old_length;
+    result->new_predictor_length = old_length;
+    result->predictor_length_changed = false;
+
+    double coefficcient = 1.0;
+    double inaccuracy = last->predicted_fitness / last->fitness;
+
+    if (inaccuracy > config->inaccuracy_tolerance) {
+        coefficcient = config->inaccuracy_coef;
+
+    } else if (fabs(velocity) <= config->zero_epsilon) {
+        // no change
+        coefficcient = config->zero_coef;
+
+    } else if (velocity < 0) {
+        // decrease
+        coefficcient = config->decrease_coef;
+
+    } else if (velocity > 0 && velocity <= config->slow_threshold) {
+        // slow increase
+        coefficcient = config->increase_slow_coef;
+
+    } else if (velocity > config->slow_threshold) {
+        // fast increase
+        coefficcient = config->increase_fast_coef;
+
+    } else {
+        fprintf(stderr, "Baldwin if-else fail. Velocity = %.10g\n", velocity);
+        assert(false);
+    }
+
+    if (fabs(coefficcient - 1.0) > 0.005) {
+        int new_length = floor(old_length * coefficcient);
+        result->new_predictor_length = new_length;
+        result->predictor_length_changed = true;
+        pred_set_length(new_length);
+    }
 }
 
 
@@ -110,10 +166,26 @@ void bw_dump_history_asciiart(FILE *fp, bw_history_t *history) {
     fprintf(fp, "\n");
 
     // fitness
-    fprintf(fp, "|      f |");
+    fprintf(fp, "|     rf |");
     fprintf(fp, " %7.3lf ||", history->last_change.fitness);
     for (int i = 0; i < len; i++) {
         fprintf(fp, " %7.3lf |", bw_get(history, i)->fitness);
+    }
+    fprintf(fp, "\n");
+
+    // predicted fitness
+    fprintf(fp, "|     pf |");
+    fprintf(fp, " %7.3lf ||", history->last_change.predicted_fitness);
+    for (int i = 0; i < len; i++) {
+        fprintf(fp, " %7.3lf |", bw_get(history, i)->predicted_fitness);
+    }
+    fprintf(fp, "\n");
+
+    // predicted fitness
+    fprintf(fp, "|  predf |");
+    fprintf(fp, " %7.3lf ||", history->last_change.active_predictor_fitness);
+    for (int i = 0; i < len; i++) {
+        fprintf(fp, " %7.3lf |", bw_get(history, i)->active_predictor_fitness);
     }
     fprintf(fp, "\n");
 
@@ -169,51 +241,4 @@ void bw_dump_history_asciiart(FILE *fp, bw_history_t *history) {
         fprintf(fp, "---------+");
     }
     fprintf(fp, "\n");
-}
-
-
-/**
- * Updates evolution parameters according to history
- * @param  history
- * @return Info about what has been changed and how
- */
-void bw_update_params(bw_history_t *history, bw_update_t *result)
-{
-    bw_history_entry_t *last = bw_get(history, -1);
-    double velocity = last->velocity;
-
-    int old_length = pred_get_length();
-    result->old_predictor_length = old_length;
-    result->new_predictor_length = old_length;
-    result->predictor_length_changed = false;
-
-    double coefficcient = 1;
-
-    if (fabs(velocity) <= BW_ZERO) {
-        // no change
-        coefficcient = BW_STEADY_COEF;
-
-    } else if (velocity < 0) {
-        // decrease
-        coefficcient = BW_DECREASE_COEF;
-
-    } else if (velocity > 0 && velocity <= BW_SLOW) {
-        // slow increase
-        coefficcient = BW_INCREASE_SLOW_COEF;
-
-    } else if (velocity > BW_SLOW) {
-        // fast increase
-        coefficcient = BW_INCREASE_FAST_COEF;
-
-    } else {
-        fprintf(stderr, "Baldwin if-else fail. Velocity = %.10g\n", velocity);
-        assert(false);
-    }
-
-    if (coefficcient != 100) {
-        int new_length = (old_length * coefficcient) / 100;
-        result->new_predictor_length = new_length;
-        result->predictor_length_changed = true;
-        pred_set_length(new_length);
-    }
 }

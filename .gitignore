@@ -22,6 +22,7 @@
 *.hex
 *.exe.stackdump
 coco
+coco_apply
 
 # Makefile little helper
 .depend
@@ -41,6 +42,7 @@ Thumbs.db
 
 # Experimental results
 results/*
+anselm/*
 
 # Documentation
 text/*.pdf

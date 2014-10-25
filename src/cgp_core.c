@@ -139,7 +139,7 @@ ga_pop_t cgp_init_pop(int pop_size)
     };
 
     /* initialize GA */
-    ga_pop_t pop = ga_create_pop(pop_size, maximize, methods);
+    ga_pop_t pop = ga_create_pop(pop_size, CGP_PROBLEM_TYPE, methods);
     ga_init_pop(pop);
 
     return pop;

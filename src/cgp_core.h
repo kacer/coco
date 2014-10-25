@@ -29,6 +29,8 @@
 #define CGP_CHR_OUTPUTS_INDEX ((CGP_FUNC_INPUTS + 1) * CGP_NODES)
 #define CGP_CHR_LENGTH (CGP_CHR_OUTPUTS_INDEX + CGP_OUTPUTS)
 
+static const ga_problem_type_t CGP_PROBLEM_TYPE = maximize;
+
 typedef unsigned char cgp_value_t;
 
 #define CGP_FUNC_COUNT 16
