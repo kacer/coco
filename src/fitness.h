@@ -32,6 +32,14 @@ static const int FITNESS_AVX2_STEP = 32;
 
 
 /**
+ * For testing purposes only
+ */
+void fitness_test_init(img_image_t original_image,
+    img_window_array_t noisy_image_windows,
+    img_pixel_t *noisy_image_simd[WINDOW_SIZE]);
+
+
+/**
  * Initializes fitness module - prepares test image
  * @param original
  * @param noisy
@@ -170,3 +178,10 @@ double _fitness_get_sqdiffsum_avx(
     img_pixel_t *_noisy_image_simd[WINDOW_SIZE],
     ga_chr_t chr,
     int offset);
+
+
+/**
+ * Fills simd-friendly predictor arrays with correct image data
+ * @param  genome
+ */
+void fitness_prepare_predictor_for_simd(pred_genome_t predictor);

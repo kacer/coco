@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cpu.h"
 #include "debug.h"
 #include "random.h"
 #include "fitness.h"
@@ -137,6 +138,26 @@ void* pred_alloc_genome()
         }
     }
 
+    // allocate space for simd-friendly data using calloc, since we
+    // want initialized padding bits
+    if (can_use_simd()) {
+        int size = _max_genome_length;
+        int padding = SIMD_PADDING_BYTES - (size % SIMD_PADDING_BYTES);
+        genome->original_simd = (img_pixel_t *) calloc(size + padding, sizeof(img_pixel_t));
+        if (genome->original_simd == NULL) {
+            // TODO: implement proper deallocation on failure
+            // Whatever, if it fails, everything fails, OS cleans it, so...
+            return NULL;
+        }
+
+        for (int i = 0; i < WINDOW_SIZE; i++) {
+            genome->pixels_simd[i] = (img_pixel_t *) calloc(size + padding, sizeof(img_pixel_t));
+            if (genome->pixels_simd[i] == NULL) {
+                return NULL;
+            }
+        }
+    }
+
     return genome;
 }
 
@@ -161,26 +182,33 @@ void pred_free_genome(void *_genome)
  */
 void pred_calculate_phenotype(pred_genome_t genome)
 {
-    assert(_genome_type == repeated);
+    if (_genome_type == repeated) {
+        // clear used values helper
+        memset(genome->_used_values, 0, sizeof(bool) * (_max_gene_value + 1));
 
-    // clear used values helper
-    memset(genome->_used_values, 0, sizeof(bool) * (_max_gene_value + 1));
+        // calculate new one
+        int pheno_index = 0;
 
-    // calculate new one
-    int pheno_index = 0;
-
-    for (int geno_index = 0; geno_index < _current_genome_length; geno_index++) {
-        pred_gene_t value = genome->_genes[geno_index];
-        if (genome->_used_values[value]) {
-            continue;
-        } else {
-            genome->_used_values[value] = true;
-            genome->pixels[pheno_index] = value;
-            pheno_index++;
+        for (int geno_index = 0; geno_index < _current_genome_length; geno_index++) {
+            pred_gene_t value = genome->_genes[geno_index];
+            if (genome->_used_values[value]) {
+                continue;
+            } else {
+                genome->_used_values[value] = true;
+                genome->pixels[pheno_index] = value;
+                pheno_index++;
+            }
         }
+
+        genome->used_pixels = pheno_index;
+
+    } else {
+        genome->used_pixels = _current_genome_length;
     }
 
-    genome->used_pixels = pheno_index;
+    if (can_use_simd()) {
+        fitness_prepare_predictor_for_simd(genome);
+    }
 }
 
 
@@ -221,13 +249,7 @@ int pred_randomize_genome(ga_chr_t chromosome)
         genome->_genes[i] = value;
     }
 
-    if (_genome_type == repeated) {
-        pred_calculate_phenotype(genome);
-
-    } else {
-        genome->used_pixels = _current_genome_length;
-    }
-
+    pred_calculate_phenotype(genome);
     return 0;
 }
 
@@ -245,8 +267,16 @@ void pred_copy_genome(void *_dst, void *_src)
 
     memcpy(dst->_genes, src->_genes, sizeof(pred_gene_t) * _max_genome_length);
     memcpy(dst->_used_values, src->_used_values, sizeof(bool) * _max_gene_value);
+
     if (_genome_type == repeated) {
         memcpy(dst->pixels, src->pixels, sizeof(pred_gene_t) * _max_genome_length);
+    }
+
+    if (can_use_simd()) {
+        memcpy(dst->original_simd, src->original_simd, sizeof(img_pixel_t) * src->used_pixels);
+        for (int w = 0; w < WINDOW_SIZE; w++) {
+            memcpy(dst->pixels_simd[w], src->pixels_simd[w], sizeof(img_pixel_t) * src->used_pixels);
+        }
     }
 
     dst->used_pixels = src->used_pixels;
@@ -286,9 +316,7 @@ void pred_mutate(pred_genome_t genome)
         genome->_used_values[value] = true;
     }
 
-    if (_genome_type == repeated) {
-        pred_calculate_phenotype(genome);
-    }
+    pred_calculate_phenotype(genome);
 }
 
 

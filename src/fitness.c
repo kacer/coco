@@ -43,6 +43,21 @@ static inline double fitness_psnr_coeficient(int pixels_count)
 
 
 /**
+ * For testing purposes only
+ */
+void fitness_test_init(img_image_t original_image,
+    img_window_array_t noisy_image_windows,
+    img_pixel_t *noisy_image_simd[WINDOW_SIZE])
+{
+    _original_image = original_image;
+    _noisy_image_windows = noisy_image_windows;
+    for (int i = 0; i < WINDOW_SIZE; i++) {
+        _noisy_image_simd[i] = noisy_image_simd[i];
+    }
+}
+
+
+/**
  * Initializes fitness module - prepares test image
  * @param original
  * @param noisy
@@ -120,7 +135,7 @@ img_image_t fitness_filter_image(ga_chr_t chr)
  * @param  w
  * @return
  */
-double _fitness_get_diff(ga_chr_t chr, img_window_t *w)
+int _fitness_get_diff(ga_chr_t chr, img_window_t *w)
 {
     cgp_value_t *inputs = w->pixels;
     cgp_value_t output_pixel;
@@ -143,7 +158,7 @@ double _fitness_get_sqdiffsum_scalar(ga_chr_t chr)
 }
 
 
-double fitness_get_sqdiffsum_simd(ga_chr_t chr, img_pixel_t *original, img_pixel_t *noisy[WINDOW_SIZE], int data_length)
+double _fitness_get_sqdiffsum_simd(ga_chr_t chr, img_pixel_t *original, img_pixel_t *noisy[WINDOW_SIZE], int data_length)
 {
     fitness_simd_func_t func = NULL;
     int block_size = 0;
@@ -176,8 +191,10 @@ double fitness_get_sqdiffsum_simd(ga_chr_t chr, img_pixel_t *original, img_pixel
     }
 
     // fix image data not fitting into register
+    // offset is set correctly here - it points to first pixel after
+    // aligned data (we subtracted no. unaligned bytes before)
     if (unaligned_bytes > 0) {
-        sum += func(original, noisy, chr, offset - block_size, unaligned_bytes);
+        sum += func(original, noisy, chr, offset, unaligned_bytes);
         #pragma omp atomic
             _cgp_evals += unaligned_bytes;
     }
@@ -197,7 +214,7 @@ ga_fitness_t fitness_eval_cgp(ga_chr_t chr)
     double sum = 0;
 
     if(can_use_simd()) {
-        sum = fitness_get_sqdiffsum_simd(chr, _original_image->data,
+        sum = _fitness_get_sqdiffsum_simd(chr, _original_image->data,
             _noisy_image_simd, _noisy_image_windows->size);
 
     } else {
@@ -224,6 +241,25 @@ ga_fitness_t fitness_eval_or_predict_cgp(ga_chr_t chr)
 }
 
 
+double _fitness_predict_cgp_scalar(ga_chr_t cgp_chr, ga_chr_t pred_chr)
+{
+    pred_genome_t predictor = (pred_genome_t) pred_chr->genome;
+    double sum = 0;
+
+    for (int i = 0; i < predictor->used_pixels; i++) {
+        // fetch window specified by predictor
+        pred_gene_t index = predictor->pixels[i];
+        assert(index < _noisy_image_windows->size);
+        img_window_t *w = &_noisy_image_windows->windows[index];
+
+        int diff = _fitness_get_diff(cgp_chr, w);
+        sum += diff * diff;
+    }
+
+    return sum;
+}
+
+
 /**
  * Predictes CGP circuit fitness
  *
@@ -238,15 +274,12 @@ ga_fitness_t fitness_predict_cgp(ga_chr_t cgp_chr, ga_chr_t pred_chr)
     double coef = fitness_psnr_coeficient(predictor->used_pixels);
     double sum = 0;
 
-    for (int i = 0; i < predictor->used_pixels; i++) {
+    if (can_use_simd()) {
+        sum = _fitness_get_sqdiffsum_simd(cgp_chr, predictor->original_simd,
+            predictor->pixels_simd, predictor->used_pixels);
 
-        // fetch window specified by predictor
-        pred_gene_t index = predictor->pixels[i];
-        assert(index < _noisy_image_windows->size);
-        img_window_t *w = &_noisy_image_windows->windows[index];
-
-        double diff = _fitness_get_diff(cgp_chr, w);
-        sum += diff * diff;
+    } else {
+        sum = _fitness_predict_cgp_scalar(cgp_chr, pred_chr);
     }
 
     return coef / sum;
@@ -268,4 +301,22 @@ ga_fitness_t fitness_eval_predictor(ga_chr_t pred_chr)
         sum += fabs(cgp_chr->fitness - predicted);
     }
     return sum / _cgp_archive->stored;
+}
+
+
+/**
+ * Fills simd-friendly predictor arrays with correct image data
+ * @param  genome
+ */
+void fitness_prepare_predictor_for_simd(pred_genome_t predictor)
+{
+    for (int i = 0; i < predictor->used_pixels; i++) {
+        pred_gene_t index = predictor->pixels[i];
+        assert(index < _noisy_image_windows->size);
+
+        predictor->original_simd[i] = _original_image->data[index];
+        for (int w = 0; w < WINDOW_SIZE; w++) {
+            predictor->pixels_simd[w][i] = _noisy_image_simd[w][index];
+        }
+    }
 }

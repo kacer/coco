@@ -65,6 +65,7 @@ int main(int argc, char const *argv[])
             n->inputs[0] = i + CGP_INPUTS - y - y - 1;
             n->inputs[1] = i + CGP_INPUTS - CGP_ROWS;
             n->function = (cgp_func_t) (i % CGP_FUNC_COUNT);
+            n->is_active = true;
         }
     }
 

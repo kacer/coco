@@ -30,6 +30,9 @@
 #include <cpuid.h>
 
 
+#define SIMD_PADDING_BYTES 32
+
+
 /**
  * Checks whether current CPU supports AVX2 and other New Haswell features
  */

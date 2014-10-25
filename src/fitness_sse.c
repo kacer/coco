@@ -53,7 +53,7 @@ double _fitness_get_sqdiffsum_sse(
     cgp_get_output_sse(chr, sse_inputs, sse_outputs);
 
     double sum = 0;
-    for (int i = 0; i < FITNESS_SSE2_STEP; i++) {
+    for (int i = 0; i < block_size; i++) {
         int diff = outputs_ptr[i] - original[offset + i];
         sum += diff * diff;
     }

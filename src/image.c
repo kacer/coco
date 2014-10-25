@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "cpu.h"
 #include "image.h"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -194,7 +195,7 @@ int img_split_windows_simd(img_image_t img, img_pixel_t *out[WINDOW_SIZE])
 {
     // align length to 256bits
     int size = img->width * img->height;
-    int padding = 32 - (size % 32);
+    int padding = SIMD_PADDING_BYTES - (size % SIMD_PADDING_BYTES);
 
     for (int i = 0; i < WINDOW_SIZE; i++) {
         out[i] = (img_pixel_t*) malloc(sizeof(img_pixel_t) * (size + padding));

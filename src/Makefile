@@ -22,7 +22,7 @@ CC=gcc
 CFLAGS=-g -Wall -std=c11 -fopenmp -D_XOPEN_SOURCE=700 \
 	-DSSE2 -DxAVX2 -DDEBUG -DxVERBOSE -DCGP_LIMIT_FUNCS
 EXECUTABLE=coco
-CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_25.png -g 10000 -a baldwin -S 100 -I 25
+CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_25.png -g 10000 -a predictors -S 25
 ANSELM_HOST=anselm
 ANSELM_PATH=~/xwigla00
 SOURCES=main.c cpu.c ga.c cgp_core.c cgp_dump.c cgp_load.c cgp_avx.c cgp_sse.c \
@@ -45,7 +45,7 @@ minirun: $(EXECUTABLE)
 
 valgrind: $(EXECUTABLE)
 	rm -rf cocolog/*
-	valgrind --track-origins=yes --log-file="valgrind.log" ./$(EXECUTABLE) $(CMDLINE)
+	valgrind --track-origins=yes --leak-check=full ./$(EXECUTABLE) $(CMDLINE)
 
 $(EXECUTABLE): $(OFILES)
 	$(CC) $(CFLAGS) -o $@ $(OFILES) $(LIBS)
@@ -64,6 +64,8 @@ tar:
 	cd .. && tar czf xwigla00.tar.gz src/*.c src/*.h src/Makefile src/tests/* src/stb/* # images/* #-C doc/ doc.pdf
 
 anselmup: tar
+	find -type f | xargs chmod ug+rw
+	find -type d | xargs chmod ug+rwx
 	scp ../xwigla00.tar.gz $(ANSELM_HOST):$(ANSELM_PATH)
 	ssh $(ANSELM_HOST) "cd $(ANSELM_PATH) && tar -xzvf xwigla00.tar.gz && cd src && module load gcc/4.9.0 && make clean all"
 

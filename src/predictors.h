@@ -22,6 +22,7 @@
 
 
 #include "ga.h"
+#include "image.h"
 
 
 static const ga_problem_type_t PRED_PROBLEM_TYPE = minimize;
@@ -52,6 +53,10 @@ struct pred_genome {
 
     /* phenotype */
     unsigned int *pixels;
+
+    /* simd-friendly prepared image data */
+    img_pixel_t *original_simd;
+    img_pixel_t *pixels_simd[WINDOW_SIZE];
 };
 typedef struct pred_genome* pred_genome_t;
 
