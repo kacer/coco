@@ -157,7 +157,7 @@ int check_sse2()
 /**
  * Checks whether current CPU supports AVX2 and other New Haswell features
  */
-int can_use_intel_core_4th_gen_features()
+bool can_use_intel_core_4th_gen_features()
 {
     static int the_4th_gen_features_available = -1;
     /* test is performed once */
@@ -171,7 +171,7 @@ int can_use_intel_core_4th_gen_features()
 /**
  * Checks whether current CPU supports SSE4.1 instruction set
  */
-int can_use_sse4_1()
+bool can_use_sse4_1()
 {
     return check_sse4_1();
 }
@@ -180,7 +180,7 @@ int can_use_sse4_1()
 /**
  * Checks whether current CPU supports SSE2 instruction set
  */
-int can_use_sse2()
+bool can_use_sse2()
 {
     return check_sse2();
 }

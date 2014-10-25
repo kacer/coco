@@ -26,23 +26,41 @@
 
 #pragma once
 
-
+#include <stdbool.h>
 #include <cpuid.h>
 
 
 /**
  * Checks whether current CPU supports AVX2 and other New Haswell features
  */
-int can_use_intel_core_4th_gen_features();
+bool can_use_intel_core_4th_gen_features();
 
 
 /**
  * Checks whether current CPU supports SSE4.1 instruction set
  */
-int can_use_sse4_1();
+bool can_use_sse4_1();
 
 
 /**
  * Checks whether current CPU supports SSE2 instruction set
  */
-int can_use_sse2();
+bool can_use_sse2();
+
+
+
+static inline bool can_use_simd() {
+    #ifdef AVX2
+        if (can_use_intel_core_4th_gen_features()) {
+            return true;
+        }
+    #endif
+
+    #ifdef SSE2
+        if (can_use_sse2()) {
+            return true;
+        }
+    #endif
+
+    return false;
+}
