@@ -61,6 +61,7 @@ typedef enum
 typedef struct {
     int inputs[CGP_FUNC_INPUTS];
     cgp_func_t function;
+    bool is_active;
 } cgp_node_t;
 
 
@@ -130,8 +131,9 @@ void cgp_copy_genome(void *_dst, void *_src);
  * Replace gene on given locus with random alele
  * @param chr
  * @param gene
+ * @return whether active node was changed or not (phenotype has changed)
  */
-void cgp_randomize_gene(cgp_genome_t genome, int gene);
+bool cgp_randomize_gene(cgp_genome_t genome, int gene);
 
 
 /**
@@ -204,4 +206,4 @@ static inline int cgp_node_row(int index)
  * @param chromosome
  * @param active
  */
-void cgp_find_active_blocks(ga_chr_t chromosome, bool active[CGP_NODES]);
+void cgp_find_active_blocks(ga_chr_t chromosome);

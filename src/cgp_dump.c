@@ -216,11 +216,6 @@ void cgp_dump_chr_asciiart(ga_chr_t chr, FILE *fp, bool only_active_blocks)
     int in_counter = 0;
     int out_counter = 0;
     cgp_genome_t genome = (cgp_genome_t) chr->genome;
-    bool active_nodes[CGP_NODES];
-
-    if (only_active_blocks) {
-        cgp_find_active_blocks(chr, active_nodes);
-    }
 
     cgp_dump_chr_header(chr, fp);
 
@@ -240,8 +235,9 @@ void cgp_dump_chr_asciiart(ga_chr_t chr, FILE *fp, bool only_active_blocks)
         fprintf(fp, " ");
         for (int x = 0; x < CGP_COLS; x++) {
             int i = cgp_node_index(x, y);
+            cgp_node_t *n = &(genome->nodes[i]);
 
-            if (only_active_blocks && !active_nodes[i]) {
+            if (only_active_blocks && !n->is_active) {
                 fprintf(fp, "                ");
             } else {
                 fprintf(fp, "    .----.      ");
@@ -260,7 +256,7 @@ void cgp_dump_chr_asciiart(ga_chr_t chr, FILE *fp, bool only_active_blocks)
             int i = cgp_node_index(x, y);
             cgp_node_t *n = &(genome->nodes[i]);
 
-            if (only_active_blocks && !active_nodes[i]) {
+            if (only_active_blocks && !n->is_active) {
                 fprintf(fp, "                ");
             } else {
                 fprintf(fp, "[%2u]>|    |>[%2u]", n->inputs[0], CGP_INPUTS + i);
@@ -279,7 +275,7 @@ void cgp_dump_chr_asciiart(ga_chr_t chr, FILE *fp, bool only_active_blocks)
             int i = cgp_node_index(x, y);
             cgp_node_t *n = &(genome->nodes[i]);
 
-            if (only_active_blocks && !active_nodes[i]) {
+            if (only_active_blocks && !n->is_active) {
                 fprintf(fp, "                ");
             } else {
                 fprintf(fp, "[%2u]>|%s|     ", n->inputs[1], cgp_func_name(n->function));
@@ -297,8 +293,9 @@ void cgp_dump_chr_asciiart(ga_chr_t chr, FILE *fp, bool only_active_blocks)
         fprintf(fp, " ");
         for (int x = 0; x < CGP_COLS; x++) {
             int i = cgp_node_index(x, y);
+            cgp_node_t *n = &(genome->nodes[i]);
 
-            if (only_active_blocks && !active_nodes[i]) {
+            if (only_active_blocks && !n->is_active) {
                 fprintf(fp, "                ");
             } else {
                 fprintf(fp, "    '----'      ");

@@ -170,6 +170,10 @@ int cgp_randomize_genome(ga_chr_t chromosome)
     for (int i = 0; i < CGP_CHR_LENGTH; i++) {
         cgp_randomize_gene(genome, i);
     }
+
+    cgp_find_active_blocks(chromosome);
+    chromosome->has_fitness = false;
+
     return 0;
 }
 
@@ -192,11 +196,12 @@ void cgp_free_genome(void *genome)
  * Replace gene on given locus with random alele
  * @param chr
  * @param gene
+ * @return whether active node was changed or not (phenotype has changed)
  */
-void cgp_randomize_gene(cgp_genome_t genome, int gene)
+bool cgp_randomize_gene(cgp_genome_t genome, int gene)
 {
     if (gene >= CGP_CHR_LENGTH)
-        return;
+        return false;
 
     if (gene < CGP_CHR_OUTPUTS_INDEX) {
         // mutating node input or function
@@ -214,11 +219,13 @@ void cgp_randomize_gene(cgp_genome_t genome, int gene)
                 genome->nodes[node_index].function = (cgp_func_t) rand_range(0, CGP_FUNC_COUNT - 1);
             #endif
             TEST_RANDOMIZE_PRINTF("func 0 - %u\n", CGP_FUNC_COUNT - 1);
+            return genome->nodes[node_index].is_active;
 
         } else {
             // mutating input
             genome->nodes[node_index].inputs[gene_index] = rand_schoice(_allowed_gene_vals[col].size, _allowed_gene_vals[col].values);
             TEST_RANDOMIZE_PRINTF("input choice from %u\n", _allowed_gene_vals[col].size);
+            return genome->nodes[node_index].is_active;
         }
 
     } else {
@@ -226,6 +233,7 @@ void cgp_randomize_gene(cgp_genome_t genome, int gene)
         int index = gene - CGP_CHR_OUTPUTS_INDEX;
         genome->outputs[index] = rand_range(CGP_INPUTS, CGP_INPUTS + CGP_NODES - 1);
         TEST_RANDOMIZE_PRINTF("out %u - %u\n", CGP_INPUTS, CGP_INPUTS + CGP_NODES - 1);
+        return true;
     }
 }
 
@@ -244,6 +252,9 @@ void cgp_mutate_chr(ga_chr_t chromosome)
         int gene = rand_range(0, CGP_CHR_LENGTH - 1);
         cgp_randomize_gene(genome, gene);
     }
+
+    cgp_find_active_blocks(chromosome);
+    chromosome->has_fitness = false;
 }
 
 
@@ -333,31 +344,35 @@ void cgp_get_output(ga_chr_t chromosome, cgp_value_t *inputs, cgp_value_t *outpu
  * @param chromosome
  * @param active
  */
-void cgp_find_active_blocks(ga_chr_t chromosome, bool active[CGP_NODES])
+void cgp_find_active_blocks(ga_chr_t chromosome)
 {
     cgp_genome_t genome = (cgp_genome_t) chromosome->genome;
-    memset(active, 0, sizeof(bool) * CGP_NODES);
+
+    // first mark all nodes as inactive
+    for (int i = CGP_NODES - 1; i >= 0; i--) {
+        genome->nodes[i].is_active = false;
+    }
 
     // mark inputs of primary outputs as active
     for (int i = 0; i < CGP_OUTPUTS; i++) {
         int index = genome->outputs[i] - CGP_INPUTS;
         // index may be negative (primary input), so do the check...
         if (index >= 0) {
-            active[index] = true;
+            genome->nodes[index].is_active = true;
         }
     }
 
     // then walk nodes backwards and mark inputs of active nodes
     // as active nodes
     for (int i = CGP_NODES - 1; i >= 0; i--) {
-        if (!active[i]) continue;
+        if (!genome->nodes[i].is_active) continue;
         cgp_node_t *n = &(genome->nodes[i]);
 
         for (int k = 0; k < CGP_FUNC_INPUTS; k++) {
             int index = n->inputs[k] - CGP_INPUTS;
             // index may be negative (primary input), so do the check...
             if (index >= 0) {
-                active[index] = true;
+                genome->nodes[index].is_active = true;
             }
         }
     }
@@ -383,6 +398,5 @@ void cgp_offspring(ga_pop_t pop)
         if (chr == parent) continue;
         ga_copy_chr(chr, parent, cgp_copy_genome);
         cgp_mutate_chr(chr);
-        chr->has_fitness = false;
     }
 }
