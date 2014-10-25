@@ -460,7 +460,7 @@ int main(int argc, char *argv[])
                 &config,
                 &vault,
                 img_noisy,
-                NULL,
+                &baldwin_state,  // required history field
                 best_circuit_file_name_txt,
                 best_circuit_file_name_chr,
                 progress_log_file,
