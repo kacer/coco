@@ -63,9 +63,9 @@ void fitness_init(img_image_t original, img_image_t noisy,
     _psnr_coeficient = fitness_psnr_coeficient(_noisy_image_windows->size);
     _cgp_evals = 0;
 
-    #if defined(AVX) || defined(SSE2)
+    if (can_use_simd()) {
         img_split_windows_simd(noisy, _noisy_image_simd);
-    #endif
+    }
 }
 
 
@@ -143,6 +143,49 @@ double _fitness_get_sqdiffsum_scalar(ga_chr_t chr)
 }
 
 
+double fitness_get_sqdiffsum_simd(ga_chr_t chr, img_pixel_t *original, img_pixel_t *noisy[WINDOW_SIZE], int data_length)
+{
+    fitness_simd_func_t func = NULL;
+    int block_size = 0;
+    double sum = 0;
+
+    #ifdef AVX2
+        if(can_use_intel_core_4th_gen_features()) {
+            func = _fitness_get_sqdiffsum_avx;
+            block_size = FITNESS_AVX2_STEP;
+        }
+    #endif
+
+    #ifdef SSE2
+        if(can_use_sse2()) {
+            func = _fitness_get_sqdiffsum_sse;
+            block_size = FITNESS_SSE2_STEP;
+        }
+    #endif
+
+    assert(func != NULL);
+
+    int offset = 0;
+    int unaligned_bytes = data_length % block_size;
+    data_length -= unaligned_bytes;
+
+    for (; offset < data_length; offset += block_size) {
+        sum += func(original, noisy, chr, offset, block_size);
+        #pragma omp atomic
+            _cgp_evals += block_size;
+    }
+
+    // fix image data not fitting into register
+    if (unaligned_bytes > 0) {
+        sum += func(original, noisy, chr, offset - block_size, unaligned_bytes);
+        #pragma omp atomic
+            _cgp_evals += unaligned_bytes;
+    }
+
+    return sum;
+}
+
+
 /**
  * Evaluates CGP circuit fitness
  *
@@ -153,38 +196,14 @@ ga_fitness_t fitness_eval_cgp(ga_chr_t chr)
 {
     double sum = 0;
 
-#ifdef AVX2
-    if(can_use_intel_core_4th_gen_features()) {
-        assert((_noisy_image_windows->size % 32) == 0);
-        for (int i = 0; i < _noisy_image_windows->size; i += 32) {
-            fprintf(stderr, "%d\n", i);
-            double subsum = _fitness_get_sqdiffsum_avx(_original_image, _noisy_image_simd, chr, i);
-            sum += subsum;
-            #pragma omp atomic
-                _cgp_evals += 32;
-        }
+    if(can_use_simd()) {
+        sum = fitness_get_sqdiffsum_simd(chr, _original_image->data,
+            _noisy_image_simd, _noisy_image_windows->size);
 
-        fprintf(stderr, "%lf\n", _psnr_coeficient / sum);
-
-        return _psnr_coeficient / sum;
+    } else {
+        sum = _fitness_get_sqdiffsum_scalar(chr);
     }
-#endif
 
-#ifdef SSE2
-    if(can_use_sse2()) {
-        assert((_noisy_image_windows->size % 16) == 0);
-        for (int i = 0; i < _noisy_image_windows->size; i += 16) {
-            double subsum = _fitness_get_sqdiffsum_sse(_original_image, _noisy_image_simd, chr, i);
-            sum += subsum;
-            #pragma omp atomic
-                _cgp_evals += 16;
-        }
-
-        return _psnr_coeficient / sum;
-    }
-#endif
-
-    sum = _fitness_get_sqdiffsum_scalar(chr);
     return _psnr_coeficient / sum;
 }
 
