@@ -130,7 +130,7 @@ void log_pred_change(FILE *fp, ga_fitness_t previous_best,
 /**
  * Logs best circuit to file.
  */
-void log_cgp_circuit(FILE *fp, ga_pop_t pop);
+void log_cgp_circuit(FILE *fp, int generation, ga_chr_t circuit);
 
 
 /**
@@ -166,10 +166,10 @@ void save_filtered_image(const char *dir, ga_pop_t cgp_population, img_image_t n
 
 /**
  * Saves best found image to results directory
- * @param cgp_population
+ * @param best_circuit
  * @param noisy
  */
-void save_best_image(const char *dir, ga_pop_t cgp_population, img_image_t noisy);
+void save_best_image(const char *dir, ga_chr_t best_circuit, img_image_t noisy);
 
 
 /**

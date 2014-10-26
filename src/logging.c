@@ -66,13 +66,16 @@ int log_create_dirs(const char *dir, char *vault_dir, int vault_dir_buffer_size)
     }
 
     // images directory
+    /*
     snprintf(buf, MAX_FILENAME_LENGTH + 1, "%s/images", dir);
     retval = mkdir(buf, S_IRWXU);
     if (retval != 0 && errno != EEXIST) {
         return retval;
     }
+    */
 
     // vault directory
+    /*
     snprintf(buf, MAX_FILENAME_LENGTH + 1, "%s/vault", dir);
     retval = mkdir(buf, S_IRWXU);
     if (retval != 0 && errno != EEXIST) {
@@ -81,6 +84,7 @@ int log_create_dirs(const char *dir, char *vault_dir, int vault_dir_buffer_size)
     if (vault_dir != NULL) {
         strncpy(vault_dir, buf, vault_dir_buffer_size);
     }
+    */
 
     return 0;
 }
@@ -231,16 +235,16 @@ void log_pred_change(FILE *fp, ga_fitness_t previous_best,
 /**
  * Logs best circuit to file.
  */
-void log_cgp_circuit(FILE *fp, ga_pop_t pop)
+void log_cgp_circuit(FILE *fp, int generation, ga_chr_t circuit)
 {
-    fprintf(fp, "Generation: %d\n", pop->generation);
-    fprintf(fp, "Fitness: " FITNESS_FMT "\n\n", pop->best_fitness);
+    fprintf(fp, "Generation: %d\n", generation);
+    fprintf(fp, "Fitness: " FITNESS_FMT "\n\n", circuit->fitness);
     fprintf(fp, "CGP Viewer format:\n");
-    cgp_dump_chr(pop->best_chromosome, fp, compat);
+    cgp_dump_chr(circuit, fp, compat);
     fprintf(fp, "\nASCII Art:\n");
-    cgp_dump_chr(pop->best_chromosome, fp, asciiart);
+    cgp_dump_chr(circuit, fp, asciiart);
     fprintf(fp, "\nASCII Art without inactive blocks:\n");
-    cgp_dump_chr(pop->best_chromosome, fp, asciiart_active);
+    cgp_dump_chr(circuit, fp, asciiart_active);
 }
 
 
@@ -285,12 +289,12 @@ void save_original_image(const char *dir, img_image_t original)
 
 /**
  * Saves best found image to results directory
- * @param cgp_population
+ * @param best_circuit
  * @param noisy
  */
-void save_best_image(const char *dir, ga_pop_t cgp_population, img_image_t noisy)
+void save_best_image(const char *dir, ga_chr_t best_circuit, img_image_t noisy)
 {
-    img_image_t best = fitness_filter_image(cgp_population->best_chromosome);
+    img_image_t best = fitness_filter_image(best_circuit);
     char filename[MAX_FILENAME_LENGTH + 1];
     snprintf(filename, MAX_FILENAME_LENGTH + 1, "%s/img_best.png", dir);
     img_save_png(best, filename);

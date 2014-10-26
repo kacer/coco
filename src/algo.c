@@ -34,7 +34,9 @@
 }
 
 
-static inline void _log_cgp(ga_pop_t cgp_population,
+static inline void _log_cgp(
+    ga_pop_t cgp_population,
+    ga_chr_t best_circuit,
     char *best_circuit_file_name_txt,
     char *best_circuit_file_name_chr,
     FILE *log_file)
@@ -43,7 +45,7 @@ static inline void _log_cgp(ga_pop_t cgp_population,
 
     FILE *circuit_file_txt = fopen(best_circuit_file_name_txt, "w");
     if (circuit_file_txt) {
-        log_cgp_circuit(circuit_file_txt, cgp_population);
+        log_cgp_circuit(circuit_file_txt, cgp_population->generation, best_circuit);
         fclose(circuit_file_txt);
     } else {
         fprintf(stderr, "Failed to open %s!\n", best_circuit_file_name_txt);
@@ -51,7 +53,7 @@ static inline void _log_cgp(ga_pop_t cgp_population,
 
     FILE *circuit_file_chr = fopen(best_circuit_file_name_chr, "w");
     if (circuit_file_chr) {
-        cgp_dump_chr_compat(cgp_population->best_chromosome, circuit_file_chr);
+        cgp_dump_chr_compat(best_circuit, circuit_file_chr);
         fclose(circuit_file_chr);
     } else {
         fprintf(stderr, "Failed to open %s!\n", best_circuit_file_name_chr);
@@ -160,7 +162,11 @@ int cgp_main(
 
         // store best circuit etc.
         if (is_better || log_now || signal || *finished) {
-            _log_cgp(cgp_population, best_circuit_file_name_txt, best_circuit_file_name_chr, log_file);
+            // lock for best circuit in archive
+            #pragma omp critical (CGP_ARCHIVE)
+            {
+                _log_cgp(cgp_population, cgp_archive->best_chromosome_ever, best_circuit_file_name_txt, best_circuit_file_name_chr, log_file);
+            }
         }
 
         // update archive if necessary
@@ -263,7 +269,10 @@ int cgp_main(
 
         if (*finished || signal > 0) {
             DOUBLE_LOG(log_cgp_finished, log_file, cgp_population);
-            save_best_image(config->log_dir, cgp_population, img_noisy);
+            #pragma omp critical (CGP_ARCHIVE)
+            {
+                save_best_image(config->log_dir, cgp_archive->best_chromosome_ever, img_noisy);
+            }
         }
 
         if (signal > 0) {
@@ -317,6 +326,8 @@ void pred_main(
         // If evolution params should be changed now, do it
         // This insane nesting is a small optimization - if state is false,
         // nothing happens, if true, aquire lock and check again, just to be sure
+        // However, apply_now is never set to false outside this function, so it
+        // is not really necessary to check again.
         if (baldwin_state->apply_now) {
             #pragma omp critical (BALDWIN_STATE)
             {
