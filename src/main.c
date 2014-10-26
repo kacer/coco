@@ -407,23 +407,23 @@ int main(int argc, char *argv[])
     printf("Initial \"PSNR\" value:         %.10g\n",
         img_psnr(img_original, img_noisy));
 
-    DEBUGLOG("Evaluating CGP population...");
+    printf("Evaluating CGP population...");
     ga_evaluate_pop(cgp_population);
 
     if (config.algorithm != simple_cgp) {
         arc_insert(cgp_archive, cgp_population->best_chromosome);
 
-        DEBUGLOG("Archive: %d", cgp_archive->stored);
+        printf("Archive: %d", cgp_archive->stored);
 
-        DEBUGLOG("Evaluating PRED population...");
+        printf("Evaluating PRED population...");
         ga_evaluate_pop(pred_population);
         arc_insert(pred_archive, pred_population->best_chromosome);
 
-        DEBUGLOG("Best fitness: CGP %.10g, PRED %.10g",
+        printf("Best fitness: CGP %.10g, PRED %.10g",
             cgp_population->best_fitness, pred_population->best_fitness);
 
     } else {
-        DEBUGLOG("Best fitness: %.10g", cgp_population->best_fitness);
+        printf("Best fitness: %.10g", cgp_population->best_fitness);
     }
 
     save_original_image(config.log_dir, img_original);
@@ -435,7 +435,7 @@ int main(int argc, char *argv[])
         Evolution itself
      */
 
-    DEBUGLOG("Starting the big while loop.");
+    printf("Starting the big while loop.");
 
     getrusage(RUSAGE_SELF, &resource_usage);
     usertime_start = resource_usage.ru_utime;
