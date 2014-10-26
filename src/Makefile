@@ -19,12 +19,14 @@
 # _XOPEN_SOURCE=700 required by scandir and alphasort from vault.c
 
 CC=gcc
-CFLAGS=-g -Wall -std=c11 -fopenmp -D_XOPEN_SOURCE=700 \
+CFLAGS=-rdynamic -g -Wall -std=c11 -fopenmp -D_XOPEN_SOURCE=700 \
 	-DSSE2 -DxAVX2 -DDEBUG -DxVERBOSE -DCGP_LIMIT_FUNCS
 EXECUTABLE=coco
-CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_25.png -g 10000 -a predictors -S 25
+CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_25.png -g 1000 -a baldwin -I 25 -S 100
 ANSELM_HOST=anselm
 ANSELM_PATH=~/xwigla00
+MERLIN_HOST=merlin
+MERLIN_PATH=~/coco
 SOURCES=main.c cpu.c ga.c cgp_core.c cgp_dump.c cgp_load.c cgp_avx.c cgp_sse.c \
 	predictors.c image.c fitness.c fitness_avx.c fitness_sse.c vault.c \
 	archive.c config.c logging.c algo.c baldwin.c
@@ -69,15 +71,15 @@ anselmup: tar
 	scp ../xwigla00.tar.gz $(ANSELM_HOST):$(ANSELM_PATH)
 	ssh $(ANSELM_HOST) "cd $(ANSELM_PATH) && tar -xzvf xwigla00.tar.gz && cd src && module load gcc/4.9.0 && make clean all"
 
-anselmrun:
-	ssh $(ANSELM_HOST) "cd $(ANSELM_PATH) && qsub bwnI25.sh && qsub bwnI50.sh && qsub bwnI75.sh"
-
 anselmdown:
 	ssh $(ANSELM_HOST) "cd $(ANSELM_PATH) && tar -czvf results.tar.gz --exclude='img_filtered_*.png' results/"
-	scp $(ANSELM_HOST):$(ANSELM_PATH)/results.tar.gz ../
+	scp $(ANSELM_HOST):$(ANSELM_PATH)/results.tar.gz ../anselm/
 
-start:
-	ssh $(SERVER) "$(SERVER_LOCATION)/$(EXECUTABLE) $(CMDLINE)"
+merlinup: tar
+	find -type f | xargs chmod ug+rw
+	find -type d | xargs chmod ug+rwx
+	scp ../xwigla00.tar.gz $(MERLIN_HOST):$(MERLIN_PATH)
+	ssh $(MERLIN_HOST) "cd $(MERLIN_PATH) && tar -xzvf xwigla00.tar.gz && cd src && make clean all"
 
 # AVX2 support
 
