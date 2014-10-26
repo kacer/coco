@@ -69,6 +69,7 @@ typedef struct
 
     float pred_size;
     float pred_initial_size;
+    float pred_min_size;
     float pred_mutation_rate;
     float pred_offspring_elite;
     float pred_offspring_combine;
@@ -169,9 +170,6 @@ static inline void print_help() {
         "    --pred-size NUM, -S NUM\n"
         "          Predictor size (in percent), default is 0.25.\n"
         "\n"
-        "    --pred-initial-size NUM, -I NUM\n"
-        "          Predictor initial size (in percent), default is same as predictor size.\n"
-        "\n"
         "    --pred-mutate NUM, -M NUM\n"
         "          Predictor mutation rate (in percent), default is 0.05.\n"
         "\n"
@@ -192,7 +190,16 @@ static inline void print_help() {
         "          Default is \"0\" which means, that parameters are updated only if.\n"
         "          CGP fitness changes.\n"
         "\n"
-        "Baldwin algorithm options (with those default values):\n"
+        "Baldwin - predictor size settings:\n"
+        "    Maximal predictor size is specified by --pred-size parameter.\n"
+        "\n"
+        "    --bw-pred-initial-size NUM, -I NUM\n"
+        "          Predictor initial size (in percent), default is predictor size.\n"
+        "\n"
+        "    --bw-pred-min-size 0, -N 0\n"
+        "          Predictor minimal size (in percent), default is no limit.\n"
+        "\n"
+        "Baldwin - algorithm options (with those default values):\n"
         "    --bw-inac-tol  1.5\n"
         "    --bw-inac-coef 3.0\n"
         "\n"

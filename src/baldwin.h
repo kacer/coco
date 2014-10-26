@@ -36,6 +36,9 @@ typedef struct {
     double decrease_coef;
     double increase_slow_coef;
     double increase_fast_coef;
+
+    int min_length;
+    int max_length;
 } bw_config_t;
 
 

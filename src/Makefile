@@ -22,7 +22,7 @@ CC=gcc
 CFLAGS=-rdynamic -g -Wall -std=c11 -fopenmp -D_XOPEN_SOURCE=700 \
 	-DSSE2 -DxAVX2 -DDEBUG -DxVERBOSE -DCGP_LIMIT_FUNCS
 EXECUTABLE=coco
-CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_25.png -g 1000 -a baldwin -I 25 -S 100
+CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_25.png -g 500 -a baldwin -S 100 -I 50 -N 50
 ANSELM_HOST=anselm
 ANSELM_PATH=~/xwigla00
 MERLIN_HOST=merlin
@@ -43,7 +43,7 @@ run: $(EXECUTABLE)
 
 minirun: $(EXECUTABLE)
 	rm -rf cocolog/*
-	./$(EXECUTABLE) -i ../images/10x10.png -n ../images/10x10_sp25.png -a baldwin -g 10000 -S 100 -I 0.5
+	./$(EXECUTABLE) -i ../images/10x10.png -n ../images/10x10_sp25.png -a baldwin -g 1000 -S 75 -I 50 -N 50
 
 valgrind: $(EXECUTABLE)
 	rm -rf cocolog/*

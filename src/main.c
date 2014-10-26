@@ -297,6 +297,16 @@ int main(int argc, char *argv[])
         config_ok = false;
     }
 
+    if (config.pred_min_size > config.pred_size) {
+        fprintf(stderr, "Predictors' minimal size cannot be larger than their full size\n");
+        config_ok = false;
+    }
+
+    if (config.pred_min_size > config.pred_initial_size) {
+        fprintf(stderr, "Predictors' minimal size cannot be larger than their initial size\n");
+        config_ok = false;
+    }
+
     if (!config_ok) {
         fprintf(stderr, "Run %s --help or %s -h to see available options.\n", argv[0], argv[0]);
         return 1;
@@ -323,9 +333,19 @@ int main(int argc, char *argv[])
 
     // predictors population and CGP archive
     if (config.algorithm != simple_cgp) {
+
+        // calculate absolute predictors sizes
         int img_size = img_original->width * img_original->height;
+        int pred_min_size = config.pred_min_size * img_size;
         int pred_max_size = config.pred_size * img_size;
-        int pred_initial_size = config.pred_initial_size? (config.pred_initial_size * img_size) : pred_max_size;
+        int pred_initial_size;
+        if (config.algorithm == baldwin && config.pred_initial_size) {
+            pred_initial_size = config.pred_initial_size * img_size;
+        } else {
+            pred_initial_size = pred_max_size;
+        }
+
+        // predictors evolution
         pred_init(
             img_size - 1,  // max gene value
             pred_max_size,                 // max genome length
@@ -336,6 +356,11 @@ int main(int argc, char *argv[])
             repeated //(config.algorithm == baldwin)? repeated : permuted  // genome type
         );
 
+        // baldwin thresholds
+        config.bw_config.min_length = pred_min_size;
+        config.bw_config.max_length = pred_max_size;
+
+        // cgp evolution
         arc_func_vect_t arc_cgp_methods = {
             .alloc_genome = cgp_alloc_genome,
             .free_genome = cgp_free_genome,

@@ -135,6 +135,14 @@ void bw_update_params(bw_config_t *config, bw_history_t *history, bw_update_t *r
 
     if (fabs(coefficcient - 1.0) > 0.005) {
         int new_length = floor(old_length * coefficcient);
+
+        if (config->min_length && new_length < config->min_length) {
+            new_length = config->min_length;
+        }
+        if (config->max_length && new_length > config->max_length) {
+            new_length = config->max_length;
+        }
+
         result->new_predictor_length = new_length;
         result->predictor_length_changed = true;
         pred_set_length(new_length);

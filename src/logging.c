@@ -58,7 +58,7 @@ int log_create_dirs(const char *dir, char *vault_dir, int vault_dir_buffer_size)
 {
     // main directory
     int retval;
-    char buf[MAX_FILENAME_LENGTH + 1];
+    //char buf[MAX_FILENAME_LENGTH + 1];
 
     retval = mkdir(dir, S_IRWXU);
     if (retval != 0 && errno != EEXIST) {

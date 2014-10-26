@@ -58,11 +58,9 @@
 #define OPT_CGP_ARCSIZE 's'
 
 #define OPT_PRED_SIZE 'S'
-#define OPT_PRED_INITIAL_SIZE 'I'
 #define OPT_PRED_MUTATE 'M'
 #define OPT_PRED_POPSIZE 'P'
 #define OPT_PRED_TYPE 'T'
-
 
 #define OPT_HELP 'h'
 
@@ -75,6 +73,9 @@
 #define OPT_BW_DECREASE_COEF        1005
 #define OPT_BW_INCREASE_SLOW_COEF   1006
 #define OPT_BW_INCREASE_FAST_COEF   1007
+
+#define OPT_BW_PRED_INITIAL_SIZE 'I'
+#define OPT_BW_PRED_MIN_SIZE 'N'
 
 
 static struct option long_options[] =
@@ -110,7 +111,6 @@ static struct option long_options[] =
 
     /* Predictors */
     {"pred-size", required_argument, 0, OPT_PRED_SIZE},
-    {"pred-initial-size", required_argument, 0, OPT_PRED_INITIAL_SIZE},
     {"pred-mutate", required_argument, 0, OPT_PRED_MUTATE},
     {"pred-population-size", required_argument, 0, OPT_PRED_POPSIZE},
     {"pred-type", required_argument, 0, OPT_PRED_TYPE},
@@ -126,10 +126,13 @@ static struct option long_options[] =
     {"bw-slow-coef", required_argument, 0, OPT_BW_INCREASE_SLOW_COEF},
     {"bw-fast-coef", required_argument, 0, OPT_BW_INCREASE_FAST_COEF},
 
+    {"bw-pred-initial-size", required_argument, 0, OPT_BW_PRED_INITIAL_SIZE},
+    {"bw-pred-min-size", required_argument, 0, OPT_BW_PRED_MIN_SIZE},
+
     {0, 0, 0, 0}
 };
 
-static const char *short_options = "hg:t:f:a:r:i:n:vw:l:k:m:p:s:S:I:M:P:T:b:";
+static const char *short_options = "hg:t:f:a:r:i:n:vw:l:k:m:p:s:S:M:P:T:b:I:N:";
 
 
 #define CHECK_FILENAME_LENGTH do { \
@@ -275,10 +278,17 @@ config_retval_t config_load_args(int argc, char **argv, config_t *cfg)
                 }
                 break;
 
-            case OPT_PRED_INITIAL_SIZE:
+            case OPT_BW_PRED_INITIAL_SIZE:
                 PARSE_DOUBLE(cfg->pred_initial_size);
                 if (cfg->pred_initial_size > 1) {
                     cfg->pred_initial_size /= 100.0;
+                }
+                break;
+
+            case OPT_BW_PRED_MIN_SIZE:
+                PARSE_DOUBLE(cfg->pred_min_size);
+                if (cfg->pred_min_size > 1) {
+                    cfg->pred_min_size /= 100.0;
                 }
                 break;
 
@@ -390,7 +400,6 @@ void config_save_file(FILE *file, config_t *cfg)
     fprintf(file, "cgp-archive-size: %d\n", cfg->cgp_archive_size);
     fprintf(file, "\n");
     fprintf(file, "pred-size: %.5g\n", cfg->pred_size);
-    fprintf(file, "pred-initial-size: %.5g\n", cfg->pred_initial_size);
     fprintf(file, "pred-mutate: %.5g\n", cfg->pred_mutation_rate);
     fprintf(file, "pred-population-size: %d\n", cfg->pred_population_size);
     fprintf(file, "pred-type: %s\n", cfg->pred_genome_type == permuted? "permuted" : "repeated");
@@ -404,6 +413,8 @@ void config_save_file(FILE *file, config_t *cfg)
     fprintf(file, "bw-decr-coef: %.5g\n", cfg->bw_config.decrease_coef);
     fprintf(file, "bw-slow-coef: %.5g\n", cfg->bw_config.increase_slow_coef);
     fprintf(file, "bw-fast-coef: %.5g\n", cfg->bw_config.increase_fast_coef);
+    fprintf(file, "bw-pred-initial-size: %.5g\n", cfg->pred_initial_size);
+    fprintf(file, "bw-pred-min-size: %.5g\n", cfg->pred_min_size);
     fprintf(file, "# baldwin-len=%d,zeroeps=%g,slowthr=%g,steady=%g,dec=%g,slow=%g,fast=%g,inthr=%g,incoef=%g\n",
         BW_HISTORY_LENGTH,
         cfg->bw_config.zero_epsilon,
