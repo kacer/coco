@@ -34,15 +34,43 @@
 }
 
 
-static inline void _log_cgp(
+static inline void _log_cgp_csv(
+    algorithm_t algorithm,
+    bw_history_entry_t *last_entry,
+    ga_pop_t cgp_population,
+    archive_t cgp_archive,
+    archive_t pred_archive,
+    FILE *history_file)
+{
+    if (algorithm == simple_cgp) {
+        log_cgp_history(
+            history_file,
+            last_entry,
+            fitness_get_cgp_evals(),
+            -1,
+            -1,
+            cgp_population->best_chromosome->fitness
+        );
+
+    } else {
+        log_cgp_history(
+            history_file,
+            last_entry,
+            fitness_get_cgp_evals(),
+            pred_get_length(),
+            ((pred_genome_t) arc_get(pred_archive, 0)->genome)->used_pixels,
+            cgp_archive->best_chromosome_ever->fitness
+        );
+    }
+}
+
+
+static inline void _log_cgp_best(
     ga_pop_t cgp_population,
     ga_chr_t best_circuit,
     char *best_circuit_file_name_txt,
-    char *best_circuit_file_name_chr,
-    FILE *log_file)
+    char *best_circuit_file_name_chr)
 {
-    DOUBLE_LOG(log_cgp_progress, log_file, cgp_population, fitness_get_cgp_evals());
-
     FILE *circuit_file_txt = fopen(best_circuit_file_name_txt, "w");
     if (circuit_file_txt) {
         log_cgp_circuit(circuit_file_txt, cgp_population->generation, best_circuit);
@@ -109,6 +137,11 @@ int cgp_main(
 {
     ga_fitness_t cgp_parent_fitness;
 
+    // append first entry to CSV
+    _log_cgp_csv(config->algorithm, bw_get(&baldwin_state->history, -1),
+        cgp_population,cgp_archive, pred_archive, history_file);
+
+    // do the work
     while (!(*finished)) {
 
         #pragma omp critical (PRED_ARCHIVE)
@@ -160,15 +193,6 @@ int cgp_main(
         ga_fitness_t predicted_fitness = cgp_population->best_fitness;
         ga_fitness_t real_fitness = 0;
 
-        // store best circuit etc.
-        if (is_better || log_now || signal || *finished) {
-            // lock for best circuit in archive
-            #pragma omp critical (CGP_ARCHIVE)
-            {
-                _log_cgp(cgp_population, cgp_archive->best_chromosome_ever, best_circuit_file_name_txt, best_circuit_file_name_chr, log_file);
-            }
-        }
-
         // update archive if necessary
         if (is_better) {
             // save image
@@ -208,15 +232,6 @@ int cgp_main(
                     -1
                 );
 
-                log_cgp_history(
-                    history_file,
-                    entry,
-                    fitness_get_cgp_evals(),
-                    -1,
-                    -1,
-                    cgp_population->best_chromosome->fitness
-                );
-
             } else {
                 entry = bw_add_history(
                     &baldwin_state->history,
@@ -225,27 +240,49 @@ int cgp_main(
                     arc_get_original_fitness(cgp_archive, -1),
                     arc_get(pred_archive, 0)->fitness
                 );
-
-                log_cgp_history(
-                    history_file,
-                    entry,
-                    fitness_get_cgp_evals(),
-                    pred_get_length(),
-                    ((pred_genome_t) arc_get(pred_archive, 0)->genome)->used_pixels,
-                    cgp_archive->best_chromosome_ever->fitness
-                );
             }
 
             DOUBLE_LOG(log_bw_history_entry, log_file, entry);
         }
 
         if (apply_baldwin) {
-            // baldwin mode: change evolution params
-            // everything is done in predictors thread asynchronously
+            // Baldwin mode: change evolution params.
+            // Everything is done in predictors thread asynchronously-
+            // Enter critical section only if it seems that it is not set.
+            if (!baldwin_state->apply_now) {
+                #pragma omp critical (BALDWIN_STATE)
+                {
+                    baldwin_state->apply_now = true;
+                }
+            }
+        }
 
-            #pragma omp critical (BALDWIN_STATE)
+        // append next entry to CSV
+        if (is_better || apply_baldwin || log_now || signal || *finished) {
+            DOUBLE_LOG(log_cgp_progress, log_file, cgp_population, fitness_get_cgp_evals());
+
+            // lock for best circuit in archive so it won't be overwritten
+            // in the middle of the dump
+            #pragma omp critical (CGP_ARCHIVE)
             {
-                baldwin_state->apply_now = true;
+                ga_chr_t best_chromosome;
+
+                if (config->algorithm == simple_cgp) {
+                    best_chromosome = cgp_population->best_chromosome;
+                } else {
+                    best_chromosome = cgp_archive->best_chromosome_ever;
+                }
+
+                _log_cgp_best(cgp_population, best_chromosome,
+                    best_circuit_file_name_txt, best_circuit_file_name_chr);
+
+                _log_cgp_csv(config->algorithm,
+                    bw_get(&baldwin_state->history, -1), cgp_population,
+                   cgp_archive, pred_archive, history_file);
+
+                // flush log files
+                fflush(log_file);
+                fflush(history_file);
             }
         }
 
@@ -260,11 +297,7 @@ int cgp_main(
             }
 
             // log that we are storing to vault
-            log_vault(stdout, cgp_population);
-
-            // flush log files
-            fflush(log_file);
-            fflush(history_file);
+            DOUBLE_LOG(log_vault, log_file, cgp_population, fitness_get_cgp_evals());
         }
 
         if (*finished || signal > 0) {

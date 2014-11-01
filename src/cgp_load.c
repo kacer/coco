@@ -73,6 +73,8 @@ int cgp_load_chr_compat(ga_chr_t chr, FILE *fp)
     }
     fscanf(fp, ")\n");
 
+    cgp_find_active_blocks(chr);
+
     return 0;
 }
 

@@ -83,7 +83,7 @@ void log_cgp_finished(FILE *fp, ga_pop_t cgp_population);
  * @param  fp
  * @param  cgp_population
  */
-void log_vault(FILE *fp, ga_pop_t cgp_population);
+void log_vault(FILE *fp, ga_pop_t cgp_population, long cgp_evals);
 
 
 /**

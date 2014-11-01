@@ -25,7 +25,28 @@
 
 #define BW_HISTORY_LENGTH 7
 
+typedef enum {
+    bwalg_last = 0,
+    bwalg_median3,
+    bwalg_avg3,
+    bwalg_avg7w,
+    bwalg_symreg,
+} bw_algorithm_t;
+
+
+// multiple const to avoid "unused variable" warnings
+static const char * const bw_algorithm_names[] = {
+    "last",
+    "median3",
+    "avg3",
+    "avg7w",
+    "symreg",
+};
+
+
 typedef struct {
+    bw_algorithm_t algorithm;
+
     double inaccuracy_tolerance;
     double inaccuracy_coef;
 

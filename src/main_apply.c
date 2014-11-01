@@ -107,8 +107,6 @@ int main(int argc, char *argv[])
 
             case 'i':
                 input_image = img_load(optarg);
-                input_image_windows = img_split_windows(input_image);
-                output_image = img_create(input_image->width, input_image->height, input_image->comp);
                 break;
 
             case 'o':
@@ -142,11 +140,13 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    input_image_windows = img_split_windows(input_image);
     if (!input_image_windows) {
         fprintf(stderr, "Failed to preprocess input image.\n");
         return 1;
     }
 
+    output_image = img_create(input_image->width, input_image->height, input_image->comp);
     if (!output_image) {
         fprintf(stderr, "Failed to allocate memory for output image\n");
         return 1;

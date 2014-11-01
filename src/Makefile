@@ -19,10 +19,10 @@
 # _XOPEN_SOURCE=700 required by scandir and alphasort from vault.c
 
 CC=gcc
-CFLAGS=-rdynamic -g -Wall -std=c11 -fopenmp -D_XOPEN_SOURCE=700 \
-	-DSSE2 -DxAVX2 -DDEBUG -DxVERBOSE -DCGP_LIMIT_FUNCS
+CFLAGS=-rdynamic -g -Wall -std=c11 -fopenmp -O2 -D_XOPEN_SOURCE=700 \
+	-DSSE2 -DxAVX2 -DDEBUG -DxVERBOSE -DxCGP_LIMIT_FUNCS
 EXECUTABLE=coco
-CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_25.png -g 500 -a baldwin -S 100 -I 50 -N 50
+CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_25.png -g 50000 -a baldwin -S 100 -I 50 -N 50 --bw-algorithm avg7w
 ANSELM_HOST=anselm
 ANSELM_PATH=~/xwigla00
 MERLIN_HOST=merlin
@@ -60,6 +60,7 @@ apply: image.o ga.o cgp_core.o cgp_load.o main_apply.o
 clean:
 	rm -rf cocolog/*
 	rm -f $(EXECUTABLE) $(EXECUTABLE).exe $(EXECUTABLE).exe.stackdump *.o
+	rm -f coco_apply coco_apply.exe coco_apply.exe.stackdump *.o
 	rm -f xwigla00.zip xwigla00.tar.gz
 
 tar:
@@ -72,8 +73,9 @@ anselmup: tar
 	ssh $(ANSELM_HOST) "cd $(ANSELM_PATH) && tar -xzvf xwigla00.tar.gz && cd src && module load gcc/4.9.0 && make clean all"
 
 anselmdown:
-	ssh $(ANSELM_HOST) "cd $(ANSELM_PATH) && tar -czvf results.tar.gz --exclude='img_filtered_*.png' results/"
+	ssh $(ANSELM_HOST) "cd $(ANSELM_PATH)/results && tar -czvf ../results.tar.gz --exclude='img_filtered_*.png' *"
 	scp $(ANSELM_HOST):$(ANSELM_PATH)/results.tar.gz ../anselm/
+	cd ../anselm/ && tar -xzvf results.tar.gz
 
 merlinup: tar
 	find -type f | xargs chmod ug+rw

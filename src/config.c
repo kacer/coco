@@ -73,6 +73,7 @@
 #define OPT_BW_DECREASE_COEF        1005
 #define OPT_BW_INCREASE_SLOW_COEF   1006
 #define OPT_BW_INCREASE_FAST_COEF   1007
+#define OPT_BW_ALGORITHM            1008
 
 #define OPT_BW_PRED_INITIAL_SIZE 'I'
 #define OPT_BW_PRED_MIN_SIZE 'N'
@@ -116,6 +117,7 @@ static struct option long_options[] =
     {"pred-type", required_argument, 0, OPT_PRED_TYPE},
 
     /* Baldwin */
+    {"bw-algorithm", required_argument, 0, OPT_BW_ALGORITHM},
     {"bw-interval", required_argument, 0, OPT_BW_INTERVAL},
     {"bw-inac-tol", required_argument, 0, OPT_BW_INACCURACY_TOLERANCE},
     {"bw-inac-coef", required_argument, 0, OPT_BW_INACCURACY_COEF},
@@ -278,6 +280,23 @@ config_retval_t config_load_args(int argc, char **argv, config_t *cfg)
                 }
                 break;
 
+            case OPT_BW_ALGORITHM:
+                if (strcmp(optarg, "last") == 0) {
+                    cfg->bw_config.algorithm = bwalg_last;
+                } else if (strcmp(optarg, "median3") == 0) {
+                    cfg->bw_config.algorithm = bwalg_median3;
+                } else if (strcmp(optarg, "avg3") == 0) {
+                    cfg->bw_config.algorithm = bwalg_avg3;
+                } else if (strcmp(optarg, "avg7w") == 0) {
+                    cfg->bw_config.algorithm = bwalg_avg7w;
+                } else if (strcmp(optarg, "symreg") == 0) {
+                    cfg->bw_config.algorithm = bwalg_symreg;
+                } else {
+                    fprintf(stderr, "Invalid baldwin algorithm\n");
+                    return cfg_err;
+                }
+                break;
+
             case OPT_BW_PRED_INITIAL_SIZE:
                 PARSE_DOUBLE(cfg->pred_initial_size);
                 if (cfg->pred_initial_size > 1) {
@@ -404,6 +423,7 @@ void config_save_file(FILE *file, config_t *cfg)
     fprintf(file, "pred-population-size: %d\n", cfg->pred_population_size);
     fprintf(file, "pred-type: %s\n", cfg->pred_genome_type == permuted? "permuted" : "repeated");
     fprintf(file, "\n");
+    fprintf(file, "bw-algorithm: %s\n", bw_algorithm_names[cfg->bw_config.algorithm]);
     fprintf(file, "bw-interval: %d\n", cfg->bw_interval);
     fprintf(file, "bw-inac-tol: %.5g\n", cfg->bw_config.inaccuracy_tolerance);
     fprintf(file, "bw-inac-coef: %.5g\n", cfg->bw_config.inaccuracy_coef);

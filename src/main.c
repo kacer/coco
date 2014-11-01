@@ -153,10 +153,11 @@ static config_t config = {
 
     .bw_interval = 0,
     .bw_config = {
-        .inaccuracy_tolerance = 1.5,
-        .inaccuracy_coef = 3.0,
-        .zero_epsilon = 0.0,
-        .slow_threshold = 1.0,
+        .algorithm = bwalg_last,
+        .inaccuracy_tolerance = 1.2,
+        .inaccuracy_coef = 2.0,
+        .zero_epsilon = 0.001,
+        .slow_threshold = 0.1,
         .zero_coef = 0.93,
         .decrease_coef = 0.97,
         .increase_slow_coef = 1.03,

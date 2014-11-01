@@ -145,11 +145,13 @@ void log_cgp_finished(FILE *fp, ga_pop_t cgp_population)
  * @param  fp
  * @param  cgp_population
  */
-void log_vault(FILE *fp, ga_pop_t cgp_population)
+void log_vault(FILE *fp, ga_pop_t cgp_population, long cgp_evals)
 {
+    char human_evals[50];
+    _evals_readable(human_evals, 50, cgp_evals);
     log_entry_prolog(fp, SECTION_SYS);
-    fprintf(fp, "Storing state. CGP generation %4d, best fitness " FITNESS_FMT "\n",
-        cgp_population->generation, cgp_population->best_fitness);
+    fprintf(fp, "Storing state. CGP generation %4d, best fitness " FITNESS_FMT ", %ld evals (%s)\n",
+        cgp_population->generation, cgp_population->best_fitness, cgp_evals, human_evals);
 }
 
 
