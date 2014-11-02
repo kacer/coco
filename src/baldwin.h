@@ -113,6 +113,30 @@ void bw_init_history(bw_history_t *history);
 
 
 /**
+ * Calculate history entry values
+ * @param  history
+ * @param  generation
+ * @param  real_fitness
+ * @param  predicted_fitness
+ * @param  active_predictor_fitness
+ * @return pointer to newly inserted entry
+ */
+void bw_calc_history(bw_history_entry_t *entry, bw_history_entry_t *prev,
+    int generation, ga_fitness_t real_fitness, ga_fitness_t predicted_fitness,
+    ga_fitness_t active_predictor_fitness);
+
+
+/**
+ * Adds entry to history
+ * @param  history
+ * @param  entry
+ * @return pointer to newly inserted entry
+ */
+bw_history_entry_t *bw_add_history_entry(bw_history_t *history,
+    bw_history_entry_t *entry);
+
+
+/**
  * Adds entry to history
  * @param  history
  * @param  generation

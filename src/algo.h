@@ -71,7 +71,7 @@ int simple_cgp_main(
  * @param  baldwin_state Colearning state and sync info
  * @param  best_circuit_file_name_txt File for storing best circuit in readable format
  * @param  best_circuit_file_name_chr File for storing best circuit in CGPViewer format
- * @param  log_file Genral log file
+ * @param  log_file General log file
  * @param  history_file History CSV file
  * @param  finished Pointer to shared variable indicating that the program
  *                  should terminate
@@ -111,9 +111,12 @@ int cgp_main(
  * Coevolutionary predictors main loop
  * @param  cgp_population
  * @param  pred_population
+ * @param  cgp_archive CGP archive
  * @param  pred_archive Predictors archive
  * @param  config
  * @param  baldwin_state Colearning state and sync info
+ * @param  log_file General log file
+ * @param  history_file History CSV file
  * @param  finished Pointer to shared variable indicating that the program
  *                  should terminate
  */
@@ -122,17 +125,19 @@ void pred_main(
     ga_pop_t cgp_population,
     ga_pop_t pred_population,
 
-    // archive
+    // archives
+    archive_t cgp_archive,
     archive_t pred_archive,
 
     // config
     config_t *config,
 
-    // baldwin
+    // baldwin_state
     bw_state_t *baldwin_state,
 
-    // log
+    // log files
     FILE *log_file,
+    FILE *history_file,
 
     // status
     bool *finished

@@ -23,6 +23,7 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/resource.h>
 
 #ifdef _OPENMP
     #include <omp.h>
@@ -30,6 +31,25 @@
 
 #include "logging.h"
 #include "fitness.h"
+
+
+static struct timeval usertime_start, wallclock_start;
+int _timeval_subtract(struct timeval *result, struct timeval *x, struct timeval *y);
+void _get_usertime_diff(struct timeval *diff);
+void _get_wallclock_diff(struct timeval *diff);
+void _fprint_timeval(FILE *fp, struct timeval *time);
+
+
+/**
+ * Load current time as start time
+ */
+void log_init_time()
+{
+    struct rusage resource_usage;
+    getrusage(RUSAGE_SELF, &resource_usage);
+    usertime_start = resource_usage.ru_utime;
+    gettimeofday(&wallclock_start, NULL);
+}
 
 
 /**
@@ -253,12 +273,13 @@ void log_cgp_circuit(FILE *fp, int generation, ga_chr_t circuit)
 /**
  * Logs final summary
  */
-void log_final_summary(FILE *fp, ga_pop_t cgp_population, long cgp_evals)
+void log_final_summary(FILE *fp, int generation, ga_fitness_t best_fitness,
+    long cgp_evals)
 {
     fprintf(fp, "Final summary:\n\n");
-    fprintf(fp, "Generation: %d\n", cgp_population->generation);
-    fprintf(fp, "Best fitness: " FITNESS_FMT "\n", cgp_population->best_fitness);
-    fprintf(fp, "PSNR: %.2f\n", fitness_to_psnr(cgp_population->best_fitness));
+    fprintf(fp, "Generation: %d\n", generation);
+    fprintf(fp, "Best fitness: " FITNESS_FMT "\n", best_fitness);
+    fprintf(fp, "PSNR: %.2f\n", fitness_to_psnr(best_fitness));
     fprintf(fp, "CGP evaluations: %ld\n", cgp_evals);
 }
 
@@ -382,7 +403,8 @@ FILE *init_cgp_history_file(const char *dir, const char *file)
         "active_predictor_fitness,pred_length,pred_used_length,"
         "cgp_evals,"
         "velocity,"
-        "delta_generation,delta_fitness,delta_velocity"
+        "delta_generation,delta_fitness,delta_velocity,"
+        "wallclock,usertime"
         "\n");
 
     return fp;
@@ -401,10 +423,15 @@ FILE *init_cgp_history_file(const char *dir, const char *file)
 void log_cgp_history(FILE *fp, bw_history_entry_t *hist, long cgp_evals,
     int pred_length, int pred_used_length, ga_fitness_t best_ever)
 {
+    struct timeval usertime_diff;
+    struct timeval wallclock_diff;
+    _get_usertime_diff(&usertime_diff);
+    _get_wallclock_diff(&wallclock_diff);
+
     fprintf(fp, "%d,", hist->generation);
     fprintf(fp, FITNESS_FMT ",", hist->predicted_fitness);
     fprintf(fp, FITNESS_FMT ",", hist->fitness);
-    fprintf(fp, FITNESS_FMT ",", hist->predicted_fitness / hist->fitness);
+    fprintf(fp, FITNESS_FMT ",", hist->fitness? (hist->predicted_fitness / hist->fitness) : 0);
     fprintf(fp, FITNESS_FMT ",", best_ever);
     fprintf(fp, FITNESS_FMT ",", hist->active_predictor_fitness);
     fprintf(fp, "%d,", pred_length);
@@ -415,7 +442,10 @@ void log_cgp_history(FILE *fp, bw_history_entry_t *hist, long cgp_evals,
 
     fprintf(fp, "%d,", hist->delta_generation);
     fprintf(fp, FITNESS_FMT ",", hist->delta_fitness);
-    fprintf(fp, "%10g\n", hist->delta_velocity);
+    fprintf(fp, "%10g,", hist->delta_velocity);
+
+    fprintf(fp, "%10g,", wallclock_diff.tv_sec / 60.0);
+    fprintf(fp, "%10g\n", usertime_diff.tv_sec / 60.0);
 }
 
 
@@ -436,6 +466,31 @@ void log_predictors_length_change(FILE *fp, int old_length, int new_length)
 
 
 /**
+ * Logs spent time
+ * @param fp
+ * @param usertime_start
+ * @param usertime_end
+ * @param wallclock_start
+ * @param wallclock_end
+ */
+void log_time(FILE *fp)
+{
+    struct timeval usertime_diff;
+    struct timeval wallclock_diff;
+    _get_usertime_diff(&usertime_diff);
+    _get_wallclock_diff(&wallclock_diff);
+
+    fprintf(fp, "Time in user mode: ");
+    _fprint_timeval(fp, &usertime_diff);
+    fprintf(fp, "\n");
+
+    fprintf(fp, "Wall clock: ");
+    _fprint_timeval(fp, &wallclock_diff);
+    fprintf(fp, "\n");
+}
+
+
+/**
  * Calculates difference of two `struct timeval` values
  *
  * http://www.gnu.org/software/libc/manual/html_node/Elapsed-Time.html
@@ -445,7 +500,7 @@ void log_predictors_length_change(FILE *fp, int old_length, int new_length)
  * @param  y
  * @return 1 if the difference is negative, otherwise 0.
  */
-int timeval_subtract(struct timeval *result, struct timeval *x, struct timeval *y)
+int _timeval_subtract(struct timeval *result, struct timeval *x, struct timeval *y)
 {
     /* Perform the carry for the later subtraction by updating y. */
     if (x->tv_usec < y->tv_usec) {
@@ -469,12 +524,29 @@ int timeval_subtract(struct timeval *result, struct timeval *x, struct timeval *
 }
 
 
+void _get_usertime_diff(struct timeval *diff)
+{
+    struct rusage resource_usage;
+    getrusage(RUSAGE_SELF, &resource_usage);
+    struct timeval usertime_end = resource_usage.ru_utime;
+    _timeval_subtract(diff, &usertime_end, &usertime_start);
+}
+
+
+void _get_wallclock_diff(struct timeval *diff)
+{
+    struct timeval wallclock_end;
+    gettimeofday(&wallclock_end, NULL);
+    _timeval_subtract(diff, &wallclock_end, &wallclock_start);
+}
+
+
 /**
  * Prints `struct timeval` value in "12m34.567s" format
  * @param fp
  * @param time
  */
-void fprint_timeval(FILE *fp, struct timeval *time)
+void _fprint_timeval(FILE *fp, struct timeval *time)
 {
     long minutes = time->tv_sec / 60;
     long seconds = time->tv_sec % 60;
@@ -486,50 +558,4 @@ void fprint_timeval(FILE *fp, struct timeval *time)
     }
 
     fprintf(fp, "%ldm%ld.%06lds", minutes, seconds, microseconds);
-}
-
-
-/**
- * Logs spent time
- * @param fp
- * @param usertime_start
- * @param usertime_end
- * @param wallclock_start
- * @param wallclock_end
- */
-void log_time(FILE *fp, struct timeval *usertime_start,
-    struct timeval *usertime_end, struct timeval *wallclock_start,
-    struct timeval *wallclock_end)
-{
-    struct timeval usertime_diff;
-    timeval_subtract(&usertime_diff, usertime_end, usertime_start);
-
-    struct timeval wallclock_diff;
-    timeval_subtract(&wallclock_diff, wallclock_end, wallclock_start);
-
-    struct tm tmp;
-    char time_string[40];
-
-    fprintf(fp, "Time in user mode:");
-    fprintf(fp, "\n- start: ");
-    fprint_timeval(fp, usertime_start);
-    fprintf(fp, "\n- end:   ");
-    fprint_timeval(fp, usertime_end);
-    fprintf(fp, "\n- diff:  ");
-    fprint_timeval(fp, &usertime_diff);
-    fprintf(fp, "\n");
-
-    fprintf(fp, "\nWall clock:");
-
-    localtime_r(&wallclock_start->tv_sec, &tmp);
-    strftime(time_string, sizeof(time_string), "%Y-%m-%d %H:%M:%S", &tmp);
-    fprintf(fp, "\n- start: %s", time_string);
-
-    localtime_r(&wallclock_end->tv_sec, &tmp);
-    strftime(time_string, sizeof(time_string), "%Y-%m-%d %H:%M:%S", &tmp);
-    fprintf(fp, "\n- end: %s", time_string);
-
-    fprintf(fp, "\n- diff:  ");
-    fprint_timeval(fp, &wallclock_diff);
-    fprintf(fp, "\n");
 }

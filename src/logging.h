@@ -56,6 +56,12 @@
 
 
 /**
+ * Load current time as start time
+ */
+void log_init_time();
+
+
+/**
  * Creates log directories
  * @param  dir
  * @param  vault_dir If not NULL, stores vault directory here
@@ -136,7 +142,8 @@ void log_cgp_circuit(FILE *fp, int generation, ga_chr_t circuit);
 /**
  * Logs final summary
  */
-void log_final_summary(FILE *fp, ga_pop_t cgp_population, long cgp_evals);
+void log_final_summary(FILE *fp, int generation, ga_fitness_t best_fitness,
+    long cgp_evals);
 
 
 /**
@@ -227,9 +234,7 @@ void log_predictors_length_change(FILE *fp, int old_length, int new_length);
  * @param wallclock_start
  * @param wallclock_end
  */
-void log_time(FILE *fp, struct timeval *usertime_start,
-    struct timeval *usertime_end, struct timeval *wallclock_start,
-    struct timeval *wallclock_end);
+void log_time(FILE *fp);
 
 
 /**

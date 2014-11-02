@@ -52,6 +52,57 @@ void bw_init_history(bw_history_t *history)
 
 
 /**
+ * Calculate history entry values
+ * @param  history
+ * @param  generation
+ * @param  real_fitness
+ * @param  predicted_fitness
+ * @param  active_predictor_fitness
+ * @return pointer to newly inserted entry
+ */
+void bw_calc_history(bw_history_entry_t *entry, bw_history_entry_t *prev,
+    int generation, ga_fitness_t real_fitness, ga_fitness_t predicted_fitness,
+    ga_fitness_t active_predictor_fitness)
+{
+    entry->generation = generation;
+    entry->fitness = real_fitness;
+    entry->predicted_fitness = predicted_fitness;
+    entry->active_predictor_fitness = active_predictor_fitness;
+
+    entry->delta_generation = generation - prev->generation;
+    entry->delta_fitness = entry->fitness - prev->fitness;
+
+    entry->velocity = entry->delta_fitness / entry->delta_generation;
+    entry->delta_velocity = entry->velocity - prev->velocity;
+}
+
+
+/**
+ * Adds entry to history
+ * @param  history
+ * @param  entry
+ * @return pointer to newly inserted entry
+ */
+bw_history_entry_t *bw_add_history_entry(bw_history_t *history,
+    bw_history_entry_t *entry)
+{
+    bw_history_entry_t *new = &history->log[history->pointer];
+    memcpy(new, entry, sizeof(bw_history_entry_t));
+
+    if (new->delta_fitness != 0) {
+        memcpy(&history->last_change, new, sizeof(bw_history_entry_t));
+    }
+
+    if (history->stored < BW_HISTORY_LENGTH) {
+        history->stored++;
+    }
+    history->pointer = (history->pointer + 1) % BW_HISTORY_LENGTH;
+
+    return new;
+}
+
+
+/**
  * Adds entry to history
  * @param  history
  * @param  generation
@@ -65,29 +116,12 @@ bw_history_entry_t *bw_add_history(bw_history_t *history, int generation,
     ga_fitness_t active_predictor_fitness)
 {
     bw_history_entry_t *prev = bw_get(history, -1);
-    bw_history_entry_t *new = &history->log[history->pointer];
+    bw_history_entry_t new;
 
-    new->generation = generation;
-    new->fitness = real_fitness;
-    new->predicted_fitness = predicted_fitness;
-    new->active_predictor_fitness = active_predictor_fitness;
+    bw_calc_history(&new, prev, generation, real_fitness, predicted_fitness,
+        active_predictor_fitness);
 
-    new->delta_generation = generation - prev->generation;
-    new->delta_fitness = new->fitness - prev->fitness;
-
-    new->velocity = new->delta_fitness / new->delta_generation;
-    new->delta_velocity = new->velocity - prev->velocity;
-
-    if (new->delta_fitness != 0) {
-        memcpy(&history->last_change, new, sizeof(bw_history_entry_t));
-    }
-
-    if (history->stored < BW_HISTORY_LENGTH) {
-        history->stored++;
-    }
-    history->pointer = (history->pointer + 1) % BW_HISTORY_LENGTH;
-
-    return new;
+    return bw_add_history_entry(history, &new);
 }
 
 

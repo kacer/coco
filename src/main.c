@@ -26,9 +26,6 @@
 #include <ctype.h>
 #include <signal.h>
 
-#include <sys/time.h>
-#include <sys/resource.h>
-
 #ifdef _OPENMP
   #include <omp.h>
 #endif
@@ -60,27 +57,6 @@ const int SIGINT_GENERATIONS_GAP = 1000;
 
 // special `check_signals` return value indicating first catch of SIGINT
 const int SIGINT_FIRST = -1;
-
-
-/**
- * Calculates diff of two `struct timeval`
- *
- * http://www.gnu.org/software/libc/manual/html_node/Elapsed-Time.html
- *
- * @param  result
- * @param  x
- * @param  y
- * @return
- */
-int timeval_subtract(struct timeval *result, struct timeval *x, struct timeval *y);
-
-
-/**
- * Prints `struct timeval` value in "12m34.567s" format
- * @param fp
- * @param time
- */
-void fprint_timeval(FILE *fp, struct timeval *time);
 
 
 /**
@@ -205,10 +181,6 @@ int main(int argc, char *argv[])
 
     // application exit code
     int retval = 0;
-
-    // resource usage
-    struct rusage resource_usage;
-    struct timeval usertime_start, usertime_end, wallclock_start, wallclock_end;
 
 
     /*
@@ -462,11 +434,7 @@ int main(int argc, char *argv[])
      */
 
     printf("Starting the big while loop.");
-
-    getrusage(RUSAGE_SELF, &resource_usage);
-    usertime_start = resource_usage.ru_utime;
-    gettimeofday(&wallclock_start, NULL);
-
+    log_init_time();
 
     // install signal handlers
     signal(SIGINT, sigint_handler);
@@ -522,10 +490,12 @@ int main(int argc, char *argv[])
                     pred_main(
                         cgp_population,
                         pred_population,
+                        cgp_archive,
                         pred_archive,
                         &config,
                         &baldwin_state,
                         progress_log_file,
+                        cgp_history_log_file,
                         &finished
                     );
                 }
@@ -543,29 +513,36 @@ int main(int argc, char *argv[])
         Dump summary and clean-up
      */
 
-
 done:
 
+    // dummy expression to avoid compiler warning
+    printf("----\n");
+
+    ga_fitness_t best_fitness;
+    if (config.algorithm == simple_cgp) {
+        best_fitness = cgp_population->best_fitness;
+    } else {
+        best_fitness = cgp_archive->best_chromosome_ever->fitness;
+    }
+
     // dump evolution summary
-    getrusage(RUSAGE_SELF, &resource_usage);
-    usertime_end = resource_usage.ru_utime;
-    gettimeofday(&wallclock_end, NULL);
+    log_final_summary(stdout, cgp_population->generation,
+        best_fitness, fitness_get_cgp_evals());
+    printf("\n");
+    log_time(stdout);
+    printf("\n");
+    config_save_file(stdout, &config);
 
     FILE *summary_file;
     if ((summary_file = open_log_file(config.log_dir, "summary.log", false)) == NULL) {
         fprintf(stderr, "Failed to open 'summary.log' in results dir for writing.\n");
 
     } else {
-        log_final_summary(summary_file, cgp_population, fitness_get_cgp_evals());
+        log_final_summary(summary_file, cgp_population->generation,
+            best_fitness, fitness_get_cgp_evals());
         fprintf(summary_file, "\n");
-        log_time(summary_file, &usertime_start, &usertime_end, &wallclock_start, &wallclock_end);
+        log_time(summary_file);
     }
-
-    log_final_summary(stdout, cgp_population, fitness_get_cgp_evals());
-    printf("\n");
-    log_time(stdout, &usertime_start, &usertime_end, &wallclock_start, &wallclock_end);
-    printf("\n");
-    config_save_file(stdout, &config);
 
     ga_destroy_pop(cgp_population);
 
