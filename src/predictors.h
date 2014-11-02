@@ -26,6 +26,7 @@
 
 
 static const ga_problem_type_t PRED_PROBLEM_TYPE = minimize;
+static const int PRED_CIRCULAR_TRIES = 5;
 
 
 typedef unsigned int pred_gene_t;
@@ -36,6 +37,12 @@ typedef enum {
     permuted,
     repeated,
 } pred_genome_type_t;
+
+
+typedef enum {
+    linear,
+    circular,
+} pred_repeated_subtype_t;
 
 
 struct pred_genome {
@@ -50,6 +57,9 @@ struct pred_genome {
 
     /* how many pixels are in the phenotype */
     unsigned int used_pixels;
+
+    /* for circular repeated genotype: phenotype starting locus */
+    unsigned int _circular_offset;
 
     /* phenotype */
     unsigned int *pixels;
@@ -66,7 +76,8 @@ typedef struct pred_genome* pred_genome_t;
  */
 void pred_init(pred_gene_t max_gene_value, unsigned int max_genome_length,
     unsigned int initial_genome_length, float mutation_rate,
-    float offspring_elite, float offspring_combine, pred_genome_type_t type);
+    float offspring_elite, float offspring_combine, pred_genome_type_t type,
+    pred_repeated_subtype_t repeated_subtype);
 
 
 /**

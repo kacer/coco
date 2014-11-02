@@ -126,6 +126,7 @@ static config_t config = {
     .pred_offspring_elite = 0.25,
     .pred_offspring_combine = 0.5,
     .pred_genome_type = permuted,
+    .pred_repeated_subtype = linear,
 
     .bw_interval = 0,
     .bw_config = {
@@ -312,7 +313,10 @@ int main(int argc, char *argv[])
         int pred_min_size = config.pred_min_size * img_size;
         int pred_max_size = config.pred_size * img_size;
         int pred_initial_size;
-        if (config.algorithm == baldwin && config.pred_initial_size) {
+
+        // allow to set different initial size only for baldwin or circular genotype
+        bool is_circular = (config.pred_genome_type == repeated && config.pred_repeated_subtype == circular);
+        if (config.pred_initial_size && (config.algorithm == baldwin || is_circular)) {
             pred_initial_size = config.pred_initial_size * img_size;
         } else {
             pred_initial_size = pred_max_size;
@@ -326,7 +330,8 @@ int main(int argc, char *argv[])
             config.pred_mutation_rate,     // % of mutated genes
             config.pred_offspring_elite,   // % of elite children
             config.pred_offspring_combine, // % of "crossovered" children
-            repeated //(config.algorithm == baldwin)? repeated : permuted  // genome type
+            config.pred_genome_type,       // genome type
+            config.pred_repeated_subtype   // repeated genome subtype
         );
 
         // baldwin thresholds

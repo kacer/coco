@@ -75,6 +75,7 @@ typedef struct
     float pred_offspring_combine;
     int pred_population_size;
     pred_genome_type_t pred_genome_type;
+    pred_repeated_subtype_t pred_repeated_subtype;
 
     int bw_interval;
     bw_config_t bw_config;
@@ -184,6 +185,9 @@ static inline void print_help() {
         "          - repeated: No limitations on genotype, duplicities are eliminated\n"
         "                      during phenotype construction. Typically, phenotype is\n"
         "                      shorter than genotype."
+        "          - repeated-circular: Same as repeated, but phenotype construction\n"
+        "                      starts from any locus (offset). It is determined as the\n"
+        "                      locus with best fitness from 5 tries."
         "\n"
         "    --baldwin-interval NUM, -b NUM\n"
         "          Minimal interval of evolution parameters update in \"baldwin\" mode\n"

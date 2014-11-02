@@ -113,6 +113,15 @@ ga_fitness_t fitness_eval_predictor(ga_chr_t chr);
 
 
 /**
+ * Evaluates predictor fitness
+ *
+ * @param  chr
+ * @return fitness value
+ */
+ga_fitness_t fitness_eval_predictor_genome(pred_genome_t predictor);
+
+
+/**
  * Calculates fitness using the PSNR (peak signal-to-noise ratio) function.
  * The higher the value, the better the filter.
  *

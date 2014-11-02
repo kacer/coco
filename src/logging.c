@@ -245,11 +245,12 @@ void log_pred_change(FILE *fp, ga_fitness_t previous_best,
     log_entry_prolog(fp, SECTION_PRED);
     if (indent) fprintf(fp, PRED_INDENT);
     fprintf(fp, "Best predictor changed by " FITNESS_FMT
-                " from " FITNESS_FMT " to " FITNESS_FMT " using %u/%u pixels\n",
+                " from " FITNESS_FMT " to " FITNESS_FMT " using %u/%u pixels, offset %u\n",
                 new_best - previous_best,
                 previous_best,
                 new_best,
                 new_genome->used_pixels,
+                new_genome->_circular_offset,
                 pred_get_length());
 }
 

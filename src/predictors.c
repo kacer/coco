@@ -32,6 +32,7 @@
 
 
 static pred_genome_type_t _genome_type;
+static pred_repeated_subtype_t _genome_repeated_subtype;
 static pred_gene_t _max_gene_value;
 static unsigned int _max_genome_length;
 static unsigned int _current_genome_length;
@@ -52,7 +53,8 @@ enum _offspring_op {
  */
 void pred_init(pred_gene_t max_gene_value, unsigned int max_genome_length,
     unsigned int initial_genome_length, float mutation_rate,
-    float offspring_elite, float offspring_combine, pred_genome_type_t type)
+    float offspring_elite, float offspring_combine, pred_genome_type_t type,
+    pred_repeated_subtype_t repeated_subtype)
 {
     _max_gene_value = max_gene_value;
     _max_genome_length = max_genome_length;
@@ -61,6 +63,7 @@ void pred_init(pred_gene_t max_gene_value, unsigned int max_genome_length,
     _offspring_elite = offspring_elite;
     _offspring_combine = offspring_combine;
     _genome_type = type;
+    _genome_repeated_subtype = repeated_subtype;
 
     assert(_current_genome_length <= _max_genome_length);
 }
@@ -178,37 +181,77 @@ void pred_free_genome(void *_genome)
 
 
 /**
+ * Calculates real index of given gene in circular genome
+ */
+int _pred_get_circular_index(pred_genome_t genome, int index)
+{
+    int real = (genome->_circular_offset + index) % _current_genome_length;
+    if (real < 0) real += _current_genome_length;
+    return real;
+}
+
+
+void _pred_calculate_repeated_phenotype(pred_genome_t genome)
+{
+    // clear used values helper
+    memset(genome->_used_values, 0, sizeof(bool) * (_max_gene_value + 1));
+
+    int pheno_index = 0;
+    for (int geno_index = 0; geno_index < _current_genome_length; geno_index++) {
+        int locus = _pred_get_circular_index(genome, geno_index);
+        pred_gene_t value = genome->_genes[locus];
+        if (genome->_used_values[value]) {
+            continue;
+
+        } else {
+            genome->_used_values[value] = true;
+            genome->pixels[pheno_index] = value;
+            pheno_index++;
+        }
+    }
+    genome->used_pixels = pheno_index;
+
+    if (can_use_simd()) {
+        fitness_prepare_predictor_for_simd(genome);
+    }
+}
+
+
+/**
  * Recalculates phenotype for repeated genotype
  */
 void pred_calculate_phenotype(pred_genome_t genome)
 {
     if (_genome_type == repeated) {
-        // clear used values helper
-        memset(genome->_used_values, 0, sizeof(bool) * (_max_gene_value + 1));
+        if (_genome_repeated_subtype == circular) {
+            int best_offset = 0;
+            ga_fitness_t best_fitness = 0;
 
-        // calculate new one
-        int pheno_index = 0;
-
-        for (int geno_index = 0; geno_index < _current_genome_length; geno_index++) {
-            pred_gene_t value = genome->_genes[geno_index];
-            if (genome->_used_values[value]) {
-                continue;
-            } else {
-                genome->_used_values[value] = true;
-                genome->pixels[pheno_index] = value;
-                pheno_index++;
+            for (int i = 0; i < PRED_CIRCULAR_TRIES; i++) {
+                genome->_circular_offset = rand_urange(0, _max_genome_length - 1);
+                _pred_calculate_repeated_phenotype(genome);
+                ga_fitness_t fit = fitness_eval_predictor_genome(genome);
+                if (i == 0 || ga_is_better(PRED_PROBLEM_TYPE, fit, best_fitness)) {
+                    best_offset = genome->_circular_offset;
+                    best_fitness = fit;
+                }
+                printf("%p #%d: %u; %.10g\n", genome, i, genome->_circular_offset, fit);
             }
+            genome->_circular_offset = best_offset;
+
+        } else {
+            genome->_circular_offset = 0;
         }
 
-        genome->used_pixels = pheno_index;
+        _pred_calculate_repeated_phenotype(genome);
 
     } else {
         genome->used_pixels = _current_genome_length;
+        if (can_use_simd()) {
+            fitness_prepare_predictor_for_simd(genome);
+        }
     }
 
-    if (can_use_simd()) {
-        fitness_prepare_predictor_for_simd(genome);
-    }
 }
 
 

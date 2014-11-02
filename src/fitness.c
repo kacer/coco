@@ -241,9 +241,8 @@ ga_fitness_t fitness_eval_or_predict_cgp(ga_chr_t chr)
 }
 
 
-double _fitness_predict_cgp_scalar(ga_chr_t cgp_chr, ga_chr_t pred_chr)
+double _fitness_predict_cgp_scalar(ga_chr_t cgp_chr, pred_genome_t predictor)
 {
-    pred_genome_t predictor = (pred_genome_t) pred_chr->genome;
     double sum = 0;
 
     for (int i = 0; i < predictor->used_pixels; i++) {
@@ -269,10 +268,8 @@ double _fitness_predict_cgp_scalar(ga_chr_t cgp_chr, ga_chr_t pred_chr)
  * @param  chr
  * @return fitness value
  */
-ga_fitness_t fitness_predict_cgp(ga_chr_t cgp_chr, ga_chr_t pred_chr)
+ga_fitness_t fitness_predict_cgp_by_genome(ga_chr_t cgp_chr, pred_genome_t predictor)
 {
-    pred_genome_t predictor = (pred_genome_t) pred_chr->genome;
-
     // PSNR coefficcient is different here (less pixels are used)
     double coef = fitness_psnr_coeficient(predictor->used_pixels);
     double sum = 0;
@@ -282,10 +279,41 @@ ga_fitness_t fitness_predict_cgp(ga_chr_t cgp_chr, ga_chr_t pred_chr)
             predictor->pixels_simd, predictor->used_pixels);
 
     } else {
-        sum = _fitness_predict_cgp_scalar(cgp_chr, pred_chr);
+        sum = _fitness_predict_cgp_scalar(cgp_chr, predictor);
     }
 
     return coef / sum;
+}
+
+
+/**
+ * Predictes CGP circuit fitness
+ *
+ * @param  chr
+ * @return fitness value
+ */
+ga_fitness_t fitness_predict_cgp(ga_chr_t cgp_chr, ga_chr_t pred_chr)
+{
+    pred_genome_t predictor = (pred_genome_t) pred_chr->genome;
+    return fitness_predict_cgp_by_genome(cgp_chr, predictor);
+}
+
+
+/**
+ * Evaluates predictor fitness
+ *
+ * @param  chr
+ * @return fitness value
+ */
+ga_fitness_t fitness_eval_predictor_genome(pred_genome_t predictor)
+{
+    double sum = 0;
+    for (int i = 0; i < _cgp_archive->stored; i++) {
+        ga_chr_t cgp_chr = arc_get(_cgp_archive, i);
+        double predicted = fitness_predict_cgp_by_genome(cgp_chr, predictor);
+        sum += fabs(cgp_chr->fitness - predicted);
+    }
+    return sum / _cgp_archive->stored;
 }
 
 
@@ -297,13 +325,8 @@ ga_fitness_t fitness_predict_cgp(ga_chr_t cgp_chr, ga_chr_t pred_chr)
  */
 ga_fitness_t fitness_eval_predictor(ga_chr_t pred_chr)
 {
-    double sum = 0;
-    for (int i = 0; i < _cgp_archive->stored; i++) {
-        ga_chr_t cgp_chr = arc_get(_cgp_archive, i);
-        double predicted = fitness_predict_cgp(cgp_chr, pred_chr);
-        sum += fabs(cgp_chr->fitness - predicted);
-    }
-    return sum / _cgp_archive->stored;
+    pred_genome_t predictor = (pred_genome_t) pred_chr->genome;
+    return fitness_eval_predictor_genome(predictor);
 }
 
 
