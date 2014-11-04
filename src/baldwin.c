@@ -214,46 +214,54 @@ void bw_update_params(bw_config_t *config, bw_history_t *history, bw_update_t *r
     bw_history_entry_t *last = bw_get(history, -1);
 
     int old_length = pred_get_length();
+    int new_length = old_length;
     result->old_predictor_length = old_length;
     result->new_predictor_length = old_length;
     result->predictor_length_changed = false;
 
-    double coefficcient = 1.0;
     double inaccuracy = last->predicted_fitness / last->fitness;
 
+    // if inaccuracy raises over threshold, do big increment,
+    // set as percentage from maximal size
     if (inaccuracy > config->inaccuracy_tolerance) {
-        coefficcient = config->inaccuracy_coef;
-    }
-
-    if (config->algorithm == bwalg_symreg) {
-        coefficcient = bw_get_coef(config->algorithm, history);
+        new_length = round(old_length * config->inaccuracy_coef);
+        /*
+        int increment = (100.0 / config->inaccuracy_coef) * pred_get_max_length();
+        new_length = old_length + increment;
+        */
+        //printf("Inaccuracy over threshold (%.3g > %.3g), new length %d\n", inaccuracy, config->inaccuracy_tolerance, new_length);
 
     } else {
-        double velocity = bw_get_velocity(config->algorithm, history);
-
-        if (fabs(velocity) <= config->zero_epsilon) {
-            // no change
-            coefficcient = config->zero_coef;
-
-        } else if (velocity < 0) {
-            // decrease
-            coefficcient = config->decrease_coef;
-
-        } else if (velocity > 0 && velocity <= config->slow_threshold) {
-            // slow increase
-            coefficcient = config->increase_slow_coef;
-
-        } else if (velocity > config->slow_threshold) {
-            // fast increase
-            coefficcient = config->increase_fast_coef;
+        if (config->algorithm == bwalg_symreg) {
+            double coefficcient = bw_get_coef(config->algorithm, history);
+            new_length = round(old_length * coefficcient);
 
         } else {
-            fprintf(stderr, "Baldwin if-else fail. Velocity = %.10g\n", velocity);
-            assert(false);
+            double velocity = bw_get_velocity(config->algorithm, history);
+
+            if (fabs(velocity) <= config->zero_epsilon) {
+                // no change
+                new_length = round(old_length * config->zero_coef);
+
+            } else if (velocity < 0) {
+                // decrease
+                new_length = round(old_length * config->decrease_coef);
+
+            } else if (velocity > 0 && velocity <= config->slow_threshold) {
+                // slow increase
+                new_length = round(old_length * config->increase_slow_coef);
+
+            } else if (velocity > config->slow_threshold) {
+                // fast increase
+                new_length = round(old_length * config->increase_fast_coef);
+
+            } else {
+                fprintf(stderr, "Baldwin if-else fail. Velocity = %.10g\n", velocity);
+                assert(false);
+            }
         }
     }
 
-    int new_length = floor(old_length * coefficcient);
     if (config->min_length && new_length < config->min_length) {
         new_length = config->min_length;
     }

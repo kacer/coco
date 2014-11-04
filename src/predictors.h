@@ -165,3 +165,9 @@ void pred_set_length(int new_length);
  * Returns current genome length.
  */
 int pred_get_length();
+
+
+/**
+ * Returns maximal genome length.
+ */
+int pred_get_max_length();

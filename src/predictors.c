@@ -584,3 +584,12 @@ int pred_get_length()
 {
     return _current_genome_length;
 }
+
+
+/**
+ * Returns maximal genome length.
+ */
+int pred_get_max_length()
+{
+    return _max_genome_length;
+}

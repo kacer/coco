@@ -22,7 +22,7 @@ CC=gcc
 CFLAGS=-rdynamic -g -Wall -std=c11 -fopenmp -O2 -D_XOPEN_SOURCE=700 \
 	-DSSE2 -DxAVX2 -DDEBUG -DxVERBOSE -DxCGP_LIMIT_FUNCS
 EXECUTABLE=coco
-CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_25.png -g 100000 -a predictors -S 10 -k 10000
+CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_50.png -g 100000 -a baldwin -S 100 -I 50 -k 10000 --bw-inac-tol 1.05
 ANSELM_HOST=anselm
 ANSELM_PATH=~/xwigla00
 MERLIN_HOST=merlin
@@ -75,7 +75,6 @@ anselmup: tar
 anselmdown:
 	ssh $(ANSELM_HOST) "cd $(ANSELM_PATH)/results && tar -czvf ../results.tar.gz --exclude='img_filtered_*.png' *"
 	scp $(ANSELM_HOST):$(ANSELM_PATH)/results.tar.gz ../anselm/
-	cd ../anselm/ && tar -xzvf results.tar.gz
 
 merlinup: tar
 	find -type f | xargs chmod ug+rw
