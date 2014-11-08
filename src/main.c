@@ -130,15 +130,23 @@ static config_t config = {
     .bw_interval = 0,
     .bw_config = {
         .algorithm = bwalg_last,
+        .use_absolute_increments = false,
         .inaccuracy_tolerance = 1.2,
         .inaccuracy_coef = 2.0,
         .zero_epsilon = 0.001,
         .slow_threshold = 0.1,
+
         .zero_coef = 0.93,
         .decrease_coef = 0.97,
         .increase_slow_coef = 1.03,
         .increase_fast_coef = 1.00,
+
     },
+
+    .bw_zero_increment_percent = -0.07,
+    .bw_decrease_increment_percent = -0.03,
+    .bw_increase_slow_increment_percent = 0.03,
+    .bw_increase_fast_increment_percent = 0,
 
     .log_interval = 0,
     .log_dir = "cocolog",
@@ -329,9 +337,33 @@ int main(int argc, char *argv[])
             repeated //(config.algorithm == baldwin)? repeated : permuted  // genome type
         );
 
-        // baldwin thresholds
-        config.bw_config.min_length = pred_min_size;
-        config.bw_config.max_length = pred_max_size;
+        if (config.algorithm == baldwin) {
+            // baldwin thresholds
+            config.bw_config.min_length = pred_min_size;
+            config.bw_config.max_length = pred_max_size;
+
+            // baldwin absolute increments
+            if (config.bw_config.use_absolute_increments) {
+                config.bw_config.absolute_increment_base = pred_max_size;
+                config.bw_config.zero_increment = pred_max_size * config.bw_zero_increment_percent;
+                config.bw_config.decrease_increment = pred_max_size * config.bw_decrease_increment_percent;
+                config.bw_config.increase_slow_increment = pred_max_size * config.bw_increase_slow_increment_percent;
+                config.bw_config.increase_fast_increment = pred_max_size * config.bw_increase_fast_increment_percent;
+
+                printf("Absolute increments are:\n"
+                    "Base: %d pixels\n"
+                    "Zero: %d pixels\n"
+                    "Decrease: %d pixels\n"
+                    "Slow increase: %d pixels\n"
+                    "Fast increase: %d pixels\n",
+                    config.bw_config.absolute_increment_base,
+                    config.bw_config.zero_increment,
+                    config.bw_config.decrease_increment,
+                    config.bw_config.increase_slow_increment,
+                    config.bw_config.increase_fast_increment
+                );
+            }
+        }
 
         // cgp evolution
         arc_func_vect_t arc_cgp_methods = {

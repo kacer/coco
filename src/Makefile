@@ -22,7 +22,7 @@ CC=gcc
 CFLAGS=-rdynamic -g -Wall -std=c11 -fopenmp -O2 -D_XOPEN_SOURCE=700 \
 	-DSSE2 -DxAVX2 -DDEBUG -DxVERBOSE -DxCGP_LIMIT_FUNCS
 EXECUTABLE=coco
-CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_50.png -g 100000 -a baldwin -S 100 -I 50 -k 10000 --bw-inac-tol 1.05
+CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_50.png -g 30000 -a baldwin -S 100 -I 50 -k 10000 --bw-by-max-length --bw-pred-min-size 0.01 --bw-zero-inc -0.02
 ANSELM_HOST=anselm
 ANSELM_PATH=~/xwigla00
 MERLIN_HOST=merlin
@@ -40,6 +40,9 @@ all: $(EXECUTABLE)
 run: $(EXECUTABLE)
 	rm -rf cocolog/*
 	./$(EXECUTABLE) $(CMDLINE)
+
+plot:
+	gnuplot cocolog.gp
 
 minirun: $(EXECUTABLE)
 	rm -rf cocolog/*
@@ -72,9 +75,13 @@ anselmup: tar
 	scp ../xwigla00.tar.gz $(ANSELM_HOST):$(ANSELM_PATH)
 	ssh $(ANSELM_HOST) "cd $(ANSELM_PATH) && tar -xzvf xwigla00.tar.gz && cd src && module load gcc/4.9.0 && make clean all"
 
+anselmdownquick:
+	ssh $(ANSELM_HOST) "cd $(ANSELM_PATH)/results && find -name 'cgp_history.csv' | tar -czvf ../results.tar.gz -T -"
+	scp $(ANSELM_HOST):$(ANSELM_PATH)/results.tar.gz ../anselm/
+
 anselmdown:
 	ssh $(ANSELM_HOST) "cd $(ANSELM_PATH)/results && tar -czvf ../results.tar.gz --exclude='img_filtered_*.png' *"
-	scp $(ANSELM_HOST):$(ANSELM_PATH)/results.tar.gz ../anselm/
+	scp -o Cipher=aes128-ctr $(ANSELM_HOST):$(ANSELM_PATH)/results.tar.gz ../anselm/
 
 merlinup: tar
 	find -type f | xargs chmod ug+rw

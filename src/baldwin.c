@@ -125,6 +125,17 @@ bw_history_entry_t *bw_add_history(bw_history_t *history, int generation,
 }
 
 
+static inline int bw_relative_to_absolute(double coef, int base) {
+    /*
+        Simple and works every time:
+        1.00 -> (1.00 - 1) * base = 0
+        1.10 -> (1.10 - 1) * base = 0.10 * base
+        0.90 -> (0.90 - 1) * base = -0.10 * base
+     */
+    return (coef - 1.0) * base;
+}
+
+
 /**
  * Gets current velocity according to algorithm
  * @param  alg
@@ -203,6 +214,15 @@ double bw_get_coef(bw_algorithm_t alg, bw_history_t *history)
         - 1.97691040282476*d*d);
 }
 
+#define CONCAT(prefix, postfix) prefix ## postfix
+#define BW_UPDATE_SIZE(coef_prefix) { \
+    if (config->use_absolute_increments) { \
+        new_length = old_length + config->CONCAT(coef_prefix, _increment); \
+    } else { \
+        new_length = old_length * config->CONCAT(coef_prefix, _coef); \
+    } \
+}
+
 
 /**
  * Updates evolution parameters according to history
@@ -241,19 +261,19 @@ void bw_update_params(bw_config_t *config, bw_history_t *history, bw_update_t *r
 
             if (fabs(velocity) <= config->zero_epsilon) {
                 // no change
-                new_length = round(old_length * config->zero_coef);
+                BW_UPDATE_SIZE(zero);
 
             } else if (velocity < 0) {
                 // decrease
-                new_length = round(old_length * config->decrease_coef);
+                BW_UPDATE_SIZE(decrease);
 
             } else if (velocity > 0 && velocity <= config->slow_threshold) {
                 // slow increase
-                new_length = round(old_length * config->increase_slow_coef);
+                BW_UPDATE_SIZE(increase_slow);
 
             } else if (velocity > config->slow_threshold) {
                 // fast increase
-                new_length = round(old_length * config->increase_fast_coef);
+                BW_UPDATE_SIZE(increase_fast);
 
             } else {
                 fprintf(stderr, "Baldwin if-else fail. Velocity = %.10g\n", velocity);
@@ -262,7 +282,7 @@ void bw_update_params(bw_config_t *config, bw_history_t *history, bw_update_t *r
         }
     }
 
-    if (config->min_length && new_length < config->min_length) {
+    if (config->min_length >= 0 && new_length < config->min_length) {
         new_length = config->min_length;
     }
     if (config->max_length && new_length > config->max_length) {
@@ -377,3 +397,4 @@ void bw_dump_history_asciiart(FILE *fp, bw_history_t *history) {
     }
     fprintf(fp, "\n");
 }
+
