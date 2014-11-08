@@ -66,14 +66,23 @@
 
 #define OPT_BW_INTERVAL 'b'
 #define OPT_BW_INACCURACY_TOLERANCE 1000
-#define OPT_BW_INACCURACY_COEF      1001
 #define OPT_BW_ZERO_EPSILON         1002
 #define OPT_BW_SLOW_THRESHOLD       1003
+
+#define OPT_BW_INACCURACY_COEF      1001
 #define OPT_BW_ZERO_COEF            1004
 #define OPT_BW_DECREASE_COEF        1005
 #define OPT_BW_INCREASE_SLOW_COEF   1006
 #define OPT_BW_INCREASE_FAST_COEF   1007
+
 #define OPT_BW_ALGORITHM            1008
+#define OPT_BW_BY_MAX_LENGTH        1009
+
+#define OPT_BW_INACCURACY_INC       1010
+#define OPT_BW_ZERO_INC             1011
+#define OPT_BW_DECREASE_INC         1012
+#define OPT_BW_INCREASE_SLOW_INC    1013
+#define OPT_BW_INCREASE_FAST_INC    1014
 
 #define OPT_BW_PRED_INITIAL_SIZE 'I'
 #define OPT_BW_PRED_MIN_SIZE 'N'
@@ -118,15 +127,23 @@ static struct option long_options[] =
 
     /* Baldwin */
     {"bw-algorithm", required_argument, 0, OPT_BW_ALGORITHM},
+    {"bw-by-max-length", no_argument, 0, OPT_BW_BY_MAX_LENGTH},
     {"bw-interval", required_argument, 0, OPT_BW_INTERVAL},
     {"bw-inac-tol", required_argument, 0, OPT_BW_INACCURACY_TOLERANCE},
-    {"bw-inac-coef", required_argument, 0, OPT_BW_INACCURACY_COEF},
     {"bw-zero-eps", required_argument, 0, OPT_BW_ZERO_EPSILON},
     {"bw-slow-thr", required_argument, 0, OPT_BW_SLOW_THRESHOLD},
+
+    {"bw-inac-coef", required_argument, 0, OPT_BW_INACCURACY_COEF},
     {"bw-zero-coef", required_argument, 0, OPT_BW_ZERO_COEF},
     {"bw-decr-coef", required_argument, 0, OPT_BW_DECREASE_COEF},
     {"bw-slow-coef", required_argument, 0, OPT_BW_INCREASE_SLOW_COEF},
     {"bw-fast-coef", required_argument, 0, OPT_BW_INCREASE_FAST_COEF},
+
+    {"bw-inac-inc", required_argument, 0, OPT_BW_INACCURACY_INC},
+    {"bw-zero-inc", required_argument, 0, OPT_BW_ZERO_INC},
+    {"bw-decr-inc", required_argument, 0, OPT_BW_DECREASE_INC},
+    {"bw-slow-inc", required_argument, 0, OPT_BW_INCREASE_SLOW_INC},
+    {"bw-fast-inc", required_argument, 0, OPT_BW_INCREASE_FAST_INC},
 
     {"bw-pred-initial-size", required_argument, 0, OPT_BW_PRED_INITIAL_SIZE},
     {"bw-pred-min-size", required_argument, 0, OPT_BW_PRED_MIN_SIZE},
@@ -166,6 +183,16 @@ static const char *short_options = "hg:t:f:a:r:i:n:vw:l:k:m:p:s:S:M:P:T:b:I:N:";
     } \
 } while(0);
 
+#define PARSE_FLOAT(dst) do { \
+    char *endptr; \
+    (dst) = strtof(optarg, &endptr); \
+    if (*endptr != '\0' && endptr != optarg && errno != ERANGE) { \
+        fprintf(stderr, "Option %s requires valid float\n", \
+            long_options[option_index].name); \
+        return 1; \
+    } \
+} while(0);
+
 #define PARSE_DOUBLE(dst) do { \
     char *endptr; \
     (dst) = strtod(optarg, &endptr); \
@@ -174,6 +201,11 @@ static const char *short_options = "hg:t:f:a:r:i:n:vw:l:k:m:p:s:S:M:P:T:b:I:N:";
             long_options[option_index].name); \
         return 1; \
     } \
+} while(0);
+
+#define PARSE_PERCENT(dst) do { \
+    PARSE_FLOAT(dst); \
+    if ((dst) > 1) dst /= 100; \
 } while(0);
 
 
@@ -274,10 +306,7 @@ config_retval_t config_load_args(int argc, char **argv, config_t *cfg)
                 break;
 
             case OPT_PRED_SIZE:
-                PARSE_DOUBLE(cfg->pred_size);
-                if (cfg->pred_size > 1) {
-                    cfg->pred_size /= 100.0;
-                }
+                PARSE_PERCENT(cfg->pred_size);
                 break;
 
             case OPT_BW_ALGORITHM:
@@ -298,24 +327,15 @@ config_retval_t config_load_args(int argc, char **argv, config_t *cfg)
                 break;
 
             case OPT_BW_PRED_INITIAL_SIZE:
-                PARSE_DOUBLE(cfg->pred_initial_size);
-                if (cfg->pred_initial_size > 1) {
-                    cfg->pred_initial_size /= 100.0;
-                }
+                PARSE_PERCENT(cfg->pred_initial_size);
                 break;
 
             case OPT_BW_PRED_MIN_SIZE:
-                PARSE_DOUBLE(cfg->pred_min_size);
-                if (cfg->pred_min_size > 1) {
-                    cfg->pred_min_size /= 100.0;
-                }
+                PARSE_PERCENT(cfg->pred_min_size);
                 break;
 
             case OPT_PRED_MUTATE:
-                PARSE_DOUBLE(cfg->pred_mutation_rate);
-                if (cfg->pred_mutation_rate > 1) {
-                    cfg->pred_mutation_rate /= 100.0;
-                }
+                PARSE_PERCENT(cfg->pred_mutation_rate);
                 break;
 
             case OPT_PRED_POPSIZE:
@@ -349,6 +369,10 @@ config_retval_t config_load_args(int argc, char **argv, config_t *cfg)
                 PARSE_INT(cfg->bw_interval);
                 break;
 
+            case OPT_BW_BY_MAX_LENGTH:
+                cfg->bw_config.use_absolute_increments = true;
+                break;
+
             case OPT_BW_INACCURACY_TOLERANCE:
                 PARSE_DOUBLE(cfg->bw_config.inaccuracy_tolerance);
                 break;
@@ -379,6 +403,22 @@ config_retval_t config_load_args(int argc, char **argv, config_t *cfg)
 
             case OPT_BW_INCREASE_FAST_COEF:
                 PARSE_DOUBLE(cfg->bw_config.increase_fast_coef);
+                break;
+
+            case OPT_BW_ZERO_INC:
+                PARSE_PERCENT(cfg->bw_zero_increment_percent);
+                break;
+
+            case OPT_BW_DECREASE_INC:
+                PARSE_PERCENT(cfg->bw_decrease_increment_percent);
+                break;
+
+            case OPT_BW_INCREASE_SLOW_INC:
+                PARSE_PERCENT(cfg->bw_increase_slow_increment_percent);
+                break;
+
+            case OPT_BW_INCREASE_FAST_INC:
+                PARSE_PERCENT(cfg->bw_increase_fast_increment_percent);
                 break;
 
             default:
@@ -431,15 +471,23 @@ void config_save_file(FILE *file, config_t *cfg)
     fprintf(file, "pred-type: %s\n", cfg->pred_genome_type == permuted? "permuted" : "repeated");
     fprintf(file, "\n");
     fprintf(file, "bw-algorithm: %s\n", bw_algorithm_names[cfg->bw_config.algorithm]);
+    fprintf(file, "bw-by-max-length: %s\n", cfg->bw_config.use_absolute_increments? "yes" : "no");
     fprintf(file, "bw-interval: %d\n", cfg->bw_interval);
     fprintf(file, "bw-inac-tol: %.5g\n", cfg->bw_config.inaccuracy_tolerance);
     fprintf(file, "bw-inac-coef: %.5g\n", cfg->bw_config.inaccuracy_coef);
     fprintf(file, "bw-zero-eps: %.5g\n", cfg->bw_config.zero_epsilon);
     fprintf(file, "bw-slow-thr: %.5g\n", cfg->bw_config.slow_threshold);
-    fprintf(file, "bw-zero-coef: %.5g\n", cfg->bw_config.zero_coef);
-    fprintf(file, "bw-decr-coef: %.5g\n", cfg->bw_config.decrease_coef);
-    fprintf(file, "bw-slow-coef: %.5g\n", cfg->bw_config.increase_slow_coef);
-    fprintf(file, "bw-fast-coef: %.5g\n", cfg->bw_config.increase_fast_coef);
+    if (cfg->bw_config.use_absolute_increments) {
+        fprintf(file, "bw-zero-inc: %.5g\n", cfg->bw_zero_increment_percent);
+        fprintf(file, "bw-decr-inc: %.5g\n", cfg->bw_decrease_increment_percent);
+        fprintf(file, "bw-slow-inc: %.5g\n", cfg->bw_increase_slow_increment_percent);
+        fprintf(file, "bw-fast-inc: %.5g\n", cfg->bw_increase_fast_increment_percent);
+    } else {
+        fprintf(file, "bw-zero-coef: %.5g\n", cfg->bw_config.zero_coef);
+        fprintf(file, "bw-decr-coef: %.5g\n", cfg->bw_config.decrease_coef);
+        fprintf(file, "bw-slow-coef: %.5g\n", cfg->bw_config.increase_slow_coef);
+        fprintf(file, "bw-fast-coef: %.5g\n", cfg->bw_config.increase_fast_coef);
+    }
     fprintf(file, "bw-pred-initial-size: %.5g\n", cfg->pred_initial_size);
     fprintf(file, "bw-pred-min-size: %.5g\n", cfg->pred_min_size);
     fprintf(file, "# baldwin-len=%d,zeroeps=%g,slowthr=%g,steady=%g,dec=%g,slow=%g,fast=%g,inthr=%g,incoef=%g\n",

@@ -46,6 +46,7 @@ static const char * const bw_algorithm_names[] = {
 
 typedef struct {
     bw_algorithm_t algorithm;
+    bool use_absolute_increments;
 
     double inaccuracy_tolerance;
     double inaccuracy_coef;
@@ -57,6 +58,12 @@ typedef struct {
     double decrease_coef;
     double increase_slow_coef;
     double increase_fast_coef;
+
+    int absolute_increment_base;
+    int zero_increment;
+    int decrease_increment;
+    int increase_slow_increment;
+    int increase_fast_increment;
 
     int min_length;
     int max_length;
@@ -175,6 +182,12 @@ static inline bw_history_entry_t *bw_get(bw_history_t *history, int index)
 {
     return &history->log[bw_real_index(history, index)];
 }
+
+
+/**
+ * Calculate absolute predictor length increments values
+ */
+void bw_init_absolute_increments(bw_config_t *config, int base);
 
 
 /**

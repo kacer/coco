@@ -221,6 +221,7 @@ int cgp_main(
 
                 predicted_fitness = cgp_population->best_fitness;
                 real_fitness = archived->fitness;
+                //printf("Inaccuracy %.10g\n", predicted_fitness / real_fitness);
 
                 DOUBLE_LOG(log_cgp_archived, log_file, predicted_fitness, real_fitness);
             }
@@ -255,7 +256,7 @@ int cgp_main(
                 bw_add_history_entry(&baldwin_state->history, &last_history_entry);
                 DOUBLE_LOG(log_bw_history_entry, log_file, &last_history_entry);
 
-                bw_dump_history_asciiart(stdout, &baldwin_state->history);
+                //bw_dump_history_asciiart(stdout, &baldwin_state->history);
             }
         }
 
