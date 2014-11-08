@@ -26,7 +26,6 @@
 
 
 static const ga_problem_type_t PRED_PROBLEM_TYPE = minimize;
-static const int PRED_CIRCULAR_TRIES = 5;
 
 
 typedef unsigned int pred_gene_t;

@@ -24,6 +24,7 @@
 #include <math.h>
 
 #include "cpu.h"
+#include "random.h"
 #include "fitness.h"
 
 static img_image_t _original_image;
@@ -328,6 +329,67 @@ ga_fitness_t fitness_eval_predictor(ga_chr_t pred_chr)
     pred_genome_t predictor = (pred_genome_t) pred_chr->genome;
     return fitness_eval_predictor_genome(predictor);
 }
+
+
+/**
+ * Evaluates circular predictor fitness, using PRED_CIRCULAR_TRIES to
+ * determine best offset
+ *
+ * @param  chr
+ * @return fitness value
+ */
+ga_fitness_t fitness_eval_circular_predictor(ga_chr_t pred_chr)
+{
+    pred_genome_t predictor = (pred_genome_t) pred_chr->genome;
+    int best_offset = predictor->_circular_offset;
+    ga_fitness_t best_fitness = fitness_eval_predictor_genome(predictor);
+
+    for (int i = 0; i < PRED_CIRCULAR_TRIES; i++) {
+        // generate new phenotype
+        int offset = rand_urange(0, pred_get_max_length() - 1);
+        predictor->_circular_offset = offset;
+        pred_calculate_phenotype(predictor);
+
+        // calculate predictor fitness
+        ga_fitness_t fit = fitness_eval_predictor_genome(predictor);
+
+        // if it is better, store it
+        if (ga_is_better(PRED_PROBLEM_TYPE, fit, best_fitness)) {
+            best_offset = offset;
+            best_fitness = fit;
+        }
+    }
+
+    // set predictor to best found phenotype
+    if (predictor->_circular_offset != best_offset) {
+        predictor->_circular_offset = best_offset;
+        pred_calculate_phenotype(predictor);
+    }
+    return best_fitness;
+}
+
+
+        /*
+        if (_genome_repeated_subtype == circular) {
+            int best_offset = 0;
+            ga_fitness_t best_fitness = 0;
+
+            for (int i = 0; i < PRED_CIRCULAR_TRIES; i++) {
+                genome->_circular_offset = rand_urange(0, _max_genome_length - 1);
+                _pred_calculate_repeated_phenotype(genome);
+                ga_fitness_t fit = fitness_eval_predictor_genome(genome);
+                if (i == 0 || ga_is_better(PRED_PROBLEM_TYPE, fit, best_fitness)) {
+                    best_offset = genome->_circular_offset;
+                    best_fitness = fit;
+                }
+                printf("%p #%d: %u; %.10g\n", genome, i, genome->_circular_offset, fit);
+            }
+            genome->_circular_offset = best_offset;
+
+        } else {
+            genome->_circular_offset = 0;
+        }
+        */
 
 
 /**

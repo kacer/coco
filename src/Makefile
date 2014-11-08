@@ -20,9 +20,9 @@
 
 CC=gcc
 CFLAGS=-rdynamic -g -Wall -std=c11 -fopenmp -O2 -D_XOPEN_SOURCE=700 \
-	-DxSSE2 -DxAVX2 -DDEBUG -DxVERBOSE -DxCGP_LIMIT_FUNCS
+	-DSSE2 -DxAVX2 -DDEBUG -DxVERBOSE -DxCGP_LIMIT_FUNCS
 EXECUTABLE=coco
-CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_25.png -g 10 -a predictors -S 100 -I 0.0001 -k 10000 --pred-type=repeated-circular
+CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_25.png -g 30000 -a predictors -S 50 -I 10 -k 10000 --pred-type=repeated-circular
 ANSELM_HOST=anselm
 ANSELM_PATH=~/xwigla00
 MERLIN_HOST=merlin
@@ -44,6 +44,9 @@ run: $(EXECUTABLE)
 minirun: $(EXECUTABLE)
 	rm -rf cocolog/*
 	./$(EXECUTABLE) -i ../images/10x10.png -n ../images/10x10_sp25.png -a baldwin -g 1000 -S 75 -I 50 -N 50
+
+plot:
+	gnuplot cocolog.gp
 
 valgrind: $(EXECUTABLE)
 	rm -rf cocolog/*

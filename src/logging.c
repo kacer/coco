@@ -250,8 +250,8 @@ void log_pred_change(FILE *fp, ga_fitness_t previous_best,
                 previous_best,
                 new_best,
                 new_genome->used_pixels,
-                new_genome->_circular_offset,
-                pred_get_length());
+                pred_get_length(),
+                new_genome->_circular_offset);
 }
 
 

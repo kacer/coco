@@ -30,6 +30,8 @@
 static const int FITNESS_SSE2_STEP = 16;
 static const int FITNESS_AVX2_STEP = 32;
 
+static const int PRED_CIRCULAR_TRIES = 3;
+
 
 /**
  * For testing purposes only
@@ -110,6 +112,16 @@ ga_fitness_t fitness_predict_cgp(ga_chr_t cgp_chr, ga_chr_t pred_chr);
  * @return fitness value
  */
 ga_fitness_t fitness_eval_predictor(ga_chr_t chr);
+
+
+/**
+ * Evaluates circular predictor fitness, using PRED_CIRCULAR_TRIES to
+ * determine best offset
+ *
+ * @param  chr
+ * @return fitness value
+ */
+ga_fitness_t fitness_eval_circular_predictor(ga_chr_t pred_chr);
 
 
 /**

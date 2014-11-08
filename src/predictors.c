@@ -83,7 +83,7 @@ ga_pop_t pred_init_pop(int pop_size)
         .free_genome = pred_free_genome,
         .init_genome = pred_randomize_genome,
 
-        .fitness = fitness_eval_predictor,
+        .fitness = (_genome_repeated_subtype == circular) ? fitness_eval_circular_predictor : fitness_eval_predictor,
         .offspring = pred_offspring,
     };
 
@@ -185,8 +185,8 @@ void pred_free_genome(void *_genome)
  */
 int _pred_get_circular_index(pred_genome_t genome, int index)
 {
-    int real = (genome->_circular_offset + index) % _current_genome_length;
-    if (real < 0) real += _current_genome_length;
+    int real = (genome->_circular_offset + index) % _max_genome_length;
+    if (real < 0) real += _max_genome_length;
     return real;
 }
 
@@ -223,35 +223,19 @@ void _pred_calculate_repeated_phenotype(pred_genome_t genome)
 void pred_calculate_phenotype(pred_genome_t genome)
 {
     if (_genome_type == repeated) {
-        if (_genome_repeated_subtype == circular) {
-            int best_offset = 0;
-            ga_fitness_t best_fitness = 0;
-
-            for (int i = 0; i < PRED_CIRCULAR_TRIES; i++) {
-                genome->_circular_offset = rand_urange(0, _max_genome_length - 1);
-                _pred_calculate_repeated_phenotype(genome);
-                ga_fitness_t fit = fitness_eval_predictor_genome(genome);
-                if (i == 0 || ga_is_better(PRED_PROBLEM_TYPE, fit, best_fitness)) {
-                    best_offset = genome->_circular_offset;
-                    best_fitness = fit;
-                }
-                printf("%p #%d: %u; %.10g\n", genome, i, genome->_circular_offset, fit);
-            }
-            genome->_circular_offset = best_offset;
-
-        } else {
-            genome->_circular_offset = 0;
-        }
-
         _pred_calculate_repeated_phenotype(genome);
 
-    } else {
-        genome->used_pixels = _current_genome_length;
         if (can_use_simd()) {
             fitness_prepare_predictor_for_simd(genome);
         }
+
+    } else {
+        genome->used_pixels = _current_genome_length;
     }
 
+    if (can_use_simd()) {
+        fitness_prepare_predictor_for_simd(genome);
+    }
 }
 
 
@@ -292,6 +276,7 @@ int pred_randomize_genome(ga_chr_t chromosome)
         genome->_genes[i] = value;
     }
 
+    genome->_circular_offset = 0;
     pred_calculate_phenotype(genome);
     return 0;
 }
