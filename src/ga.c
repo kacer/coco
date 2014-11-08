@@ -22,8 +22,8 @@
 #include <string.h>
 #include <assert.h>
 
-#ifdef GA_USE_PTHREAD
-    #include <pthread.h>
+#ifdef _OPENMP
+    #include <omp.h>
 #endif
 
 #include "ga.h"
@@ -309,7 +309,7 @@ void _ga_find_new_best(ga_pop_t pop)
 void ga_evaluate_pop(ga_pop_t pop)
 {
     // reevaluate population
-    #pragma omp parallel for
+    #pragma omp parallel for schedule(static)
     for (int i = 0; i < pop->size; i++) {
         ga_evaluate_chr(pop, pop->chromosomes[i]);
     }
@@ -326,7 +326,7 @@ void ga_evaluate_pop(ga_pop_t pop)
 void ga_reevaluate_pop(ga_pop_t pop)
 {
     // reevaluate population
-    #pragma omp parallel for
+    #pragma omp parallel for schedule(static)
     for (int i = 0; i < pop->size; i++) {
         ga_reevaluate_chr(pop, pop->chromosomes[i]);
     }
