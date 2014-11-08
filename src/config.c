@@ -247,7 +247,7 @@ config_retval_t config_load_args(int argc, char **argv, config_t *cfg)
             case OPT_ALGORITHM:
                 if (strcmp(optarg, "cgp") == 0) {
                     cfg->algorithm = simple_cgp;
-                } else if (strcmp(optarg, "predictors") == 0) {
+                } else if ((strcmp(optarg, "predictors") == 0) || (strcmp(optarg, "coev") == 0)) {
                     cfg->algorithm = predictors;
                 } else if (strcmp(optarg, "baldwin") == 0) {
                     cfg->algorithm = baldwin;
@@ -349,10 +349,17 @@ config_retval_t config_load_args(int argc, char **argv, config_t *cfg)
                         fprintf(stderr, "Cannot combine baldwin and permuted genotype.\n");
                         return cfg_err;
                     }
+
                 } else if (strcmp(optarg, "repeated") == 0) {
                     cfg->pred_genome_type = repeated;
+                    cfg->pred_repeated_subtype = linear;
+
+                } else if (strcmp(optarg, "repeated-circular") == 0) {
+                    cfg->pred_genome_type = repeated;
+                    cfg->pred_repeated_subtype = circular;
+
                 } else {
-                    fprintf(stderr, "Invalid predictor type (options: permuted, repeated)\n");
+                    fprintf(stderr, "Invalid predictor type (options: permuted, repeated, repeated-circular)\n");
                     return cfg_err;
                 }
                 pred_type_specified = true;

@@ -75,6 +75,7 @@ typedef struct
     float pred_offspring_combine;
     int pred_population_size;
     pred_genome_type_t pred_genome_type;
+    pred_repeated_subtype_t pred_repeated_subtype;
 
     int bw_interval;
     bw_config_t bw_config;
@@ -128,10 +129,10 @@ static inline void print_help() {
         "\n"
         "Optional:\n"
         "    --algorithm ALG, -a ALG\n"
-        "          Evolution algorithm selection, one of {cgp|predictors|baldwin},\n"
+        "          Evolution algorithm selection, one of {cgp|coev|baldwin},\n"
         "          default is \"predictors\".\n"
         "          - cgp: Simple CGP without any coevolution.\n"
-        "          - predictors: CGP coevoluting with fitness predictors of fixed size.\n"
+        "          - coev: CGP coevoluting with fitness predictors of fixed size.\n"
         "          - baldwin: CGP coevoluting with fitness predictors of flexible size.\n"
         "\n"
         "    --random-seed NUM, -r ALG\n"
@@ -188,6 +189,9 @@ static inline void print_help() {
         "          - repeated: No limitations on genotype, duplicities are eliminated\n"
         "                      during phenotype construction. Typically, phenotype is\n"
         "                      shorter than genotype.\n"
+        "          - repeated-circular: Same as repeated, but phenotype construction\n"
+        "                      starts from any locus (offset). It is determined as the\n"
+        "                      locus with best fitness from 5 tries.\n"
         "\n"
         "    --baldwin-interval NUM, -b NUM\n"
         "          Minimal interval of evolution parameters update in \"baldwin\" mode\n"

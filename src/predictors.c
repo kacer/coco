@@ -32,6 +32,7 @@
 
 
 static pred_genome_type_t _genome_type;
+static pred_repeated_subtype_t _genome_repeated_subtype;
 static pred_gene_t _max_gene_value;
 static unsigned int _max_genome_length;
 static unsigned int _current_genome_length;
@@ -52,7 +53,8 @@ enum _offspring_op {
  */
 void pred_init(pred_gene_t max_gene_value, unsigned int max_genome_length,
     unsigned int initial_genome_length, float mutation_rate,
-    float offspring_elite, float offspring_combine, pred_genome_type_t type)
+    float offspring_elite, float offspring_combine, pred_genome_type_t type,
+    pred_repeated_subtype_t repeated_subtype)
 {
     _max_gene_value = max_gene_value;
     _max_genome_length = max_genome_length;
@@ -61,6 +63,7 @@ void pred_init(pred_gene_t max_gene_value, unsigned int max_genome_length,
     _offspring_elite = offspring_elite;
     _offspring_combine = offspring_combine;
     _genome_type = type;
+    _genome_repeated_subtype = repeated_subtype;
 
     assert(_current_genome_length <= _max_genome_length);
 }
@@ -80,7 +83,7 @@ ga_pop_t pred_init_pop(int pop_size)
         .free_genome = pred_free_genome,
         .init_genome = pred_randomize_genome,
 
-        .fitness = fitness_eval_predictor,
+        .fitness = (_genome_repeated_subtype == circular) ? fitness_eval_circular_predictor : fitness_eval_predictor,
         .offspring = pred_offspring,
     };
 
@@ -178,29 +181,53 @@ void pred_free_genome(void *_genome)
 
 
 /**
+ * Calculates real index of given gene in circular genome
+ */
+int _pred_get_circular_index(pred_genome_t genome, int index)
+{
+    int real = (genome->_circular_offset + index) % _max_genome_length;
+    if (real < 0) real += _max_genome_length;
+    return real;
+}
+
+
+void _pred_calculate_repeated_phenotype(pred_genome_t genome)
+{
+    // clear used values helper
+    memset(genome->_used_values, 0, sizeof(bool) * (_max_gene_value + 1));
+
+    int pheno_index = 0;
+    for (int geno_index = 0; geno_index < _current_genome_length; geno_index++) {
+        int locus = _pred_get_circular_index(genome, geno_index);
+        pred_gene_t value = genome->_genes[locus];
+        if (genome->_used_values[value]) {
+            continue;
+
+        } else {
+            genome->_used_values[value] = true;
+            genome->pixels[pheno_index] = value;
+            pheno_index++;
+        }
+    }
+    genome->used_pixels = pheno_index;
+
+    if (can_use_simd()) {
+        fitness_prepare_predictor_for_simd(genome);
+    }
+}
+
+
+/**
  * Recalculates phenotype for repeated genotype
  */
 void pred_calculate_phenotype(pred_genome_t genome)
 {
     if (_genome_type == repeated) {
-        // clear used values helper
-        memset(genome->_used_values, 0, sizeof(bool) * (_max_gene_value + 1));
+        _pred_calculate_repeated_phenotype(genome);
 
-        // calculate new one
-        int pheno_index = 0;
-
-        for (int geno_index = 0; geno_index < _current_genome_length; geno_index++) {
-            pred_gene_t value = genome->_genes[geno_index];
-            if (genome->_used_values[value]) {
-                continue;
-            } else {
-                genome->_used_values[value] = true;
-                genome->pixels[pheno_index] = value;
-                pheno_index++;
-            }
+        if (can_use_simd()) {
+            fitness_prepare_predictor_for_simd(genome);
         }
-
-        genome->used_pixels = pheno_index;
 
     } else {
         genome->used_pixels = _current_genome_length;
@@ -249,6 +276,7 @@ int pred_randomize_genome(ga_chr_t chromosome)
         genome->_genes[i] = value;
     }
 
+    genome->_circular_offset = 0;
     pred_calculate_phenotype(genome);
     return 0;
 }

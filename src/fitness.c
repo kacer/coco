@@ -24,6 +24,7 @@
 #include <math.h>
 
 #include "cpu.h"
+#include "random.h"
 #include "fitness.h"
 
 static img_image_t _original_image;
@@ -241,9 +242,8 @@ ga_fitness_t fitness_eval_or_predict_cgp(ga_chr_t chr)
 }
 
 
-double _fitness_predict_cgp_scalar(ga_chr_t cgp_chr, ga_chr_t pred_chr)
+double _fitness_predict_cgp_scalar(ga_chr_t cgp_chr, pred_genome_t predictor)
 {
-    pred_genome_t predictor = (pred_genome_t) pred_chr->genome;
     double sum = 0;
 
     for (int i = 0; i < predictor->used_pixels; i++) {
@@ -269,10 +269,8 @@ double _fitness_predict_cgp_scalar(ga_chr_t cgp_chr, ga_chr_t pred_chr)
  * @param  chr
  * @return fitness value
  */
-ga_fitness_t fitness_predict_cgp(ga_chr_t cgp_chr, ga_chr_t pred_chr)
+ga_fitness_t fitness_predict_cgp_by_genome(ga_chr_t cgp_chr, pred_genome_t predictor)
 {
-    pred_genome_t predictor = (pred_genome_t) pred_chr->genome;
-
     // PSNR coefficcient is different here (less pixels are used)
     double coef = fitness_psnr_coeficient(predictor->used_pixels);
     double sum = 0;
@@ -282,10 +280,41 @@ ga_fitness_t fitness_predict_cgp(ga_chr_t cgp_chr, ga_chr_t pred_chr)
             predictor->pixels_simd, predictor->used_pixels);
 
     } else {
-        sum = _fitness_predict_cgp_scalar(cgp_chr, pred_chr);
+        sum = _fitness_predict_cgp_scalar(cgp_chr, predictor);
     }
 
     return coef / sum;
+}
+
+
+/**
+ * Predictes CGP circuit fitness
+ *
+ * @param  chr
+ * @return fitness value
+ */
+ga_fitness_t fitness_predict_cgp(ga_chr_t cgp_chr, ga_chr_t pred_chr)
+{
+    pred_genome_t predictor = (pred_genome_t) pred_chr->genome;
+    return fitness_predict_cgp_by_genome(cgp_chr, predictor);
+}
+
+
+/**
+ * Evaluates predictor fitness
+ *
+ * @param  chr
+ * @return fitness value
+ */
+ga_fitness_t fitness_eval_predictor_genome(pred_genome_t predictor)
+{
+    double sum = 0;
+    for (int i = 0; i < _cgp_archive->stored; i++) {
+        ga_chr_t cgp_chr = arc_get(_cgp_archive, i);
+        double predicted = fitness_predict_cgp_by_genome(cgp_chr, predictor);
+        sum += fabs(cgp_chr->fitness - predicted);
+    }
+    return sum / _cgp_archive->stored;
 }
 
 
@@ -297,14 +326,70 @@ ga_fitness_t fitness_predict_cgp(ga_chr_t cgp_chr, ga_chr_t pred_chr)
  */
 ga_fitness_t fitness_eval_predictor(ga_chr_t pred_chr)
 {
-    double sum = 0;
-    for (int i = 0; i < _cgp_archive->stored; i++) {
-        ga_chr_t cgp_chr = arc_get(_cgp_archive, i);
-        double predicted = fitness_predict_cgp(cgp_chr, pred_chr);
-        sum += fabs(cgp_chr->fitness - predicted);
-    }
-    return sum / _cgp_archive->stored;
+    pred_genome_t predictor = (pred_genome_t) pred_chr->genome;
+    return fitness_eval_predictor_genome(predictor);
 }
+
+
+/**
+ * Evaluates circular predictor fitness, using PRED_CIRCULAR_TRIES to
+ * determine best offset
+ *
+ * @param  chr
+ * @return fitness value
+ */
+ga_fitness_t fitness_eval_circular_predictor(ga_chr_t pred_chr)
+{
+    pred_genome_t predictor = (pred_genome_t) pred_chr->genome;
+    int best_offset = predictor->_circular_offset;
+    ga_fitness_t best_fitness = fitness_eval_predictor_genome(predictor);
+
+    for (int i = 0; i < PRED_CIRCULAR_TRIES; i++) {
+        // generate new phenotype
+        int offset = rand_urange(0, pred_get_max_length() - 1);
+        predictor->_circular_offset = offset;
+        pred_calculate_phenotype(predictor);
+
+        // calculate predictor fitness
+        ga_fitness_t fit = fitness_eval_predictor_genome(predictor);
+
+        // if it is better, store it
+        if (ga_is_better(PRED_PROBLEM_TYPE, fit, best_fitness)) {
+            best_offset = offset;
+            best_fitness = fit;
+        }
+    }
+
+    // set predictor to best found phenotype
+    if (predictor->_circular_offset != best_offset) {
+        predictor->_circular_offset = best_offset;
+        pred_calculate_phenotype(predictor);
+    }
+    return best_fitness;
+}
+
+
+        /*
+        if (_genome_repeated_subtype == circular) {
+            int best_offset = 0;
+            ga_fitness_t best_fitness = 0;
+
+            for (int i = 0; i < PRED_CIRCULAR_TRIES; i++) {
+                genome->_circular_offset = rand_urange(0, _max_genome_length - 1);
+                _pred_calculate_repeated_phenotype(genome);
+                ga_fitness_t fit = fitness_eval_predictor_genome(genome);
+                if (i == 0 || ga_is_better(PRED_PROBLEM_TYPE, fit, best_fitness)) {
+                    best_offset = genome->_circular_offset;
+                    best_fitness = fit;
+                }
+                printf("%p #%d: %u; %.10g\n", genome, i, genome->_circular_offset, fit);
+            }
+            genome->_circular_offset = best_offset;
+
+        } else {
+            genome->_circular_offset = 0;
+        }
+        */
 
 
 /**
