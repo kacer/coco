@@ -47,9 +47,6 @@
 #define OPT_ORIGINAL 'i'
 #define OPT_NOISY 'n'
 
-#define OPT_VAULT_ENABLE 'v'
-#define OPT_VAULT_INTERVAL 'w'
-
 #define OPT_LOG_DIR 'l'
 #define OPT_LOG_INTERVAL 'k'
 
@@ -105,10 +102,6 @@ static struct option long_options[] =
     /* Input images */
     {"original", required_argument, 0, OPT_ORIGINAL},
     {"noisy", required_argument, 0, OPT_NOISY},
-
-    /* Vault */
-    {"vault", no_argument, 0, OPT_VAULT_ENABLE},
-    {"vault-interval", required_argument, 0, OPT_VAULT_INTERVAL},
 
     /* Logging */
     {"log-dir", required_argument, 0, OPT_LOG_DIR},
@@ -274,14 +267,6 @@ config_retval_t config_load_args(int argc, char **argv, config_t *cfg)
             case OPT_NOISY:
                 CHECK_FILENAME_LENGTH;
                 strncpy(cfg->noisy_image, optarg, MAX_FILENAME_LENGTH);
-                break;
-
-            case OPT_VAULT_ENABLE:
-                cfg->vault_enabled = true;
-                break;
-
-            case OPT_VAULT_INTERVAL:
-                PARSE_INT(cfg->vault_interval);
                 break;
 
             case OPT_LOG_INTERVAL:
@@ -454,9 +439,6 @@ void config_save_file(FILE *file, config_t *cfg)
     fprintf(file, "random-seed: %u\n", cfg->random_seed);
     fprintf(file, "max-generations: %d\n", cfg->max_generations);
     fprintf(file, "target_fitness: " FITNESS_FMT "\n", cfg->target_fitness);
-    fprintf(file, "\n");
-    fprintf(file, "vault: %s\n", cfg->vault_enabled? "yes" : "no");
-    fprintf(file, "vault-interval: %d\n", cfg->vault_interval);
     fprintf(file, "\n");
     fprintf(file, "log-dir: %s\n", cfg->log_dir);
     fprintf(file, "log-interval: %d\n", cfg->log_interval);

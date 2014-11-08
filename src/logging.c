@@ -71,10 +71,8 @@ void log_entry_prolog(FILE *fp, const char *section)
 /**
  * Creates log directories
  * @param  dir
- * @param  vault_dir If not NULL, stores vault directory here
- * @param  vault_dir_buffer_size
  */
-int log_create_dirs(const char *dir, char *vault_dir, int vault_dir_buffer_size)
+int log_create_dirs(const char *dir)
 {
     // main directory
     int retval;
@@ -91,18 +89,6 @@ int log_create_dirs(const char *dir, char *vault_dir, int vault_dir_buffer_size)
     retval = mkdir(buf, S_IRWXU);
     if (retval != 0 && errno != EEXIST) {
         return retval;
-    }
-    */
-
-    // vault directory
-    /*
-    snprintf(buf, MAX_FILENAME_LENGTH + 1, "%s/vault", dir);
-    retval = mkdir(buf, S_IRWXU);
-    if (retval != 0 && errno != EEXIST) {
-        return retval;
-    }
-    if (vault_dir != NULL) {
-        strncpy(vault_dir, buf, vault_dir_buffer_size);
     }
     */
 
@@ -157,21 +143,6 @@ void log_cgp_finished(FILE *fp, ga_pop_t cgp_population)
     log_entry_prolog(fp, SECTION_SYS);
     fprintf(fp, "Evolution finished. Best PSNR %.2f dB\n",
         fitness_to_psnr(cgp_population->best_fitness));
-}
-
-
-/**
- * Logs that evolution is stored to vault + prints best fitness
- * @param  fp
- * @param  cgp_population
- */
-void log_vault(FILE *fp, ga_pop_t cgp_population, long cgp_evals)
-{
-    char human_evals[50];
-    _evals_readable(human_evals, 50, cgp_evals);
-    log_entry_prolog(fp, SECTION_SYS);
-    fprintf(fp, "Storing state. CGP generation %4d, best fitness " FITNESS_FMT ", %ld evals (%s)\n",
-        cgp_population->generation, cgp_population->best_fitness, cgp_evals, human_evals);
 }
 
 

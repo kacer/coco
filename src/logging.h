@@ -64,10 +64,8 @@ void log_init_time();
 /**
  * Creates log directories
  * @param  dir
- * @param  vault_dir If not NULL, stores vault directory here
- * @param  vault_dir_buffer_size
  */
-int log_create_dirs(const char *dir, char *vault_dir, int vault_dir_buffer_size);
+int log_create_dirs(const char *dir);
 
 
 /**
@@ -82,14 +80,6 @@ void log_cgp_progress(FILE *fp, ga_pop_t cgp_population, long cgp_evals);
  * @param  cgp_population
  */
 void log_cgp_finished(FILE *fp, ga_pop_t cgp_population);
-
-
-/**
- * Logs that evolution is stored to vault + prints best fitness
- * @param  fp
- * @param  cgp_population
- */
-void log_vault(FILE *fp, ga_pop_t cgp_population, long cgp_evals);
 
 
 /**

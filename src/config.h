@@ -87,9 +87,6 @@ typedef struct
     int log_interval;
     char log_dir[MAX_FILENAME_LENGTH + 1];
 
-    bool vault_enabled;
-    int vault_interval;
-
 } config_t;
 
 
@@ -150,14 +147,8 @@ static inline void print_help() {
         "          Fitness can be obtained from PSNR as F = 10 ^ (PSNR / 10).\n"
         "          If --target-psnr is specified, only one option is used.\n"
         "\n"
-        "    --vault, -v\n"
-        "          Enable vault, it is disabled by default.\n"
-        "\n"
-        "    --vault-interval NUM, -w NUM\n"
-        "          Vault storing interval (in generations), default is 200.\n"
-        "\n"
         "    --log-dir DIR, -l DIR\n"
-        "          Log (results and vault) directory, default is \"cocolog\".\n"
+        "          Log (results) directory, default is \"cocolog\".\n"
         "\n"
         "    --log-interval NUM, -k NUM\n"
         "          Logging interval (in generations), default is 0.\n"

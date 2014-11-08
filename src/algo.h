@@ -22,7 +22,6 @@
 
 
 #include "cgp.h"
-#include "vault.h"
 #include "image.h"
 #include "config.h"
 #include "archive.h"
@@ -41,32 +40,12 @@ extern int check_signals(int current_generation);
 
 
 /**
- * Simple CGP (no coevolution) main loop
- * @param  cgp_population
- * @param  config
- * @param  vault
- * @param  img_noisy Noisy image (to store filtered img to results)
- * @return Program return value
- */
-int simple_cgp_main(
-    ga_pop_t cgp_population,
-    config_t *config,
-    vault_storage_t *vault,
-    img_image_t img_noisy,
-    char *best_circuit_file_name_txt,
-    char *best_circuit_file_name_chr,
-    FILE *log_file
-);
-
-
-/**
  * CGP main loop
  * @param  cgp_population
  * @param  pred_population
  * @param  cgp_archive CGP archive
  * @param  pred_archive Predictors archive
  * @param  config
- * @param  vault
  * @param  img_noisy Noisy image (to store filtered img to results)
  * @param  baldwin_state Colearning state and sync info
  * @param  best_circuit_file_name_txt File for storing best circuit in readable format
@@ -88,7 +67,6 @@ int cgp_main(
 
     // config
     config_t *config,
-    vault_storage_t *vault,
 
     // input
     img_image_t img_noisy,

@@ -28,10 +28,10 @@ ANSELM_PATH=~/xwigla00
 MERLIN_HOST=merlin
 MERLIN_PATH=~/coco
 SOURCES=main.c cpu.c ga.c cgp_core.c cgp_dump.c cgp_load.c cgp_avx.c cgp_sse.c \
-	predictors.c image.c fitness.c fitness_avx.c fitness_sse.c vault.c \
+	predictors.c image.c fitness.c fitness_avx.c fitness_sse.c \
 	archive.c config.c logging.c algo.c baldwin.c
 OFILES= main.o cpu.o ga.o cgp_core.o cgp_dump.o cgp_load.o cgp_avx.o cgp_sse.o \
-	predictors.o image.o fitness.o fitness_avx.o fitness_sse.o vault.o \
+	predictors.o image.o fitness.o fitness_avx.o fitness_sse.o \
 	archive.o config.o logging.o algo.o baldwin.o
 LIBS=-lm -lc
 

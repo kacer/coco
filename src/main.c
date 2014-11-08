@@ -35,7 +35,6 @@
 #include "algo.h"
 #include "files.h"
 #include "image.h"
-#include "vault.h"
 #include "random.h"
 #include "config.h"
 #include "fitness.h"
@@ -151,9 +150,6 @@ static config_t config = {
 
     .log_interval = 0,
     .log_dir = "cocolog",
-
-    .vault_enabled = false,
-    .vault_interval = 200,
 };
 
 
@@ -164,9 +160,6 @@ int main(int argc, char *argv[])
 {
     // cannot be set in initializer
     config.random_seed = rand_seed_from_time();
-
-    // vault
-    vault_storage_t vault;
 
     // populations and archives
     ga_pop_t cgp_population;
@@ -258,7 +251,7 @@ int main(int argc, char *argv[])
         config_ok = false;
     }
 
-    int log_create_dirs_retval = log_create_dirs(config.log_dir, vault.directory, MAX_FILENAME_LENGTH + 1);
+    int log_create_dirs_retval = log_create_dirs(config.log_dir);
     if (log_create_dirs_retval != 0) {
         fprintf(stderr, "Error initializing results directory: %s\n", strerror(log_create_dirs_retval));
         config_ok = false;
@@ -307,11 +300,6 @@ int main(int argc, char *argv[])
 
     // evolution
     cgp_init(config.cgp_mutate_genes, fitness_eval_or_predict_cgp);
-
-    // vault
-    if (config.vault_enabled) {
-        vault_init(&vault);
-    }
 
     // predictors population and CGP archive
     if (config.algorithm != simple_cgp) {
@@ -401,23 +389,18 @@ int main(int argc, char *argv[])
     fitness_init(img_original, img_noisy, cgp_archive, pred_archive);
 
     /*
-        Populations recovery / initialization
+        Populations initialization
      */
 
-    if (config.vault_enabled && vault_retrieve(&vault, &cgp_population) == 0) {
-        printf("Population retrieved from vault.\n");
+    cgp_population = cgp_init_pop(config.cgp_population_size);
+    if (cgp_population == NULL) {
+        fprintf(stderr, "Failed to initialize CGP population.\n");
+    }
 
-    } else {
-        cgp_population = cgp_init_pop(config.cgp_population_size);
-        if (cgp_population == NULL) {
-            fprintf(stderr, "Failed to initialize CGP population.\n");
-        }
-
-        if (config.algorithm != simple_cgp) {
-            pred_population = pred_init_pop(config.pred_population_size);
-            if (pred_population == NULL) {
-                fprintf(stderr, "Failed to initialize predictors population.\n");
-            }
+    if (config.algorithm != simple_cgp) {
+        pred_population = pred_init_pop(config.pred_population_size);
+        if (pred_population == NULL) {
+            fprintf(stderr, "Failed to initialize predictors population.\n");
         }
     }
 
@@ -489,7 +472,6 @@ int main(int argc, char *argv[])
                 NULL,
                 NULL,
                 &config,
-                &vault,
                 img_noisy,
                 &baldwin_state,  // required history field
                 best_circuit_file_name_txt,
@@ -514,7 +496,6 @@ int main(int argc, char *argv[])
                             cgp_archive,
                             pred_archive,
                             &config,
-                            &vault,
                             img_noisy,
                             &baldwin_state,
                             best_circuit_file_name_txt,

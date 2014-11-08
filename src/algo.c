@@ -72,7 +72,6 @@ static inline void _log_cgp_csv(
  * @param  cgp_archive CGP archive
  * @param  pred_archive Predictors archive
  * @param  config
- * @param  vault
  * @param  img_noisy Noisy image (to store filtered img to results)
  * @param  baldwin_state Colearning state and sync info
  * @param  best_circuit_file_name_txt File for storing best circuit in readable format
@@ -94,7 +93,6 @@ int cgp_main(
 
     // config
     config_t *config,
-    vault_storage_t *vault,
 
     // input
     img_image_t img_noisy,
@@ -149,14 +147,11 @@ int cgp_main(
             *finished = true;
         }
 
-        // whether we are storing to vault now
-        bool store_now = config->vault_enabled && (cgp_population->generation % config->vault_interval) == 0;
-
         // whether we found better solution
         bool is_better = ga_is_better(cgp_population->problem_type, cgp_population->best_fitness, cgp_parent_fitness);
 
         // whether we should log now
-        bool log_now = config->log_interval && (store_now || (cgp_population->generation % config->log_interval) == 0);
+        bool log_now = config->log_interval && ((cgp_population->generation % config->log_interval) == 0);
 
         // whether new entry was appended to history log
         bw_history_entry_t last_history_entry;
