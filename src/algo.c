@@ -294,6 +294,9 @@ int cgp_main(
                     &last_history_entry, cgp_population,
                     cgp_archive, pred_archive, history_file);
             }
+
+            fflush(log_file);
+            fflush(history_file);
         }
 
         if (*finished && signal >= 0) {
