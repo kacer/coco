@@ -77,13 +77,18 @@ void pred_init(pred_gene_t max_gene_value, unsigned int max_genome_length,
  */
 ga_pop_t pred_init_pop(int pop_size)
 {
+    ga_fitness_func_t fitfunc = fitness_eval_predictor;
+    if (_genome_type == repeated && _genome_repeated_subtype == circular) {
+        fitfunc = fitness_eval_circular_predictor;
+    }
+
     /* prepare methods vector */
     ga_func_vect_t methods = {
         .alloc_genome = pred_alloc_genome,
         .free_genome = pred_free_genome,
         .init_genome = pred_randomize_genome,
 
-        .fitness = (_genome_repeated_subtype == circular) ? fitness_eval_circular_predictor : fitness_eval_predictor,
+        .fitness = fitfunc,
         .offspring = pred_offspring,
     };
 

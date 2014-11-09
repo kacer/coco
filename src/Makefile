@@ -22,7 +22,7 @@ CC=gcc
 CFLAGS=-rdynamic -g -Wall -std=c11 -fopenmp -O2 -D_XOPEN_SOURCE=700 \
 	-DSSE2 -DxAVX2 -DDEBUG -DxVERBOSE -DxCGP_LIMIT_FUNCS
 EXECUTABLE=coco
-CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_25.png -g 30000 -a predictors -S 50 -I 10 -k 10000 --pred-type=repeated-circular
+CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_25.png -g 30000 -a predictors -S 75 -I 25 -k 10000 --pred-type=repeated-circular
 ANSELM_HOST=anselm
 ANSELM_PATH=~/xwigla00
 MERLIN_HOST=merlin

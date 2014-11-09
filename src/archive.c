@@ -129,6 +129,5 @@ ga_chr_t arc_insert(archive_t arc, ga_chr_t chr)
         arc->stored++;
     }
     arc->pointer = (arc->pointer + 1) % arc->capacity;
-    arc->modified = true;
     return dst;
 }

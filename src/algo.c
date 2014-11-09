@@ -65,6 +65,30 @@ static inline void _log_cgp_csv(
 }
 
 
+static inline void _log_cgp_best(
+    ga_pop_t cgp_population,
+    ga_chr_t best_circuit,
+    char *best_circuit_file_name_txt,
+    char *best_circuit_file_name_chr)
+{
+    FILE *circuit_file_txt = fopen(best_circuit_file_name_txt, "w");
+    if (circuit_file_txt) {
+        log_cgp_circuit(circuit_file_txt, cgp_population->generation, best_circuit);
+        fclose(circuit_file_txt);
+    } else {
+        fprintf(stderr, "Failed to open %s!\n", best_circuit_file_name_txt);
+    }
+
+    FILE *circuit_file_chr = fopen(best_circuit_file_name_chr, "w");
+    if (circuit_file_chr) {
+        cgp_dump_chr_compat(best_circuit, circuit_file_chr);
+        fclose(circuit_file_chr);
+    } else {
+        fprintf(stderr, "Failed to open %s!\n", best_circuit_file_name_chr);
+    }
+}
+
+
 /**
  * CGP main loop
  * @param  cgp_population
@@ -120,11 +144,8 @@ int cgp_main(
 
         #pragma omp critical (PRED_ARCHIVE__CGP_POP)
         {
-            if (config->algorithm != simple_cgp && pred_archive->modified) {
-                ga_reevaluate_pop(cgp_population);
-                pred_archive->modified = false;
-            }
             cgp_parent_fitness = cgp_population->best_fitness;
+            // create children and evaluate new generation
             ga_next_generation(cgp_population);
         }
 
@@ -176,6 +197,8 @@ int cgp_main(
 
         // update archive if necessary
         if (is_better) {
+            // save image
+            // save_filtered_image(config->log_dir, cgp_population, img_noisy);
             DOUBLE_LOG(log_cgp_change, log_file, cgp_parent_fitness, cgp_population->best_fitness);
 
             if (config->algorithm != simple_cgp) {
@@ -184,6 +207,11 @@ int cgp_main(
                 #pragma omp critical (CGP_ARCHIVE__PRED_POP)
                 {
                     archived = arc_insert(cgp_archive, cgp_population->best_chromosome);
+                    ga_reevaluate_pop(pred_population);
+                    #pragma omp critical (PRED_ARCHIVE__CGP_POP)
+                    {
+                        ga_reevaluate_chr(pred_population, arc_get(pred_archive, 0));
+                    }
                 }
 
                 predicted_fitness = cgp_population->best_fitness;
@@ -248,6 +276,20 @@ int cgp_main(
             // in the middle of the dump
             #pragma omp critical (CGP_ARCHIVE__PRED_POP)
             {
+                ga_chr_t best_chromosome;
+                if (config->algorithm == simple_cgp) {
+                    best_chromosome = cgp_population->best_chromosome;
+                } else {
+                    best_chromosome = cgp_archive->best_chromosome_ever;
+                }
+
+                _log_cgp_best(cgp_population, best_chromosome,
+                    best_circuit_file_name_txt, best_circuit_file_name_chr);
+                /*
+                fprintf(history_file, "is_better: %d, apply_baldwin: %d, log_now: %d, signal: %d, finished: %d\n",
+                    is_better, apply_baldwin, log_now, signal, *finished);
+                */
+
                 _log_cgp_csv(config->algorithm,
                     &last_history_entry, cgp_population,
                     cgp_archive, pred_archive, history_file);
@@ -256,6 +298,16 @@ int cgp_main(
 
         if (*finished && signal >= 0) {
             DOUBLE_LOG(log_cgp_finished, log_file, cgp_population);
+            #pragma omp critical (CGP_ARCHIVE__PRED_POP)
+            {
+                ga_chr_t best_chromosome;
+                if (config->algorithm == simple_cgp) {
+                    best_chromosome = cgp_population->best_chromosome;
+                } else {
+                    best_chromosome = cgp_archive->best_chromosome_ever;
+                }
+                save_best_image(config->log_dir, best_chromosome, img_noisy);
+            }
         }
 
         if (signal > 0) {
@@ -302,19 +354,10 @@ void pred_main(
     // status
     bool *finished)
 {
-    ga_fitness_t pred_parent_fitness;
-
-
     while (!(*finished)) {
 
         #pragma omp critical (CGP_ARCHIVE__PRED_POP)
         {
-            if (cgp_archive->modified) {
-                ga_reevaluate_pop(pred_population);
-                ga_reevaluate_chr(pred_population, arc_get(pred_archive, 0));
-                cgp_archive->modified = false;
-            }
-            pred_parent_fitness = arc_get(pred_archive, 0)->fitness;
             ga_next_generation(pred_population);
         }
 
@@ -323,8 +366,7 @@ void pred_main(
         // nothing happens, if true, aquire lock and check again, just to be sure
         // However, apply_now is never set to false outside this function, so it
         // is not really necessary to check again.
-        /*
-        if (config->algorithm == baldwin && baldwin_state->apply_now) {
+        if (baldwin_state->apply_now) {
             #pragma omp critical (BALDWIN_STATE)
             {
                 if (baldwin_state->apply_now) {
@@ -365,10 +407,9 @@ void pred_main(
                 }
             }
         }
-        */
 
        // log progress
-       bool is_better = ga_is_better(pred_population->problem_type, pred_population->best_fitness, pred_parent_fitness);
+       bool is_better = ga_is_better(pred_population->problem_type, pred_population->best_fitness, arc_get(pred_archive, 0)->fitness);
        bool log_interval = config->log_interval && (pred_population->generation % config->log_interval) == 0;
 
        // log progress
@@ -390,6 +431,7 @@ void pred_main(
             #pragma omp critical (PRED_ARCHIVE__CGP_POP)
             {
                 arc_insert(pred_archive, pred_population->best_chromosome);
+                ga_reevaluate_pop(cgp_population);
             }
         }
     }

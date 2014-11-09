@@ -480,48 +480,45 @@ int main(int argc, char *argv[])
                 cgp_history_log_file,
                 &finished
             );
-            break;
+            goto done;
 
         case predictors:
         case baldwin:
-            #pragma omp parallel
+            #pragma omp parallel sections num_threads(2)
             {
-                #pragma omp single
+                #pragma omp section
                 {
-                    #pragma omp task
-                    {
-                        retval = cgp_main(
-                            cgp_population,
-                            pred_population,
-                            cgp_archive,
-                            pred_archive,
-                            &config,
-                            img_noisy,
-                            &baldwin_state,
-                            best_circuit_file_name_txt,
-                            best_circuit_file_name_chr,
-                            progress_log_file,
-                            cgp_history_log_file,
-                            &finished
-                        );
-                    }
-                    #pragma omp task
-                    {
-                        pred_main(
-                            cgp_population,
-                            pred_population,
-                            cgp_archive,
-                            pred_archive,
-                            &config,
-                            &baldwin_state,
-                            progress_log_file,
-                            cgp_history_log_file,
-                            &finished
-                        );
-                    }
+                    retval = cgp_main(
+                        cgp_population,
+                        pred_population,
+                        cgp_archive,
+                        pred_archive,
+                        &config,
+                        img_noisy,
+                        &baldwin_state,
+                        best_circuit_file_name_txt,
+                        best_circuit_file_name_chr,
+                        progress_log_file,
+                        cgp_history_log_file,
+                        &finished
+                    );
+                }
+                #pragma omp section
+                {
+                    pred_main(
+                        cgp_population,
+                        pred_population,
+                        cgp_archive,
+                        pred_archive,
+                        &config,
+                        &baldwin_state,
+                        progress_log_file,
+                        cgp_history_log_file,
+                        &finished
+                    );
                 }
             }
-            break;
+            goto done;
 
         default:
             fprintf(stderr, "Algorithm '%s' is not supported.\n",
@@ -534,6 +531,8 @@ int main(int argc, char *argv[])
         Dump summary and clean-up
      */
 
+done:
+
     // dummy expression to avoid compiler warning
     printf("----\n");
 
@@ -543,32 +542,6 @@ int main(int argc, char *argv[])
     } else {
         best_fitness = cgp_archive->best_chromosome_ever->fitness;
     }
-
-    // dump best filter
-    ga_chr_t best_filter;
-    if (config.algorithm == simple_cgp) {
-        best_filter = cgp_population->best_chromosome;
-    } else {
-        best_filter = cgp_archive->best_chromosome_ever;
-    }
-
-    FILE *circuit_file_txt = fopen(best_circuit_file_name_txt, "w");
-    if (circuit_file_txt) {
-        log_cgp_circuit(circuit_file_txt, cgp_population->generation, best_filter);
-        fclose(circuit_file_txt);
-    } else {
-        fprintf(stderr, "Failed to open %s!\n", best_circuit_file_name_txt);
-    }
-
-    FILE *circuit_file_chr = fopen(best_circuit_file_name_chr, "w");
-    if (circuit_file_chr) {
-        cgp_dump_chr_compat(best_filter, circuit_file_chr);
-        fclose(circuit_file_chr);
-    } else {
-        fprintf(stderr, "Failed to open %s!\n", best_circuit_file_name_chr);
-    }
-
-    save_best_image(config.log_dir, best_filter, img_noisy);
 
     // dump evolution summary
     log_final_summary(stdout, cgp_population->generation,
