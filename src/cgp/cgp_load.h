@@ -34,13 +34,3 @@
  * @return 0 on success, -1 on file format error, -2 on incompatible CGP config
  */
 int cgp_load_chr_compat(ga_chr_t chr, FILE *fp);
-
-
-/**
- * Loads whole population from given file with chromosomes stored in
- * CGP-viewer compatible format
- * @param pop
- * @param fp
- * @return 0 on success, -1 on file format error, -2 on incompatible CGP config
- */
-int cgp_load_pop_compat(ga_pop_t *pop_ptr, FILE *fp);
