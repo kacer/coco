@@ -413,7 +413,26 @@ config_retval_t config_load_args(int argc, char **argv, config_t *cfg)
         }
     }
 
-    return cfg_ok;
+    /* some advanced checks */
+
+    bool advanced_checks_status = true;
+
+    if (cfg->pred_initial_size > cfg->pred_size) {
+        fprintf(stderr, "Predictors' initial size cannot be larger than their full size\n");
+        advanced_checks_status = false;
+    }
+
+    if (cfg->pred_min_size > cfg->pred_size) {
+        fprintf(stderr, "Predictors' minimal size cannot be larger than their full size\n");
+        advanced_checks_status = false;
+    }
+
+    if (cfg->pred_min_size > cfg->pred_initial_size) {
+        fprintf(stderr, "Predictors' minimal size cannot be larger than their initial size\n");
+        advanced_checks_status = false;
+    }
+
+    return advanced_checks_status? cfg_ok : cfg_err;
 }
 
 

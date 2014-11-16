@@ -28,16 +28,10 @@
 static const ga_problem_type_t PRED_PROBLEM_TYPE = minimize;
 
 
+/* genome types ***************************************************************/
+
 typedef unsigned int pred_gene_t;
 typedef pred_gene_t* pred_gene_array_t;
-
-
-typedef enum {
-    permuted,
-    repeated,
-    circular,
-} pred_genome_type_t;
-
 
 struct pred_genome {
     /* genotype */
@@ -65,12 +59,45 @@ struct pred_genome {
 typedef struct pred_genome* pred_genome_t;
 
 
+/* metadata types *************************************************************/
+
+
+typedef enum {
+    permuted,
+    repeated,
+    circular,
+} pred_genome_type_t;
+
+
+typedef struct {
+    /* genome type */
+    pred_genome_type_t genome_type;
+
+    /* maximal gene value (inclusive) */
+    pred_gene_t max_gene_value;
+
+    /* genotype length */
+    unsigned int genotype_length;
+
+    /* genotype used portion length */
+    unsigned int genotype_used_length;
+
+    /* relative mutation rate */
+    float mutation_rate;
+
+    /* relative number of elite and crossovered children */
+    float offspring_elite;
+    float offspring_combine;
+} pred_metadata_t;
+
+
+/* initialization *************************************************************/
+
+
 /**
  * Initialize predictor internals
  */
-void pred_init(pred_gene_t max_gene_value, unsigned int max_genome_length,
-    unsigned int initial_genome_length, float mutation_rate,
-    float offspring_elite, float offspring_combine, pred_genome_type_t type);
+void pred_init(pred_metadata_t *metadata);
 
 
 /**

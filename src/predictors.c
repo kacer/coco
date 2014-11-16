@@ -30,13 +30,7 @@
 #include "predictors.h"
 
 
-static pred_genome_type_t _genome_type;
-static pred_gene_t _max_gene_value;
-static unsigned int _max_genome_length;
-static unsigned int _current_genome_length;
-static float _mutation_rate;
-static float _offspring_elite;
-static float _offspring_combine;
+static pred_metadata_t *_metadata;
 
 
 #ifdef PRED_DEBUG
@@ -53,25 +47,16 @@ enum _offspring_op {
 };
 
 
-/** INITIALIZATION ************************************************************/
+/* initialization *************************************************************/
 
 
 /**
  * Initialize predictor internals
  */
-void pred_init(pred_gene_t max_gene_value, unsigned int max_genome_length,
-    unsigned int initial_genome_length, float mutation_rate,
-    float offspring_elite, float offspring_combine, pred_genome_type_t type)
+void pred_init(pred_metadata_t *metadata)
 {
-    _max_gene_value = max_gene_value;
-    _max_genome_length = max_genome_length;
-    _current_genome_length = initial_genome_length;
-    _mutation_rate = mutation_rate;
-    _offspring_elite = offspring_elite;
-    _offspring_combine = offspring_combine;
-    _genome_type = type;
-
-    assert(_current_genome_length <= _max_genome_length);
+    _metadata = metadata;
+    assert(metadata->genotype_used_length <= metadata->genotype_length);
 }
 
 
@@ -84,7 +69,7 @@ void pred_init(pred_gene_t max_gene_value, unsigned int max_genome_length,
 ga_pop_t pred_init_pop(int pop_size)
 {
     ga_fitness_func_t fitfunc = fitness_eval_predictor;
-    if (_genome_type == circular) {
+    if (_metadata->genome_type == circular) {
         fitfunc = fitness_eval_circular_predictor;
     }
 
@@ -115,7 +100,7 @@ void* pred_alloc_genome()
         return NULL;
     }
 
-    genome->_genes = (pred_gene_t*) malloc(sizeof(pred_gene_t) * _max_genome_length);
+    genome->_genes = (pred_gene_t*) malloc(sizeof(pred_gene_t) * _metadata->genotype_length);
     if (genome->_genes == NULL) {
         free(genome);
         return NULL;
@@ -126,14 +111,14 @@ void* pred_alloc_genome()
         For repeated genotype: used for calculating genotype (also holds
             which values has been used in phenotype)
      */
-    genome->_used_values = (bool*) malloc(sizeof(bool) * (_max_gene_value + 1));
+    genome->_used_values = (bool*) malloc(sizeof(bool) * (_metadata->max_gene_value + 1));
     if (genome->_used_values == NULL) {
         free(genome->_genes);
         free(genome);
         return NULL;
     }
 
-    if (_genome_type == permuted) {
+    if (_metadata->genome_type == permuted) {
 
         // one-to-one mapping
         // field genome->used_pixels must be updated manually after every change!
@@ -141,7 +126,7 @@ void* pred_alloc_genome()
 
     } else {
         // phenotype is different
-        genome->pixels = (unsigned int*) malloc(sizeof(unsigned int) * _max_genome_length);
+        genome->pixels = (unsigned int*) malloc(sizeof(unsigned int) * _metadata->genotype_length);
         if (genome->pixels == NULL) {
             free(genome->_genes);
             free(genome);
@@ -152,7 +137,7 @@ void* pred_alloc_genome()
     // allocate space for simd-friendly data using calloc, since we
     // want initialized padding bits
     if (can_use_simd()) {
-        int size = _max_genome_length;
+        int size = _metadata->genotype_length;
         int padding = SIMD_PADDING_BYTES - (size % SIMD_PADDING_BYTES);
         genome->original_simd = (img_pixel_t *) calloc(size + padding, sizeof(img_pixel_t));
         if (genome->original_simd == NULL) {
@@ -183,7 +168,7 @@ void pred_free_genome(void *_genome)
     pred_genome_t genome = (pred_genome_t) _genome;
     free(genome->_used_values);
     free(genome->_genes);
-    if (_genome_type != permuted) free(genome->pixels);
+    if (_metadata->genome_type != permuted) free(genome->pixels);
     free(genome);
 }
 
@@ -193,8 +178,8 @@ void pred_free_genome(void *_genome)
  */
 int _pred_get_circular_index(pred_genome_t genome, int index)
 {
-    int real = (genome->_circular_offset + index) % _max_genome_length;
-    if (real < 0) real += _max_genome_length;
+    int real = (genome->_circular_offset + index) % _metadata->genotype_length;
+    if (real < 0) real += _metadata->genotype_length;
     return real;
 }
 
@@ -202,10 +187,10 @@ int _pred_get_circular_index(pred_genome_t genome, int index)
 void _pred_calculate_repeated_phenotype(pred_genome_t genome)
 {
     // clear used values helper
-    memset(genome->_used_values, 0, sizeof(bool) * (_max_gene_value + 1));
+    memset(genome->_used_values, 0, sizeof(bool) * (_metadata->max_gene_value + 1));
 
     int pheno_index = 0;
-    for (int geno_index = 0; geno_index < _current_genome_length; geno_index++) {
+    for (int geno_index = 0; geno_index < _metadata->genotype_used_length; geno_index++) {
         int locus = _pred_get_circular_index(genome, geno_index);
         pred_gene_t value = genome->_genes[locus];
         if (genome->_used_values[value]) {
@@ -230,8 +215,8 @@ void _pred_calculate_repeated_phenotype(pred_genome_t genome)
  */
 void pred_calculate_phenotype(pred_genome_t genome)
 {
-    if (_genome_type == permuted) {
-        genome->used_pixels = _current_genome_length;
+    if (_metadata->genome_type == permuted) {
+        genome->used_pixels = _metadata->genotype_used_length;
 
     } else {
         _pred_calculate_repeated_phenotype(genome);
@@ -263,16 +248,16 @@ int pred_randomize_genome(ga_chr_t chromosome)
 {
     pred_genome_t genome = (pred_genome_t) chromosome->genome;
 
-    if (_genome_type == permuted) {
-        memset(genome->_used_values, 0, sizeof(bool) * (_max_gene_value + 1));
+    if (_metadata->genome_type == permuted) {
+        memset(genome->_used_values, 0, sizeof(bool) * (_metadata->max_gene_value + 1));
     }
 
-    for (int i = 0; i < _max_genome_length; i++) {
-        pred_gene_t value = rand_urange(0, _max_gene_value);
-        if (_genome_type == permuted) {
+    for (int i = 0; i < _metadata->genotype_length; i++) {
+        pred_gene_t value = rand_urange(0, _metadata->max_gene_value);
+        if (_metadata->genome_type == permuted) {
             // only unused is valid, so make corrections
             while(genome->_used_values[value]) {
-                value = (value + 1) % (_max_gene_value + 1);
+                value = (value + 1) % (_metadata->max_gene_value + 1);
             };
             genome->_used_values[value] = true;
         }
@@ -297,11 +282,11 @@ void pred_copy_genome(void *_dst, void *_src)
     pred_genome_t dst = (pred_genome_t) _dst;
     pred_genome_t src = (pred_genome_t) _src;
 
-    memcpy(dst->_genes, src->_genes, sizeof(pred_gene_t) * _max_genome_length);
-    memcpy(dst->_used_values, src->_used_values, sizeof(bool) * _max_gene_value);
+    memcpy(dst->_genes, src->_genes, sizeof(pred_gene_t) * _metadata->genotype_length);
+    memcpy(dst->_used_values, src->_used_values, sizeof(bool) * _metadata->max_gene_value);
 
-    if (_genome_type == repeated || _genome_type == circular) {
-        memcpy(dst->pixels, src->pixels, sizeof(pred_gene_t) * _max_genome_length);
+    if (_metadata->genome_type == repeated || _metadata->genome_type == circular) {
+        memcpy(dst->pixels, src->pixels, sizeof(pred_gene_t) * _metadata->genotype_length);
     }
 
     if (can_use_simd()) {
@@ -326,20 +311,20 @@ void pred_copy_genome(void *_dst, void *_src)
  */
 void pred_mutate(pred_genome_t genome)
 {
-    int max_changed_genes = _mutation_rate * _max_genome_length;
+    int max_changed_genes = _metadata->mutation_rate * _metadata->genotype_length;
     int genes_to_change = rand_range(0, max_changed_genes);
 
     for (int i = 0; i < genes_to_change; i++) {
         // choose mutated gene
-        int gene = rand_range(0, _max_genome_length - 1);
+        int gene = rand_range(0, _metadata->genotype_length - 1);
         pred_gene_t old_value = genome->_genes[gene];
 
         // generate new value
-        pred_gene_t value = rand_urange(0, _max_gene_value);
-        if (_genome_type == permuted) {
+        pred_gene_t value = rand_urange(0, _metadata->max_gene_value);
+        if (_metadata->genome_type == permuted) {
             // either unused or same value is valid, so make corrections
             while(genome->_used_values[value] && old_value != value) {
-                value = (value + 1) % (_max_gene_value + 1);
+                value = (value + 1) % (_metadata->max_gene_value + 1);
             };
         }
 
@@ -389,31 +374,31 @@ void _tournament(ga_pop_t pop, ga_chr_t *winner, ga_chr_t red, ga_chr_t blue)
 
 void _crossover1p_repeated(pred_genome_t baby, pred_genome_t mom, pred_genome_t dad)
 {
-    const int split_point = rand_range(0, _max_genome_length - 1);
+    const int split_point = rand_range(0, _metadata->genotype_length - 1);
 
     // copy from mom
     memcpy(baby->_genes, mom->_genes, sizeof(pred_gene_t) * split_point);
 
     // copy from dad
     memcpy(baby->_genes + split_point, dad->_genes + split_point,
-        sizeof(pred_gene_t) * (_max_genome_length - split_point));
+        sizeof(pred_gene_t) * (_metadata->genotype_length - split_point));
 }
 
 
 
 void _crossover1p_permuted(pred_genome_t baby, pred_genome_t mom, pred_genome_t dad)
 {
-    const int split_point = rand_range(0, _max_genome_length - 1);
+    const int split_point = rand_range(0, _metadata->genotype_length - 1);
 
     // first clear usage flags
-    memset(baby->_used_values, 0, sizeof(bool) * (_max_gene_value + 1));
+    memset(baby->_used_values, 0, sizeof(bool) * (_metadata->max_gene_value + 1));
 
     // second copy everything we can from mom
     int geneIndex = 0;
     pred_gene_array_t parent_genes = mom->_genes;
 
     VERBOSELOG("Copying.");
-    for (int i = 0; i < _max_genome_length; i++) {
+    for (int i = 0; i < _metadata->genotype_length; i++) {
         pred_gene_t value = parent_genes[i];
         if (!baby->_used_values[value]) {
             baby->_genes[geneIndex] = value;
@@ -429,10 +414,10 @@ void _crossover1p_permuted(pred_genome_t baby, pred_genome_t mom, pred_genome_t 
 
     VERBOSELOG("Finish with random values. Index: %d", geneIndex);
     // now create random values in place of duplicates
-    for (; geneIndex < _max_genome_length; geneIndex++) {
-        pred_gene_t value = rand_urange(0, _max_gene_value);
+    for (; geneIndex < _metadata->genotype_length; geneIndex++) {
+        pred_gene_t value = rand_urange(0, _metadata->max_gene_value);
         while(baby->_used_values[value]) {
-            value = (value + 1) % (_max_gene_value + 1);
+            value = (value + 1) % (_metadata->max_gene_value + 1);
         };
         baby->_genes[geneIndex] = value;
         baby->_used_values[value] = true;
@@ -458,7 +443,7 @@ void _create_combined(ga_pop_t pop, pred_genome_t children)
     pred_genome_t mom_genome = (pred_genome_t)mom->genome;
     pred_genome_t dad_genome = (pred_genome_t)dad->genome;
 
-    if (_genome_type == permuted) {
+    if (_metadata->genome_type == permuted) {
         _crossover1p_permuted(children, mom_genome, dad_genome);
 
     } else {
@@ -466,15 +451,15 @@ void _create_combined(ga_pop_t pop, pred_genome_t children)
     }
 
     /*
-    for (int i = 0; i < _max_genome_length; i++) {
+    for (int i = 0; i < _metadata->genotype_length; i++) {
         printf("%4x ", mom_genome->_genes[i]);
     }
     printf("\n");
-    for (int i = 0; i < _max_genome_length; i++) {
+    for (int i = 0; i < _metadata->genotype_length; i++) {
         printf("%4x ", dad_genome->_genes[i]);
     }
     printf("\n");
-    for (int i = 0; i < _max_genome_length; i++) {
+    for (int i = 0; i < _metadata->genotype_length; i++) {
         printf("%4x ", children[i]);
     }
     printf("\n");
@@ -484,7 +469,7 @@ void _create_combined(ga_pop_t pop, pred_genome_t children)
     pred_mutate(children);
 
     /*
-    for (int i = 0; i < _max_genome_length; i++) {
+    for (int i = 0; i < _metadata->genotype_length; i++) {
         printf("%4x ", children[i]);
     }
     printf("\n\n");
@@ -500,8 +485,8 @@ void _create_combined(ga_pop_t pop, pred_genome_t children)
 void pred_offspring(ga_pop_t pop)
 {
     // number of children copied and crossovered from parents
-    const int elite_count = ceil(pop->size * _offspring_elite);
-    const int crossover_count = ceil(pop->size * _offspring_combine);
+    const int elite_count = ceil(pop->size * _metadata->offspring_elite);
+    const int crossover_count = ceil(pop->size * _metadata->offspring_combine);
     assert(elite_count + crossover_count <= pop->size);
 
     // this array describes how to create each individual
@@ -562,11 +547,11 @@ void pred_offspring(ga_pop_t pop)
  */
 void pred_set_length(int new_length)
 {
-    if (new_length > _max_genome_length) {
-        _current_genome_length = _max_genome_length;
+    if (new_length > _metadata->genotype_length) {
+        _metadata->genotype_used_length = _metadata->genotype_length;
 
     } else if (new_length > 0) {
-        _current_genome_length = new_length;
+        _metadata->genotype_used_length = new_length;
     }
 }
 
@@ -576,7 +561,7 @@ void pred_set_length(int new_length)
  */
 int pred_get_length()
 {
-    return _current_genome_length;
+    return _metadata->genotype_used_length;
 }
 
 
@@ -585,5 +570,5 @@ int pred_get_length()
  */
 int pred_get_max_length()
 {
-    return _max_genome_length;
+    return _metadata->genotype_length;
 }

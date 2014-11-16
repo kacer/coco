@@ -266,21 +266,6 @@ int main(int argc, char *argv[])
         config_ok = false;
     }
 
-    if (config.pred_initial_size > config.pred_size) {
-        fprintf(stderr, "Predictors' initial size cannot be larger than their full size\n");
-        config_ok = false;
-    }
-
-    if (config.pred_min_size > config.pred_size) {
-        fprintf(stderr, "Predictors' minimal size cannot be larger than their full size\n");
-        config_ok = false;
-    }
-
-    if (config.pred_min_size > config.pred_initial_size) {
-        fprintf(stderr, "Predictors' minimal size cannot be larger than their initial size\n");
-        config_ok = false;
-    }
-
     if (!config_ok) {
         fprintf(stderr, "Run %s --help or %s -h to see available options.\n", argv[0], argv[0]);
         return 1;
@@ -297,10 +282,10 @@ int main(int argc, char *argv[])
     // random number generator
     rand_init_seed(config.random_seed);
 
-    // evolution
+    // cgp evolution
     cgp_init(config.cgp_mutate_genes, fitness_eval_or_predict_cgp);
 
-    // predictors population and CGP archive
+    // predictors population and both archives
     if (config.algorithm != simple_cgp) {
 
         // calculate absolute predictors sizes
@@ -346,18 +331,20 @@ int main(int argc, char *argv[])
             }
         }
 
-        // predictors evolution
-        pred_init(
-            img_size - 1,  // max gene value
-            pred_max_size,                 // max genome length
-            pred_initial_size,             // initial genome length
-            config.pred_mutation_rate,     // % of mutated genes
-            config.pred_offspring_elite,   // % of elite children
-            config.pred_offspring_combine, // % of "crossovered" children
-            config.pred_genome_type        // genome type
-        );
+        pred_metadata_t pred_metadata = {
+            .genome_type = config.pred_genome_type,
+            .max_gene_value = img_size - 1,
+            .genotype_length = pred_max_size,
+            .genotype_used_length = pred_initial_size,
+            .mutation_rate = config.pred_mutation_rate,
+            .offspring_elite = config.pred_offspring_elite,
+            .offspring_combine = config.pred_offspring_combine,
+        };
 
-        // cgp evolution
+        // predictors evolution
+        pred_init(&pred_metadata);
+
+        // cgp archive
         arc_func_vect_t arc_cgp_methods = {
             .alloc_genome = cgp_alloc_genome,
             .free_genome = cgp_free_genome,
@@ -424,23 +411,12 @@ int main(int argc, char *argv[])
     printf("Initial \"PSNR\" value:         %.10g\n",
         img_psnr(img_original, img_noisy));
 
-    printf("Evaluating CGP population...");
     ga_evaluate_pop(cgp_population);
 
     if (config.algorithm != simple_cgp) {
         arc_insert(cgp_archive, cgp_population->best_chromosome);
-
-        printf("Archive: %d", cgp_archive->stored);
-
-        printf("Evaluating PRED population...");
         ga_evaluate_pop(pred_population);
         arc_insert(pred_archive, pred_population->best_chromosome);
-
-        printf("Best fitness: CGP %.10g, PRED %.10g",
-            cgp_population->best_fitness, pred_population->best_fitness);
-
-    } else {
-        printf("Best fitness: %.10g", cgp_population->best_fitness);
     }
 
     save_original_image(config.log_dir, img_original);
@@ -452,7 +428,6 @@ int main(int argc, char *argv[])
         Evolution itself
      */
 
-    printf("Starting the big while loop.");
     log_init_time();
 
     // install signal handlers
