@@ -41,7 +41,7 @@ ANSELM_PATH=~/xwigla00
 MERLIN_HOST=merlin
 MERLIN_PATH=~/coco
 
-.PHONY: clean run minirun zip tar upload start depend anselmup anselmdown merlinup callgraph rebuild
+.PHONY: clean run minirun zip tar upload start depend anselmup anselmdown merlinup rebuild callgraph
 
 all: $(EXECUTABLE) $(EXECUTABLE_APPLY)
 
@@ -115,7 +115,7 @@ valgrind: $(EXECUTABLE)
 
 callgraph:
 	$(MAKE) CFLAGS='$(CFLAGS) -fdump-rtl-expand' clean all
-	ls *.expand | xargs egypt --omit stbi_load,can_use_sse2,log_entry_prolog | dot -Grankdir=LR  -Tpng -o callgraph.png
+	ls *.expand | grep -v 'main_apply' | xargs egypt --omit stbi_load,stbi_write_png,log_entry_prolog,can_use_sse2 | dot -Grankdir=LR  -Tpng -o callgraph.png
 	rm *.expand
 
 # general rules

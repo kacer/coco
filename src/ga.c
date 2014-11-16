@@ -284,7 +284,7 @@ void ga_invalidate_fitness(ga_pop_t pop)
  */
 void ga_evaluate_pop(ga_pop_t pop)
 {
-    // reevaluate population
+    // evaluate population
     #pragma omp parallel for
     for (int i = 0; i < pop->size; i++) {
         ga_evaluate_chr(pop, pop->chromosomes[i]);
