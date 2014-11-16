@@ -31,12 +31,12 @@
 #endif
 
 #include "cpu.h"
-#include "cgp.h"
 #include "algo.h"
 #include "files.h"
 #include "image.h"
 #include "random.h"
 #include "config.h"
+#include "cgp/cgp.h"
 #include "fitness.h"
 #include "archive.h"
 #include "logging.h"

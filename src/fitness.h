@@ -21,8 +21,8 @@
 #pragma once
 
 
-#include "cgp.h"
 #include "image.h"
+#include "cgp/cgp.h"
 #include "archive.h"
 #include "predictors.h"
 

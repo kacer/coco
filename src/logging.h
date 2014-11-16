@@ -23,10 +23,10 @@
 #include <stdio.h>
 #include <sys/time.h>
 
-#include "cgp.h"
 #include "image.h"
 #include "files.h"
 #include "config.h"
+#include "cgp/cgp.h"
 #include "archive.h"
 #include "baldwin.h"
 #include "fitness.h"

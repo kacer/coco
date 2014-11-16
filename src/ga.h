@@ -123,6 +123,29 @@ typedef ga_fitness_t (*ga_fitness_func_t)(ga_chr_t chromosome);
 typedef void (*ga_offspring_func_t)(ga_pop_t population);
 
 
+/**
+ * Metadata allocation/initialization function
+ *
+ * This function should allocate all required memory and perform
+ * initialization of any kind.
+ *
+ * @return Pointer to allocated metadata variable (usually struct)
+ */
+typedef void* (*ga_alloc_metadata_func_t)();
+
+
+/**
+ * Metadata deinitialization/deallocation function.
+ *
+ * This function should release any memory resources allocated by
+ * ga_alloc_metadata_func_t.
+ *
+ * @param  metadata
+ * @return
+ */
+typedef void (*ga_free_metadata_func_t)(void *metadata);
+
+
 
 /**
  * GA problem type
@@ -149,6 +172,11 @@ typedef struct {
 
     /* children generator */
     ga_offspring_func_t offspring;
+
+    /* metadata */
+    ga_alloc_metadata_func_t alloc_metadata;
+    ga_free_metadata_func_t free_metadata;
+
 } ga_func_vect_t;
 
 
@@ -174,6 +202,9 @@ struct ga_pop {
     ga_fitness_t best_fitness;
     ga_chr_t best_chromosome;
     int best_chr_index;
+
+    /* problem-specific metadata, e.g. pre-calculated values */
+    void *metadata;
 };
 
 

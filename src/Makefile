@@ -23,19 +23,19 @@ CFLAGS=-rdynamic -g -Wall -std=c11 -fopenmp -O2 -D_XOPEN_SOURCE=700 \
 	-DSSE2 -DxAVX2 -DDEBUG -DxVERBOSE -DxCGP_LIMIT_FUNCS
 LIBS=-lm -lc
 
-SOURCES=main.c cpu.c ga.c cgp_core.c cgp_dump.c cgp_load.c cgp_avx.c cgp_sse.c \
+SOURCES=main.c cpu.c ga.c cgp/cgp_core.c cgp/cgp_dump.c cgp/cgp_load.c cgp/cgp_avx.c cgp/cgp_sse.c \
 	predictors.c image.c fitness.c fitness_avx.c fitness_sse.c \
 	archive.c config.c logging.c algo.c baldwin.c
 
 EXECUTABLE=coco
-OFILES= main.o cpu.o ga.o cgp_core.o cgp_dump.o cgp_load.o cgp_avx.o cgp_sse.o \
+OFILES= main.o cpu.o ga.o cgp/cgp_core.o cgp/cgp_dump.o cgp/cgp_load.o cgp/cgp_avx.o cgp/cgp_sse.o \
 	predictors.o image.o fitness.o fitness_avx.o fitness_sse.o \
 	archive.o config.o logging.o algo.o baldwin.o
 
 EXECUTABLE_APPLY=coco_apply
-OFILES_APPLY= image.o ga.o cgp_core.o cgp_load.o main_apply.o
+OFILES_APPLY= image.o ga.o cgp/cgp_core.o cgp/cgp_load.o main_apply.o
 
-CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_25.png -g 30000 -a predictors -S 75 -I 25 -k 10000 --pred-type=repeated-circular
+CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_15.png -g 30000 -a predictors -S 15 -k 10000
 ANSELM_HOST=anselm
 ANSELM_PATH=~/xwigla00
 MERLIN_HOST=merlin
@@ -46,9 +46,10 @@ MERLIN_PATH=~/coco
 all: $(EXECUTABLE) $(EXECUTABLE_APPLY)
 
 clean:
+	rm -f *.o cgp/*.o
 	rm -rf cocolog/*
-	rm -f $(EXECUTABLE) $(EXECUTABLE).exe $(EXECUTABLE).exe.stackdump *.o
-	rm -f $(EXECUTABLE_APPLY) $(EXECUTABLE_APPLY).exe $(EXECUTABLE_APPLY).exe.stackdump *.o
+	rm -f $(EXECUTABLE) $(EXECUTABLE).exe $(EXECUTABLE).exe.stackdump
+	rm -f $(EXECUTABLE_APPLY) $(EXECUTABLE_APPLY).exe $(EXECUTABLE_APPLY).exe.stackdump
 	rm -f xwigla00.zip xwigla00.tar.gz
 
 rebuild: clean all
@@ -89,7 +90,7 @@ merlinup: tar
 
 # AVX2 support
 
-cgp_avx.o: cgp_avx.c
+cgp/cgp_avx.o: cgp/cgp_avx.c
 	$(CC) $(CFLAGS) -mavx2 -c $< -o $@
 
 fitness_avx.o: fitness_avx.c
@@ -97,7 +98,7 @@ fitness_avx.o: fitness_avx.c
 
 # SSE2 support
 
-cgp_sse.o: cgp_sse.c
+cgp/cgp_sse.o: cgp/cgp_sse.c
 	$(CC) $(CFLAGS) -msse2 -c $< -o $@
 
 fitness_sse.o: fitness_sse.c

@@ -33,7 +33,7 @@
 
 #include "config.h"
 #include "cpu.h"
-#include "cgp_config.h"
+#include "cgp/cgp.h"
 #include "logging.h"  /* for FITNESS_FMT */
 
 

@@ -21,7 +21,7 @@
 #pragma once
 
 
-#include "cgp.h"
+#include "cgp/cgp.h"
 #include "image.h"
 #include "config.h"
 #include "archive.h"

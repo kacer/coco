@@ -19,7 +19,7 @@
 
 
 #include "fitness.h"
-#include "cgp_avx.h"
+#include "cgp/cgp_avx.h"
 
 
 /**

@@ -23,7 +23,7 @@
 #include <assert.h>
 
 #include "cgp_core.h"
-#include "random.h"
+#include "../random.h"
 
 
 typedef struct {
