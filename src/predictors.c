@@ -556,44 +556,6 @@ void pred_offspring(ga_pop_t pop)
 }
 
 
-
-/**
- * Dump predictor chromosome to file
- */
-void pred_dump_chr(ga_chr_t chr, FILE *fp)
-{
-    return;
-    /*
-    pred_genome_t genome = (pred_genome_t) chr->genome;
-
-    for (int i = 0; i < _max_genome_length; i++) {
-        if (i == genome->used_genes) fputs(" | ", fp);
-        else if (i > 0) fputs(", ", fp);
-
-        fprintf(fp, "%d", genome->_genes[i]);
-    }
-
-    fprintf(fp, "\n");
-    */
-}
-
-
-
-/**
- * Dump predictor chromosome to file
- */
-void pred_dump_pop(ga_pop_t pop, FILE *fp)
-{
-    fprintf(fp, "Generation: %d\n", pop->generation);
-    fprintf(fp, "Best chromosome: %d\n", pop->best_chr_index);
-    fprintf(fp, "Chromosomes: %d\n", pop->size);
-
-    for (int i = 0; i < pop->size; i++) {
-        pred_dump_chr(pop->chromosomes[i], fp);
-    }
-}
-
-
 /**
  * Sets current genome length.
  * @param new_length

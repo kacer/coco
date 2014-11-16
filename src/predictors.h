@@ -144,20 +144,6 @@ void pred_mutate(pred_genome_t genes);
 void pred_offspring(ga_pop_t pop);
 
 
-
-/**
- * Dump predictor chromosome to file
- */
-void pred_dump_chr(ga_chr_t chr, FILE *fp);
-
-
-
-/**
- * Dump predictor chromosome to file
- */
-void pred_dump_pop(ga_pop_t pop, FILE *fp);
-
-
 /**
  * Sets current genome length.
  * @param new_length
