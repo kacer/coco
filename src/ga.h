@@ -177,6 +177,9 @@ struct ga_pop {
 };
 
 
+/* population *****************************************************************/
+
+
 /**
  * Create a new CGP population with given size. The genomes are not
  * initialized at this point.
@@ -189,23 +192,13 @@ ga_pop_t ga_create_pop(int size, ga_problem_type_t type, ga_func_vect_t methods)
 
 
 /**
- * Initializes population to random chromosomes
- * @param pop
- */
-int ga_init_pop(ga_pop_t pop);
-
-
-/**
- * Sets method vector
- */
-void ga_set_methods(ga_pop_t pop, ga_func_vect_t methods);
-
-
-/**
 * Clear memory associated with given population (including its chromosomes)
 * @param pop
 */
 void ga_destroy_pop(ga_pop_t pop);
+
+
+/* chromosome *****************************************************************/
 
 
 /**
@@ -233,6 +226,9 @@ void ga_free_chr(ga_chr_t chr, ga_free_genome_func_t free_func);
 void ga_copy_chr(ga_chr_t dst, ga_chr_t src, ga_copy_genome_func_t copy_func);
 
 
+/* fitness calculation ********************************************************/
+
+
 /**
  * Calculate fitness of given chromosome, but only if its `has_fitness`
  * attribute is set to `false`
@@ -255,6 +251,21 @@ ga_fitness_t ga_reevaluate_chr(ga_pop_t pop, ga_chr_t chr);
  * Set `has_fitness` flag for all chromosomes to false
  */
 void ga_invalidate_fitness(ga_pop_t pop);
+
+
+/**
+ * Calculate fitness of whole population, using `ga_evaluate_chr`
+ * in single thread
+ * @param chr
+ */
+void ga_evaluate_pop(ga_pop_t pop);
+
+
+/**
+ * Re-calculate fitness of whole population, using `ga_reevaluate_chr`
+ * @param chr
+ */
+void ga_reevaluate_pop(ga_pop_t pop);
 
 
 /**
@@ -304,19 +315,7 @@ static inline double ga_worst_fitness(ga_problem_type_t type) {
 }
 
 
-/**
- * Calculate fitness of whole population, using `ga_evaluate_chr`
- * in single thread
- * @param chr
- */
-void ga_evaluate_pop(ga_pop_t pop);
-
-
-/**
- * Re-calculate fitness of whole population, using `ga_reevaluate_chr`
- * @param chr
- */
-void ga_reevaluate_pop(ga_pop_t pop);
+/* evolution process **********************************************************/
 
 
 /**
@@ -324,10 +323,3 @@ void ga_reevaluate_pop(ga_pop_t pop);
  * @param pop
  */
 void ga_next_generation(ga_pop_t pop);
-
-
-/**
- * Advance population to next generation WITHOUT evaluation
- * @param pop
- */
-void ga_create_children(ga_pop_t pop);
