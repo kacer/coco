@@ -35,7 +35,7 @@ OFILES= main.o cpu.o ga.o cgp/cgp_core.o cgp/cgp_dump.o cgp/cgp_load.o cgp/cgp_a
 EXECUTABLE_APPLY=coco_apply
 OFILES_APPLY= image.o ga.o cgp/cgp_core.o cgp/cgp_load.o main_apply.o
 
-CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_15.png -g 30000 -a predictors -S 15 -k 10000
+CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_15.png -g 30000 -a baldwin -S 100 -I 50 -k 10000
 ANSELM_HOST=anselm
 ANSELM_PATH=~/xwigla00
 MERLIN_HOST=merlin

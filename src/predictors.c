@@ -31,7 +31,6 @@
 
 
 static pred_genome_type_t _genome_type;
-static pred_repeated_subtype_t _genome_repeated_subtype;
 static pred_gene_t _max_gene_value;
 static unsigned int _max_genome_length;
 static unsigned int _current_genome_length;
@@ -62,8 +61,7 @@ enum _offspring_op {
  */
 void pred_init(pred_gene_t max_gene_value, unsigned int max_genome_length,
     unsigned int initial_genome_length, float mutation_rate,
-    float offspring_elite, float offspring_combine, pred_genome_type_t type,
-    pred_repeated_subtype_t repeated_subtype)
+    float offspring_elite, float offspring_combine, pred_genome_type_t type)
 {
     _max_gene_value = max_gene_value;
     _max_genome_length = max_genome_length;
@@ -72,7 +70,6 @@ void pred_init(pred_gene_t max_gene_value, unsigned int max_genome_length,
     _offspring_elite = offspring_elite;
     _offspring_combine = offspring_combine;
     _genome_type = type;
-    _genome_repeated_subtype = repeated_subtype;
 
     assert(_current_genome_length <= _max_genome_length);
 }
@@ -87,7 +84,7 @@ void pred_init(pred_gene_t max_gene_value, unsigned int max_genome_length,
 ga_pop_t pred_init_pop(int pop_size)
 {
     ga_fitness_func_t fitfunc = fitness_eval_predictor;
-    if (_genome_type == repeated && _genome_repeated_subtype == circular) {
+    if (_genome_type == circular) {
         fitfunc = fitness_eval_circular_predictor;
     }
 
@@ -186,7 +183,7 @@ void pred_free_genome(void *_genome)
     pred_genome_t genome = (pred_genome_t) _genome;
     free(genome->_used_values);
     free(genome->_genes);
-    if (_genome_type == repeated) free(genome->pixels);
+    if (_genome_type != permuted) free(genome->pixels);
     free(genome);
 }
 
@@ -233,15 +230,11 @@ void _pred_calculate_repeated_phenotype(pred_genome_t genome)
  */
 void pred_calculate_phenotype(pred_genome_t genome)
 {
-    if (_genome_type == repeated) {
-        _pred_calculate_repeated_phenotype(genome);
-
-        if (can_use_simd()) {
-            fitness_prepare_predictor_for_simd(genome);
-        }
+    if (_genome_type == permuted) {
+        genome->used_pixels = _current_genome_length;
 
     } else {
-        genome->used_pixels = _current_genome_length;
+        _pred_calculate_repeated_phenotype(genome);
     }
 
     if (can_use_simd()) {
@@ -307,7 +300,7 @@ void pred_copy_genome(void *_dst, void *_src)
     memcpy(dst->_genes, src->_genes, sizeof(pred_gene_t) * _max_genome_length);
     memcpy(dst->_used_values, src->_used_values, sizeof(bool) * _max_gene_value);
 
-    if (_genome_type == repeated) {
+    if (_genome_type == repeated || _genome_type == circular) {
         memcpy(dst->pixels, src->pixels, sizeof(pred_gene_t) * _max_genome_length);
     }
 

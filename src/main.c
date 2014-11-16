@@ -125,7 +125,6 @@ static config_t config = {
     .pred_offspring_elite = 0.25,
     .pred_offspring_combine = 0.5,
     .pred_genome_type = permuted,
-    .pred_repeated_subtype = linear,
 
     .bw_interval = 0,
     .bw_config = {
@@ -311,26 +310,15 @@ int main(int argc, char *argv[])
         int pred_initial_size;
 
         // allow to set different initial size only for baldwin or circular genotype
-        bool is_circular = (config.pred_genome_type == repeated && config.pred_repeated_subtype == circular);
+        bool is_circular = (config.pred_genome_type == circular);
         if (config.pred_initial_size && (config.algorithm == baldwin || is_circular)) {
             pred_initial_size = config.pred_initial_size * img_size;
         } else {
             pred_initial_size = pred_max_size;
         }
 
-        // predictors evolution
-        pred_init(
-            img_size - 1,  // max gene value
-            pred_max_size,                 // max genome length
-            pred_initial_size,             // initial genome length
-            config.pred_mutation_rate,     // % of mutated genes
-            config.pred_offspring_elite,   // % of elite children
-            config.pred_offspring_combine, // % of "crossovered" children
-            config.pred_genome_type,       // genome type
-            config.pred_repeated_subtype   // repeated genome subtype
-        );
-
         if (config.algorithm == baldwin) {
+
             // baldwin thresholds
             config.bw_config.min_length = pred_min_size;
             config.bw_config.max_length = pred_max_size;
@@ -357,6 +345,17 @@ int main(int argc, char *argv[])
                 );
             }
         }
+
+        // predictors evolution
+        pred_init(
+            img_size - 1,  // max gene value
+            pred_max_size,                 // max genome length
+            pred_initial_size,             // initial genome length
+            config.pred_mutation_rate,     // % of mutated genes
+            config.pred_offspring_elite,   // % of elite children
+            config.pred_offspring_combine, // % of "crossovered" children
+            config.pred_genome_type        // genome type
+        );
 
         // cgp evolution
         arc_func_vect_t arc_cgp_methods = {

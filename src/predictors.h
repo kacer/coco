@@ -35,13 +35,8 @@ typedef pred_gene_t* pred_gene_array_t;
 typedef enum {
     permuted,
     repeated,
-} pred_genome_type_t;
-
-
-typedef enum {
-    linear,
     circular,
-} pred_repeated_subtype_t;
+} pred_genome_type_t;
 
 
 struct pred_genome {
@@ -75,8 +70,7 @@ typedef struct pred_genome* pred_genome_t;
  */
 void pred_init(pred_gene_t max_gene_value, unsigned int max_genome_length,
     unsigned int initial_genome_length, float mutation_rate,
-    float offspring_elite, float offspring_combine, pred_genome_type_t type,
-    pred_repeated_subtype_t repeated_subtype);
+    float offspring_elite, float offspring_combine, pred_genome_type_t type);
 
 
 /**

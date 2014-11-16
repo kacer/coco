@@ -75,7 +75,6 @@ typedef struct
     float pred_offspring_combine;
     int pred_population_size;
     pred_genome_type_t pred_genome_type;
-    pred_repeated_subtype_t pred_repeated_subtype;
 
     int bw_interval;
     bw_config_t bw_config;
