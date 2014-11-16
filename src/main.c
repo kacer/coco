@@ -86,7 +86,7 @@ int check_signals(int current_generation)
 {
     // SIGXCPU
     if (cpu_limit_reached) {
-        DEBUGLOG("SIGXCPU received!");
+        fprintf(stderr, "SIGXCPU received!\n");
         return SIGXCPU;
     }
 
@@ -94,11 +94,11 @@ int check_signals(int current_generation)
     if (interrupted) {
         if (interrupted_generation >= 0
             &&  interrupted_generation > current_generation - SIGINT_GENERATIONS_GAP) {
-            DEBUGLOG("SIGINT received and terminating!");
+            fprintf(stderr, "SIGINT received and terminating!\n");
             return SIGINT;
         }
 
-        DEBUGLOG("SIGINT received!");
+        fprintf(stderr, "SIGINT received!\n");
         interrupted = 0;
         interrupted_generation = current_generation;
         return SIGINT_FIRST;

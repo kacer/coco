@@ -27,7 +27,6 @@
 #endif
 
 #include "ga.h"
-#include "debug.h"
 #include "random.h"
 
 

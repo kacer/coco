@@ -46,13 +46,18 @@
 
 /* standard console outputing */
 
-#include "debug.h"
-
 #define LOG_F(fp, ...) { LOG_THREAD_IDENT((fp)); fprintf((fp), __VA_ARGS__); fprintf((fp), "\n"); }
 #define SLOWLOG_F(fp, ...) { LOG_THREAD_IDENT((fp)); fprintf((fp), __VA_ARGS__); fprintf((fp), "\n"); }
 
 #define LOG(...) LOG_F(stdout, __VA_ARGS__)
 #define SLOWLOG(...) SLOWLOG_F(stdout, __VA_ARGS__)
+
+#ifdef _OPENMP
+    #include <omp.h>
+    #define LOG_THREAD_IDENT(stream) { fprintf((stream), "thread %02d: ", omp_get_thread_num()); }
+#else
+    #define LOG_THREAD_IDENT(stream)
+#endif
 
 
 /**

@@ -25,7 +25,6 @@
 #include <string.h>
 
 #include "cpu.h"
-#include "debug.h"
 #include "random.h"
 #include "fitness.h"
 #include "predictors.h"
@@ -39,6 +38,13 @@ static unsigned int _current_genome_length;
 static float _mutation_rate;
 static float _offspring_elite;
 static float _offspring_combine;
+
+
+#ifdef PRED_DEBUG
+    #define VERBOSELOG(s, ...) fprintf(stderr, s "\n", __VA_ARGS__)
+#else
+    #define VERBOSELOG(s, ...)
+#endif
 
 
 enum _offspring_op {
