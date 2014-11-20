@@ -23,7 +23,7 @@
 #include <immintrin.h>
 
 #include "cgp_avx.h"
-#include "random.h"
+#include "../random.h"
 
 
 #define CURRENT(x) \

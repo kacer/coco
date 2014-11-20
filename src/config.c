@@ -33,7 +33,7 @@
 
 #include "config.h"
 #include "cpu.h"
-#include "cgp_config.h"
+#include "cgp/cgp.h"
 #include "logging.h"  /* for FITNESS_FMT */
 
 
@@ -248,6 +248,9 @@ config_retval_t config_load_args(int argc, char **argv, config_t *cfg)
                         fprintf(stderr, "Cannot combine baldwin and permuted genotype.\n");
                         return cfg_err;
                     }
+                    if (cfg->pred_genome_type == permuted) {
+                        cfg->pred_genome_type = repeated;
+                    }
                 } else {
                     fprintf(stderr, "Invalid algorithm (options: cgp, predictors, baldwin)\n");
                     return cfg_err;
@@ -337,11 +340,9 @@ config_retval_t config_load_args(int argc, char **argv, config_t *cfg)
 
                 } else if (strcmp(optarg, "repeated") == 0) {
                     cfg->pred_genome_type = repeated;
-                    cfg->pred_repeated_subtype = linear;
 
                 } else if (strcmp(optarg, "repeated-circular") == 0) {
-                    cfg->pred_genome_type = repeated;
-                    cfg->pred_repeated_subtype = circular;
+                    cfg->pred_genome_type = circular;
 
                 } else {
                     fprintf(stderr, "Invalid predictor type (options: permuted, repeated, repeated-circular)\n");
@@ -412,7 +413,26 @@ config_retval_t config_load_args(int argc, char **argv, config_t *cfg)
         }
     }
 
-    return cfg_ok;
+    /* some advanced checks */
+
+    bool advanced_checks_status = true;
+
+    if (cfg->pred_initial_size > cfg->pred_size) {
+        fprintf(stderr, "Predictors' initial size cannot be larger than their full size\n");
+        advanced_checks_status = false;
+    }
+
+    if (cfg->pred_min_size > cfg->pred_size) {
+        fprintf(stderr, "Predictors' minimal size cannot be larger than their full size\n");
+        advanced_checks_status = false;
+    }
+
+    if (cfg->pred_min_size > cfg->pred_initial_size) {
+        fprintf(stderr, "Predictors' minimal size cannot be larger than their initial size\n");
+        advanced_checks_status = false;
+    }
+
+    return advanced_checks_status? cfg_ok : cfg_err;
 }
 
 
@@ -472,17 +492,6 @@ void config_save_file(FILE *file, config_t *cfg)
     }
     fprintf(file, "bw-pred-initial-size: %.5g\n", cfg->pred_initial_size);
     fprintf(file, "bw-pred-min-size: %.5g\n", cfg->pred_min_size);
-    fprintf(file, "# baldwin-len=%d,zeroeps=%g,slowthr=%g,steady=%g,dec=%g,slow=%g,fast=%g,inthr=%g,incoef=%g\n",
-        BW_HISTORY_LENGTH,
-        cfg->bw_config.zero_epsilon,
-        cfg->bw_config.slow_threshold,
-        cfg->bw_config.zero_coef,
-        cfg->bw_config.decrease_coef,
-        cfg->bw_config.increase_slow_coef,
-        cfg->bw_config.increase_fast_coef,
-        cfg->bw_config.inaccuracy_tolerance,
-        cfg->bw_config.inaccuracy_coef
-    );
     fprintf(file, "\n");
     fprintf(file, "# Compiler flags\n");
     fprintf(file, "# CGP_COLS: %d\n", CGP_COLS);
@@ -505,15 +514,15 @@ void config_save_file(FILE *file, config_t *cfg)
         fprintf(file, "# OpenMP: no\n");
     #endif
     #ifdef AVX2
-        fprintf(file, "# AVX2: yes\n");
+        fprintf(file, "# AVX2 compiled: yes\n");
     #else
-        fprintf(file, "# AVX2: no\n");
+        fprintf(file, "# AVX2 compiled: no\n");
     #endif
     fprintf(file, "# AVX2 supported by CPU/OS: %s\n", can_use_intel_core_4th_gen_features()? "yes" : "no");
     #ifdef SSE2
-        fprintf(file, "# SSE2: yes\n");
+        fprintf(file, "# SSE2 compiled: yes\n");
     #else
-        fprintf(file, "# SSE2: no\n");
+        fprintf(file, "# SSE2 compiled: no\n");
     #endif
     fprintf(file, "# SSE2 supported by CPU/OS: %s\n", can_use_sse2()? "yes" : "no");
 }

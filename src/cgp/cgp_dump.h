@@ -23,7 +23,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#include "cgp.h"
+#include "cgp_core.h"
 #include "cgp_config.h"
 
 

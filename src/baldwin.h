@@ -106,7 +106,6 @@ typedef struct {
 
 
 typedef struct {
-    bw_history_t history;
     bool apply_now;
     int last_applied_generation;
 } bw_state_t;

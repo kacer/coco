@@ -27,7 +27,6 @@
 
 
 #include "ga.h"
-#include "debug.h"
 
 
  /**
@@ -53,9 +52,6 @@ struct archive
 
     /* number of stored items */
     int stored;
-
-    /* modification flag */
-    bool modified;
 
     /* stored items - ring buffer */
     ga_chr_t *chromosomes;

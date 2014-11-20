@@ -123,6 +123,29 @@ typedef ga_fitness_t (*ga_fitness_func_t)(ga_chr_t chromosome);
 typedef void (*ga_offspring_func_t)(ga_pop_t population);
 
 
+/**
+ * Metadata allocation/initialization function
+ *
+ * This function should allocate all required memory and perform
+ * initialization of any kind.
+ *
+ * @return Pointer to allocated metadata variable (usually struct)
+ */
+typedef void* (*ga_alloc_metadata_func_t)();
+
+
+/**
+ * Metadata deinitialization/deallocation function.
+ *
+ * This function should release any memory resources allocated by
+ * ga_alloc_metadata_func_t.
+ *
+ * @param  metadata
+ * @return
+ */
+typedef void (*ga_free_metadata_func_t)(void *metadata);
+
+
 
 /**
  * GA problem type
@@ -149,6 +172,11 @@ typedef struct {
 
     /* children generator */
     ga_offspring_func_t offspring;
+
+    /* metadata */
+    ga_alloc_metadata_func_t alloc_metadata;
+    ga_free_metadata_func_t free_metadata;
+
 } ga_func_vect_t;
 
 
@@ -174,7 +202,13 @@ struct ga_pop {
     ga_fitness_t best_fitness;
     ga_chr_t best_chromosome;
     int best_chr_index;
+
+    /* problem-specific metadata, e.g. pre-calculated values */
+    void *metadata;
 };
+
+
+/* population *****************************************************************/
 
 
 /**
@@ -189,23 +223,13 @@ ga_pop_t ga_create_pop(int size, ga_problem_type_t type, ga_func_vect_t methods)
 
 
 /**
- * Initializes population to random chromosomes
- * @param pop
- */
-int ga_init_pop(ga_pop_t pop);
-
-
-/**
- * Sets method vector
- */
-void ga_set_methods(ga_pop_t pop, ga_func_vect_t methods);
-
-
-/**
 * Clear memory associated with given population (including its chromosomes)
 * @param pop
 */
 void ga_destroy_pop(ga_pop_t pop);
+
+
+/* chromosome *****************************************************************/
 
 
 /**
@@ -233,6 +257,9 @@ void ga_free_chr(ga_chr_t chr, ga_free_genome_func_t free_func);
 void ga_copy_chr(ga_chr_t dst, ga_chr_t src, ga_copy_genome_func_t copy_func);
 
 
+/* fitness calculation ********************************************************/
+
+
 /**
  * Calculate fitness of given chromosome, but only if its `has_fitness`
  * attribute is set to `false`
@@ -255,6 +282,21 @@ ga_fitness_t ga_reevaluate_chr(ga_pop_t pop, ga_chr_t chr);
  * Set `has_fitness` flag for all chromosomes to false
  */
 void ga_invalidate_fitness(ga_pop_t pop);
+
+
+/**
+ * Calculate fitness of whole population, using `ga_evaluate_chr`
+ * in single thread
+ * @param chr
+ */
+void ga_evaluate_pop(ga_pop_t pop);
+
+
+/**
+ * Re-calculate fitness of whole population, using `ga_reevaluate_chr`
+ * @param chr
+ */
+void ga_reevaluate_pop(ga_pop_t pop);
 
 
 /**
@@ -304,19 +346,7 @@ static inline double ga_worst_fitness(ga_problem_type_t type) {
 }
 
 
-/**
- * Calculate fitness of whole population, using `ga_evaluate_chr`
- * in single thread
- * @param chr
- */
-void ga_evaluate_pop(ga_pop_t pop);
-
-
-/**
- * Re-calculate fitness of whole population, using `ga_reevaluate_chr`
- * @param chr
- */
-void ga_reevaluate_pop(ga_pop_t pop);
+/* evolution process **********************************************************/
 
 
 /**
@@ -324,10 +354,3 @@ void ga_reevaluate_pop(ga_pop_t pop);
  * @param pop
  */
 void ga_next_generation(ga_pop_t pop);
-
-
-/**
- * Advance population to next generation WITHOUT evaluation
- * @param pop
- */
-void ga_create_children(ga_pop_t pop);

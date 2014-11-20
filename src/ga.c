@@ -22,12 +22,11 @@
 #include <string.h>
 #include <assert.h>
 
-#ifdef _OPENMP
-    #include <omp.h>
+#ifdef GA_USE_PTHREAD
+    #include <pthread.h>
 #endif
 
 #include "ga.h"
-#include "debug.h"
 #include "random.h"
 
 
@@ -80,9 +79,10 @@ void _ga_free_chromosomes(ga_chr_t * arr, int size, ga_free_genome_func_t free_f
  */
 ga_pop_t ga_create_pop(int size, ga_problem_type_t type, ga_func_vect_t methods)
 {
-    /* only alloc/free are required for initialization */
+    /* only alloc/free/init are required for initialization */
     assert(methods.alloc_genome != NULL);
     assert(methods.free_genome != NULL);
+    assert(methods.init_genome != NULL);
 
     ga_pop_t new_pop = (ga_pop_t) malloc(sizeof(struct ga_pop));
     if (new_pop == NULL) {
@@ -115,40 +115,16 @@ ga_pop_t ga_create_pop(int size, ga_problem_type_t type, ga_func_vect_t methods)
         return NULL;
     }
 
-    return new_pop;
-}
-
-
-/**
- * Initializes population to random chromosomes
- * @param pop
- */
-int ga_init_pop(ga_pop_t pop)
-{
-    assert(pop->methods.init_genome != NULL);
-
-    for (int i = 0; i < pop->size; i++) {
-        int retval = pop->methods.init_genome(pop->chromosomes[i]);
+    /* initialize chromosomes */
+    for (int i = 0; i < size; i++) {
+        int retval = methods.init_genome(new_pop->chromosomes[i]);
         if (retval != 0) {
-            return retval;
+            ga_destroy_pop(new_pop);
+            return NULL;
         }
     }
-    return 0;
-}
 
-
-/**
- * Sets method vector
- */
-void ga_set_methods(ga_pop_t pop, ga_func_vect_t methods)
-{
-    assert(methods.alloc_genome != NULL);
-    assert(methods.free_genome != NULL);
-    assert(methods.init_genome != NULL);
-    assert(methods.fitness != NULL);
-    assert(methods.offspring != NULL);
-
-    pop->methods = methods;
+    return new_pop;
 }
 
 
@@ -224,6 +200,41 @@ void ga_copy_chr(ga_chr_t dst, ga_chr_t src, ga_copy_genome_func_t copy_func)
 }
 
 
+/* fitness calculation ********************************************************/
+
+
+void _ga_find_new_best(ga_pop_t pop)
+{
+    ga_fitness_t best_fitness = pop->chromosomes[0]->fitness;
+    int best_index = 0;
+
+    // find best fitness
+    for (int i = 1; i < pop->size; i++) {
+        ga_fitness_t f = pop->chromosomes[i]->fitness;
+        if (ga_is_better_or_same(pop->problem_type, f, best_fitness)) {
+            best_fitness = f;
+            best_index = i;
+        }
+    }
+
+    // if best index hasn't changed, try to find different one with the same fitness
+    if (best_index == pop->best_chr_index) {
+        for (int i = 0; i < pop->size; i++) {
+            ga_fitness_t f = pop->chromosomes[i]->fitness;
+            if (i != best_index && f == best_fitness) {
+                best_index = i;
+                break;
+            }
+        }
+    }
+
+    // set new best values
+    pop->best_fitness = best_fitness;
+    pop->best_chr_index = best_index;
+    pop->best_chromosome = pop->chromosomes[best_index];
+}
+
+
 /**
  * Calculate fitness of given chromosome, but only if its `has_fitness`
  * attribute is set to `false`
@@ -267,49 +278,14 @@ void ga_invalidate_fitness(ga_pop_t pop)
 }
 
 
-/* fitness calculation ********************************************************/
-
-
-void _ga_find_new_best(ga_pop_t pop)
-{
-    ga_fitness_t best_fitness = pop->chromosomes[0]->fitness;
-    int best_index = 0;
-
-    // find best fitness
-    for (int i = 1; i < pop->size; i++) {
-        ga_fitness_t f = pop->chromosomes[i]->fitness;
-        if (ga_is_better_or_same(pop->problem_type, f, best_fitness)) {
-            best_fitness = f;
-            best_index = i;
-        }
-    }
-
-    // if best index hasn't changed, try to find different one with the same fitness
-    if (best_index == pop->best_chr_index) {
-        for (int i = 0; i < pop->size; i++) {
-            ga_fitness_t f = pop->chromosomes[i]->fitness;
-            if (i != best_index && f == best_fitness) {
-                best_index = i;
-                break;
-            }
-        }
-    }
-
-    // set new best values
-    pop->best_fitness = best_fitness;
-    pop->best_chr_index = best_index;
-    pop->best_chromosome = pop->chromosomes[best_index];
-}
-
-
 /**
  * Calculate fitness of whole population, using `ga_evaluate_chr`
  * @param chr
  */
 void ga_evaluate_pop(ga_pop_t pop)
 {
-    // reevaluate population
-    #pragma omp parallel for schedule(static)
+    // evaluate population
+    #pragma omp parallel for
     for (int i = 0; i < pop->size; i++) {
         ga_evaluate_chr(pop, pop->chromosomes[i]);
     }
@@ -326,7 +302,7 @@ void ga_evaluate_pop(ga_pop_t pop)
 void ga_reevaluate_pop(ga_pop_t pop)
 {
     // reevaluate population
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel for
     for (int i = 0; i < pop->size; i++) {
         ga_reevaluate_chr(pop, pop->chromosomes[i]);
     }
@@ -334,6 +310,9 @@ void ga_reevaluate_pop(ga_pop_t pop)
     /* find new best chromosome */
     _ga_find_new_best(pop);
 }
+
+
+/* evolution process **********************************************************/
 
 
 /**
@@ -344,16 +323,5 @@ void ga_next_generation(ga_pop_t pop)
 {
     pop->methods.offspring(pop);
     ga_evaluate_pop(pop);
-    pop->generation++;
-}
-
-
-/**
- * Advance population to next generation WITHOUT evaluation
- * @param pop
- */
-void ga_create_children(ga_pop_t pop)
-{
-    pop->methods.offspring(pop);
     pop->generation++;
 }

@@ -21,7 +21,7 @@
 #pragma once
 
 
-#include "cgp.h"
+#include "cgp/cgp.h"
 #include "image.h"
 #include "config.h"
 #include "archive.h"
@@ -39,84 +39,46 @@
 extern int check_signals(int current_generation);
 
 
-/**
- * CGP main loop
- * @param  cgp_population
- * @param  pred_population
- * @param  cgp_archive CGP archive
- * @param  pred_archive Predictors archive
- * @param  config
- * @param  img_noisy Noisy image (to store filtered img to results)
- * @param  baldwin_state Colearning state and sync info
- * @param  best_circuit_file_name_txt File for storing best circuit in readable format
- * @param  best_circuit_file_name_chr File for storing best circuit in CGPViewer format
- * @param  log_file General log file
- * @param  history_file History CSV file
- * @param  finished Pointer to shared variable indicating that the program
- *                  should terminate
- * @return Program return value
- */
-int cgp_main(
+typedef struct {
+    // config
+    config_t *config;
+
     // populations
-    ga_pop_t cgp_population,
-    ga_pop_t pred_population,
+    // if algo == simple_cgp, only cgp population is necessary
+    ga_pop_t cgp_population;
+    ga_pop_t pred_population;
 
     // archives
-    archive_t cgp_archive,
-    archive_t pred_archive,
+    // not used when algo == simple_cgp
+    archive_t cgp_archive;
+    archive_t pred_archive;
 
-    // config
-    config_t *config,
+    // history
+    bw_history_t history;
 
-    // input
-    img_image_t img_noisy,
-
-    // baldwin
-    bw_state_t *baldwin_state,
+    // baldwin (colearning state)
+    // used always - to store history
+    bw_state_t baldwin_state;
 
     // log files
-    char *best_circuit_file_name_txt,
-    char *best_circuit_file_name_chr,
-    FILE *log_file,
-    FILE *history_file,
+    FILE *log_file;
+    FILE *history_file;
 
-    // status
-    bool *finished
-);
+    // indicates that the algorithm should terminate ASAP
+    bool finished;
+} algo_data_t;
+
+
+/**
+ * CGP main loop
+ * @param  work_data
+ * @return Program return value
+ */
+int cgp_main(algo_data_t *work_data);
 
 
 /**
  * Coevolutionary predictors main loop
- * @param  cgp_population
- * @param  pred_population
- * @param  cgp_archive CGP archive
- * @param  pred_archive Predictors archive
- * @param  config
- * @param  baldwin_state Colearning state and sync info
- * @param  log_file General log file
- * @param  history_file History CSV file
- * @param  finished Pointer to shared variable indicating that the program
- *                  should terminate
+ * @param  work_data
  */
-void pred_main(
-    // populations
-    ga_pop_t cgp_population,
-    ga_pop_t pred_population,
-
-    // archives
-    archive_t cgp_archive,
-    archive_t pred_archive,
-
-    // config
-    config_t *config,
-
-    // baldwin_state
-    bw_state_t *baldwin_state,
-
-    // log files
-    FILE *log_file,
-    FILE *history_file,
-
-    // status
-    bool *finished
-);
+void pred_main(algo_data_t *work_data);

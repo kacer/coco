@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include "ga.h"
+#include "../ga.h"
 #include "cgp_config.h"
 
 
