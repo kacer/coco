@@ -27,6 +27,7 @@
 #include "archive.h"
 #include "baldwin.h"
 #include "predictors.h"
+#include "logging/logging.h"
 
 
 /**
@@ -63,6 +64,9 @@ typedef struct {
     // log files
     FILE *log_file;
     FILE *history_file;
+
+    // loggers
+    logger_list_t loggers;
 
     // indicates that the algorithm should terminate ASAP
     bool finished;

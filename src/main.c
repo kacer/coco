@@ -178,6 +178,12 @@ int main(int argc, char *argv[])
     // baldwin
     bw_init_history(&work_data.history);
 
+    // loggers list
+    logger_init_list(&work_data.loggers);
+
+    logger_add(&work_data.loggers,
+        logger_text_create(fopen("cocolog/test.log", "w")));
+
     // images
     img_image_t img_original;
     img_image_t img_noisy;
@@ -388,6 +394,14 @@ int main(int argc, char *argv[])
 
 
     /*
+        If no loggers are set, use the devnull one
+     */
+    if (work_data.loggers.count == 0) {
+        logger_add(&work_data.loggers, logger_devnull_create());
+    }
+
+
+    /*
         Log initial info
      */
 
@@ -526,6 +540,8 @@ int main(int argc, char *argv[])
 
     img_destroy(img_original);
     img_destroy(img_noisy);
+
+    logger_destroy_list(&work_data.loggers);
 
     fclose(work_data.log_file);
     fclose(work_data.history_file);

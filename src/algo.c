@@ -136,8 +136,6 @@ int cgp_main(algo_data_t *wd)
 
         // update archive if necessary
         if (is_better) {
-            // save image
-            // save_filtered_image(wd->config->log_dir, wd->cgp_population, img_noisy);
             DOUBLE_LOG(log_cgp_change, wd->log_file, cgp_parent_fitness, wd->cgp_population->best_fitness);
 
             if (wd->config->algorithm != simple_cgp) {
@@ -158,6 +156,11 @@ int cgp_main(algo_data_t *wd)
                 //printf("Inaccuracy %.10g\n", predicted_fitness / real_fitness);
 
                 DOUBLE_LOG(log_cgp_archived, wd->log_file, predicted_fitness, real_fitness);
+                logger_fire(&wd->loggers, better_cgp, predicted_fitness, real_fitness);
+
+            } else {
+                // in simple CGP, predicted fitness is in fact the real fitness
+                logger_fire(&wd->loggers, better_cgp, -1, predicted_fitness);
             }
         }
 
