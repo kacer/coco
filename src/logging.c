@@ -21,6 +21,7 @@
 #include <math.h>
 #include <time.h>
 #include <errno.h>
+#include <assert.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/resource.h>
@@ -395,6 +396,8 @@ FILE *init_cgp_history_file(const char *dir, const char *file)
 void log_cgp_history(FILE *fp, bw_history_entry_t *hist, long cgp_evals,
     int pred_length, int pred_used_length, ga_fitness_t best_ever)
 {
+    assert(fp != NULL);
+
     struct timeval usertime_diff;
     struct timeval wallclock_diff;
     _get_usertime_diff(&usertime_diff);

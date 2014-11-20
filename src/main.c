@@ -48,9 +48,6 @@
 volatile sig_atomic_t interrupted = 0;
 volatile sig_atomic_t cpu_limit_reached = 0;
 
-// when SIGINT was received last time
-static long interrupted_generation = -1;
-
 // if SIGINT is received twice within this gap, program exits
 const int SIGINT_GENERATIONS_GAP = 1000;
 
@@ -84,6 +81,9 @@ void sigxcpu_handler(int _)
  */
 int check_signals(int current_generation)
 {
+    // when SIGINT was received last time
+    static long interrupted_generation = -1;
+
     // SIGXCPU
     if (cpu_limit_reached) {
         fprintf(stderr, "SIGXCPU received!\n");
@@ -152,6 +152,21 @@ static config_t config = {
 };
 
 
+// predictor evolution settings and current state
+static pred_metadata_t pred_metadata;
+
+// algorithm working data
+// everything else is statically initialized to NULL
+static algo_data_t work_data = {
+    .config = &config,
+    .baldwin_state = {
+        .apply_now = false,
+        .last_applied_generation = 0,
+    },
+    .finished = false,
+};
+
+
 /******************************************************************************/
 
 
@@ -160,29 +175,15 @@ int main(int argc, char *argv[])
     // cannot be set in initializer
     config.random_seed = rand_seed_from_time();
 
-    // populations and archives
-    ga_pop_t cgp_population;
-    ga_pop_t pred_population = NULL;
-    archive_t cgp_archive = NULL;
-    archive_t pred_archive = NULL;
-
     // baldwin
-    bw_state_t baldwin_state = {};
-    bw_init_history(&baldwin_state.history);
+    bw_init_history(&work_data.history);
 
     // images
     img_image_t img_original;
     img_image_t img_noisy;
 
-    // log files
-    char best_circuit_file_name_txt[MAX_FILENAME_LENGTH + 1];
-    char best_circuit_file_name_chr[MAX_FILENAME_LENGTH + 1];
-    FILE *progress_log_file;
-    FILE *cgp_history_log_file;
-
     // application exit code
     int retval = 0;
-
 
     /*
         Log system configuration
@@ -256,12 +257,12 @@ int main(int argc, char *argv[])
         config_ok = false;
     }
 
-    if ((progress_log_file = open_log_file(config.log_dir, "progress.log", true)) == NULL) {
+    if ((work_data.log_file = open_log_file(config.log_dir, "progress.log", true)) == NULL) {
         fprintf(stderr, "Failed to open 'progress.log' in results dir for writing.\n");
         config_ok = false;
     }
 
-    if ((cgp_history_log_file = init_cgp_history_file(config.log_dir, "cgp_history.csv")) == NULL) {
+    if ((work_data.history_file = init_cgp_history_file(config.log_dir, "cgp_history.csv")) == NULL) {
         fprintf(stderr, "Failed to open 'cgp_history.csv' in results dir for writing.\n");
         config_ok = false;
     }
@@ -270,9 +271,6 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Run %s --help or %s -h to see available options.\n", argv[0], argv[0]);
         return 1;
     }
-
-    snprintf(best_circuit_file_name_txt, MAX_FILENAME_LENGTH + 1, "%s/best_circuit.txt", config.log_dir);
-    snprintf(best_circuit_file_name_chr, MAX_FILENAME_LENGTH + 1, "%s/best_circuit.chr", config.log_dir);
 
 
     /*
@@ -331,15 +329,13 @@ int main(int argc, char *argv[])
             }
         }
 
-        pred_metadata_t pred_metadata = {
-            .genome_type = config.pred_genome_type,
-            .max_gene_value = img_size - 1,
-            .genotype_length = pred_max_size,
-            .genotype_used_length = pred_initial_size,
-            .mutation_rate = config.pred_mutation_rate,
-            .offspring_elite = config.pred_offspring_elite,
-            .offspring_combine = config.pred_offspring_combine,
-        };
+        pred_metadata.genome_type = config.pred_genome_type;
+        pred_metadata.max_gene_value = img_size - 1;
+        pred_metadata.genotype_length = pred_max_size;
+        pred_metadata.genotype_used_length = pred_initial_size;
+        pred_metadata.mutation_rate = config.pred_mutation_rate;
+        pred_metadata.offspring_elite = config.pred_offspring_elite;
+        pred_metadata.offspring_combine = config.pred_offspring_combine;
 
         // predictors evolution
         pred_init(&pred_metadata);
@@ -351,8 +347,8 @@ int main(int argc, char *argv[])
             .copy_genome = cgp_copy_genome,
             .fitness = fitness_eval_cgp,
         };
-        cgp_archive = arc_create(config.cgp_archive_size, arc_cgp_methods, CGP_PROBLEM_TYPE);
-        if (cgp_archive == NULL) {
+        work_data.cgp_archive = arc_create(config.cgp_archive_size, arc_cgp_methods, CGP_PROBLEM_TYPE);
+        if (work_data.cgp_archive == NULL) {
             fprintf(stderr, "Failed to initialize CGP archive.\n");
             return 1;
         }
@@ -364,28 +360,28 @@ int main(int argc, char *argv[])
             .copy_genome = pred_copy_genome,
             .fitness = NULL,
         };
-        pred_archive = arc_create(1, arc_pred_methods, PRED_PROBLEM_TYPE);
-        if (pred_archive == NULL) {
+        work_data.pred_archive = arc_create(1, arc_pred_methods, PRED_PROBLEM_TYPE);
+        if (work_data.pred_archive == NULL) {
             fprintf(stderr, "Failed to initialize predictors archive.\n");
             return 1;
         }
     }
 
     // fitness function
-    fitness_init(img_original, img_noisy, cgp_archive, pred_archive);
+    fitness_init(img_original, img_noisy, work_data.cgp_archive, work_data.pred_archive);
 
     /*
         Populations initialization
      */
 
-    cgp_population = cgp_init_pop(config.cgp_population_size);
-    if (cgp_population == NULL) {
+    work_data.cgp_population = cgp_init_pop(config.cgp_population_size);
+    if (work_data.cgp_population == NULL) {
         fprintf(stderr, "Failed to initialize CGP population.\n");
     }
 
     if (config.algorithm != simple_cgp) {
-        pred_population = pred_init_pop(config.pred_population_size);
-        if (pred_population == NULL) {
+        work_data.pred_population = pred_init_pop(config.pred_population_size);
+        if (work_data.pred_population == NULL) {
             fprintf(stderr, "Failed to initialize predictors population.\n");
         }
     }
@@ -411,12 +407,12 @@ int main(int argc, char *argv[])
     printf("Initial \"PSNR\" value:         %.10g\n",
         img_psnr(img_original, img_noisy));
 
-    ga_evaluate_pop(cgp_population);
+    ga_evaluate_pop(work_data.cgp_population);
 
     if (config.algorithm != simple_cgp) {
-        arc_insert(cgp_archive, cgp_population->best_chromosome);
-        ga_evaluate_pop(pred_population);
-        arc_insert(pred_archive, pred_population->best_chromosome);
+        arc_insert(work_data.cgp_archive, work_data.cgp_population->best_chromosome);
+        ga_evaluate_pop(work_data.pred_population);
+        arc_insert(work_data.pred_archive, work_data.pred_population->best_chromosome);
     }
 
     save_original_image(config.log_dir, img_original);
@@ -434,27 +430,11 @@ int main(int argc, char *argv[])
     signal(SIGINT, sigint_handler);
     signal(SIGXCPU, sigxcpu_handler);
 
-    // shared among threads
-    bool finished = false;
-
     switch (config.algorithm) {
 
         case simple_cgp:
-            retval = cgp_main(
-                cgp_population,
-                NULL,
-                NULL,
-                NULL,
-                &config,
-                img_noisy,
-                &baldwin_state,  // required history field
-                best_circuit_file_name_txt,
-                best_circuit_file_name_chr,
-                progress_log_file,
-                cgp_history_log_file,
-                &finished
-            );
-            goto done;
+            retval = cgp_main(&work_data);
+            break;
 
         case predictors:
         case baldwin:
@@ -462,37 +442,14 @@ int main(int argc, char *argv[])
             {
                 #pragma omp section
                 {
-                    retval = cgp_main(
-                        cgp_population,
-                        pred_population,
-                        cgp_archive,
-                        pred_archive,
-                        &config,
-                        img_noisy,
-                        &baldwin_state,
-                        best_circuit_file_name_txt,
-                        best_circuit_file_name_chr,
-                        progress_log_file,
-                        cgp_history_log_file,
-                        &finished
-                    );
+                    retval = cgp_main(&work_data);
                 }
                 #pragma omp section
                 {
-                    pred_main(
-                        cgp_population,
-                        pred_population,
-                        cgp_archive,
-                        pred_archive,
-                        &config,
-                        &baldwin_state,
-                        progress_log_file,
-                        cgp_history_log_file,
-                        &finished
-                    );
+                    pred_main(&work_data);
                 }
             }
-            goto done;
+            break;
 
         default:
             fprintf(stderr, "Algorithm '%s' is not supported.\n",
@@ -505,20 +462,41 @@ int main(int argc, char *argv[])
         Dump summary and clean-up
      */
 
-done:
-
-    // dummy expression to avoid compiler warning
-    printf("----\n");
-
     ga_fitness_t best_fitness;
+    ga_chr_t best_chromosome;
     if (config.algorithm == simple_cgp) {
-        best_fitness = cgp_population->best_fitness;
+        best_chromosome = work_data.cgp_population->best_chromosome;
     } else {
-        best_fitness = cgp_archive->best_chromosome_ever->fitness;
+        best_chromosome = work_data.cgp_archive->best_chromosome_ever;
+    }
+    best_fitness = best_chromosome->fitness;
+
+    // dump best circuit and image
+    char buffer[MAX_FILENAME_LENGTH + 1];
+
+    snprintf(buffer, MAX_FILENAME_LENGTH + 1, "%s/best_circuit.txt", config.log_dir);
+    FILE *circuit_file_txt = fopen(buffer, "w");
+    if (circuit_file_txt) {
+        log_cgp_circuit(circuit_file_txt, work_data.cgp_population->generation, best_chromosome);
+        fclose(circuit_file_txt);
+    } else {
+        fprintf(stderr, "Failed to open %s!\n", buffer);
     }
 
+    snprintf(buffer, MAX_FILENAME_LENGTH + 1, "%s/best_circuit.chr", config.log_dir);
+    FILE *circuit_file_chr = fopen(buffer, "w");
+    if (circuit_file_chr) {
+        cgp_dump_chr_compat(best_chromosome, circuit_file_chr);
+        fclose(circuit_file_chr);
+    } else {
+        fprintf(stderr, "Failed to open %s!\n", buffer);
+    }
+
+    // save best filtered image
+    save_best_image(config.log_dir, best_chromosome, img_noisy);
+
     // dump evolution summary
-    log_final_summary(stdout, cgp_population->generation,
+    log_final_summary(stdout, work_data.cgp_population->generation,
         best_fitness, fitness_get_cgp_evals());
     printf("\n");
     log_time(stdout);
@@ -530,18 +508,18 @@ done:
         fprintf(stderr, "Failed to open 'summary.log' in results dir for writing.\n");
 
     } else {
-        log_final_summary(summary_file, cgp_population->generation,
+        log_final_summary(summary_file, work_data.cgp_population->generation,
             best_fitness, fitness_get_cgp_evals());
         fprintf(summary_file, "\n");
         log_time(summary_file);
     }
 
-    ga_destroy_pop(cgp_population);
+    ga_destroy_pop(work_data.cgp_population);
 
     if (config.algorithm != simple_cgp) {
-        ga_destroy_pop(pred_population);
-        arc_destroy(cgp_archive);
-        arc_destroy(pred_archive);
+        ga_destroy_pop(work_data.pred_population);
+        arc_destroy(work_data.cgp_archive);
+        arc_destroy(work_data.pred_archive);
     }
     cgp_deinit();
     fitness_deinit();
@@ -549,7 +527,8 @@ done:
     img_destroy(img_original);
     img_destroy(img_noisy);
 
-    fclose(progress_log_file);
+    fclose(work_data.log_file);
+    fclose(work_data.history_file);
 
     return retval;
 }
