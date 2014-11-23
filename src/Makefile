@@ -26,18 +26,18 @@ LIBS=-lm -lc
 SOURCES=main.c cpu.c ga.c cgp/cgp_core.c cgp/cgp_dump.c cgp/cgp_load.c cgp/cgp_avx.c cgp/cgp_sse.c \
 	predictors.c image.c fitness.c fitness_avx.c fitness_sse.c \
 	archive.c config.c logging.c algo.c baldwin.c \
-	logging/base.c logging/text.c
+	logging/base.c logging/text.c logging/history.c
 
 EXECUTABLE=coco
 OFILES= main.o cpu.o ga.o cgp/cgp_core.o cgp/cgp_dump.o cgp/cgp_load.o cgp/cgp_avx.o cgp/cgp_sse.o \
 	predictors.o image.o fitness.o fitness_avx.o fitness_sse.o \
 	archive.o config.o logging.o algo.o baldwin.o \
-	logging/base.o logging/text.o
+	logging/base.o logging/text.o logging/history.o
 
 EXECUTABLE_APPLY=coco_apply
 OFILES_APPLY= image.o ga.o cgp/cgp_core.o cgp/cgp_load.o main_apply.o
 
-CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_15.png -g 30000 -a cgp -S 25 -I 25 -k 10000
+CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_15.png -g 30000 -a baldwin -S 100 -I 25 -k 10000
 ANSELM_HOST=anselm
 ANSELM_PATH=~/xwigla00
 MERLIN_HOST=merlin

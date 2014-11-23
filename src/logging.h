@@ -108,7 +108,7 @@ void log_cgp_change(FILE *fp, ga_fitness_t previous_best, ga_fitness_t new_best)
  * Logs CGP history entry
  * @param history
  */
-void log_bw_history_entry(FILE *fp, bw_history_entry_t *history);
+void log_bw_history_entry(FILE *fp, history_entry_t *history);
 
 
 /**
@@ -208,7 +208,7 @@ FILE *init_cgp_history_file(const char *dir, const char *file);
  * @param pred_used_length
  * @param best_ever
  */
-void log_cgp_history(FILE *fp, bw_history_entry_t *hist, long cgp_evals,
+void log_cgp_history(FILE *fp, history_entry_t *hist, long cgp_evals,
     int pred_length, int pred_used_length, ga_fitness_t best_ever);
 
 

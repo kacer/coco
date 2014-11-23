@@ -17,15 +17,17 @@
  *   \___)     (___/
  */
 
+#pragma once
+
 #include <assert.h>
 
 #include "base.h"
-#include "devnull.h"
 #include "text.h"
+#include "history.h"
 
 
 /* maximal number of active loggers */
-#define LOGGERS_MAX 3
+#define LOGGERS_MAX 10
 
 
 typedef struct {
@@ -60,6 +62,8 @@ static inline void logger_add(logger_list_t *list, logger_t logger)
 
 #define logger_fire(listptr, event, ...) do { \
     for (int i = 0; i < (listptr)->count; i++) { \
-        (listptr)->loggers[i]->handler_ ## event ((listptr)->loggers[i], __VA_ARGS__); \
+        if ((listptr)->loggers[i]->handler_ ## event) { \
+            (listptr)->loggers[i]->handler_ ## event ((listptr)->loggers[i], ##__VA_ARGS__); \
+        } \
     } \
 } while(0);

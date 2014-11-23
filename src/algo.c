@@ -19,24 +19,12 @@
 
 
 #include "algo.h"
-#include "logging.h"
+#include "fitness.h"
 
-
-#define DOUBLE_LOG(func, file, ...) { \
-    func(stdout, __VA_ARGS__); \
-    func(file, __VA_ARGS__); \
-}
-
-
-#define DOUBLE_LOG_PRED(func, file, ...) { \
-    func(stdout, __VA_ARGS__, false); \
-    func(file, __VA_ARGS__, false); \
-}
-
-
+/*
 static inline void _log_cgp_csv(
     algorithm_t algorithm,
-    bw_history_entry_t *last_entry,
+    history_entry_t *last_entry,
     ga_pop_t cgp_population,
     archive_t cgp_archive,
     archive_t pred_archive,
@@ -63,6 +51,21 @@ static inline void _log_cgp_csv(
         );
     }
 }
+*/
+
+bool _should_apply_baldwin(bool is_better, algo_data_t *wd)
+{
+    if (wd->config->algorithm == baldwin) {
+        int diff = (wd->cgp_population->generation
+                    - wd->baldwin_state.last_applied_generation);
+
+        if (is_better || (wd->config->bw_interval && diff >= wd->config->bw_interval)) {
+            return true;
+        }
+    }
+
+    return false;
+}
 
 
 /**
@@ -72,14 +75,21 @@ static inline void _log_cgp_csv(
  */
 int cgp_main(algo_data_t *wd)
 {
-    ga_fitness_t cgp_parent_fitness;
+    /* A. log start */
+    logger_fire(&wd->loggers, started, history_last(&wd->history));
 
-    // append first entry to CSV
-    _log_cgp_csv(wd->config->algorithm, bw_get(&wd->history, -1),
-        wd->cgp_population, wd->cgp_archive, wd->pred_archive, wd->history_file);
-
-    // do the work
+    /* B. "Infinite" loop */
     while (!(wd->finished)) {
+        ga_fitness_t cgp_parent_fitness;
+        ga_fitness_t predicted_fitness;
+        ga_fitness_t real_fitness = 0;
+
+        history_entry_t current_history_entry;
+        finish_reason_t finish_reason;
+
+
+        /* advance to next generation *****************************************/
+
 
         #pragma omp critical (PRED_ARCHIVE__CGP_POP)
         {
@@ -88,157 +98,164 @@ int cgp_main(algo_data_t *wd)
             ga_next_generation(wd->cgp_population);
         }
 
+
+        /* check stop conditions **********************************************/
+
+
+        int received_signal = check_signals(wd->cgp_population->generation);
+
         // last generation?
         if (wd->cgp_population->generation >= wd->config->max_generations) {
-            printf("Generations limit reached (%d), terminating.\n", wd->config->max_generations);
+            finish_reason = generation_limit;
             wd->finished = true;
         }
 
         // target fitness achieved?
-        if (wd->config->target_fitness != 0 && wd->cgp_population->best_fitness >= wd->config->target_fitness) {
-            printf("Target fitness reached (" FITNESS_FMT "), terminating.\n", wd->config->target_fitness);
+        if (wd->config->target_fitness != 0
+            && wd->cgp_population->best_fitness >= wd->config->target_fitness)
+        {
+            finish_reason = target_fitness;
             wd->finished = true;
         }
 
-        // check signals
-        int signal = check_signals(wd->cgp_population->generation);
-        if (signal > 0) {
+        // signal received
+        if (received_signal > 0) {
             // stop other threads
+            finish_reason = received_signal;
             wd->finished = true;
         }
+
+
+        /* various checks******************************************************/
+
 
         // whether we found better solution
-        bool is_better = ga_is_better(wd->cgp_population->problem_type, wd->cgp_population->best_fitness, cgp_parent_fitness);
+        bool is_better = ga_is_better(wd->cgp_population->problem_type,
+            wd->cgp_population->best_fitness, cgp_parent_fitness);
 
         // whether we should log now
-        bool log_now = wd->config->log_interval && ((wd->cgp_population->generation % wd->config->log_interval) == 0);
-
-        // whether new entry was appended to history log
-        bw_history_entry_t last_history_entry;
+        bool log_tick_now = wd->config->log_interval
+            && ((wd->cgp_population->generation % wd->config->log_interval) == 0);
 
         // whether we update evolution params now
-        bool apply_baldwin = false;
-        if (wd->config->algorithm == baldwin) {
+        bool apply_baldwin_now = _should_apply_baldwin(is_better, wd);
+
+        // whether we should append entry to history log
+        bool need_history_entry_append = is_better || apply_baldwin_now;
+
+        // whether we need to calculate current state for any reason
+        bool need_history_entry_calc =
+            need_history_entry_append || log_tick_now || received_signal
+            || wd->finished;
+
+
+        /* update archive, calculate real fitness if necessary ****************/
+
+
+        if (wd->config->algorithm == simple_cgp) {
+            predicted_fitness = -1;
+            real_fitness = wd->cgp_population->best_fitness;
+
+        } else {
+            /* coevolution */
+            predicted_fitness = wd->cgp_population->best_fitness;
+
             if (is_better) {
-                apply_baldwin = true;
-
-            } else if (wd->config->bw_interval) {
-                int diff = wd->cgp_population->generation - wd->baldwin_state.last_applied_generation;
-                if (diff >= wd->config->bw_interval) {
-                    apply_baldwin = true;
-                }
-            }
-        }
-
-        // store predicted and real fitness
-        ga_fitness_t predicted_fitness = wd->cgp_population->best_fitness;
-        ga_fitness_t real_fitness = 0;
-
-        // update archive if necessary
-        if (is_better) {
-            DOUBLE_LOG(log_cgp_change, wd->log_file, cgp_parent_fitness, wd->cgp_population->best_fitness);
-
-            if (wd->config->algorithm != simple_cgp) {
                 // store and recalculate predictors fitness
                 ga_chr_t archived;
                 #pragma omp critical (CGP_ARCHIVE__PRED_POP)
                 {
-                    archived = arc_insert(wd->cgp_archive, wd->cgp_population->best_chromosome);
+                    archived = arc_insert(wd->cgp_archive,
+                        wd->cgp_population->best_chromosome);
+                    real_fitness = archived->fitness;
                     ga_reevaluate_pop(wd->pred_population);
                     #pragma omp critical (PRED_ARCHIVE__CGP_POP)
                     {
-                        ga_reevaluate_chr(wd->pred_population, arc_get(wd->pred_archive, 0));
+                        ga_reevaluate_chr(wd->pred_population,
+                            arc_get(wd->pred_archive, 0));
                     }
                 }
 
-                predicted_fitness = wd->cgp_population->best_fitness;
-                real_fitness = archived->fitness;
-                //printf("Inaccuracy %.10g\n", predicted_fitness / real_fitness);
-
-                DOUBLE_LOG(log_cgp_archived, wd->log_file, predicted_fitness, real_fitness);
-                logger_fire(&wd->loggers, better_cgp, predicted_fitness, real_fitness);
-
-            } else {
-                // in simple CGP, predicted fitness is in fact the real fitness
-                logger_fire(&wd->loggers, better_cgp, -1, predicted_fitness);
+            } else if (need_history_entry_calc) {
+                real_fitness = fitness_eval_cgp(wd->cgp_population->best_chromosome);
             }
         }
 
-        if (is_better || apply_baldwin || log_now || wd->finished) {
-            // update history log
-            bw_history_entry_t *prev_entry = bw_get(&wd->history, -1);
 
-            if (wd->config->algorithm == simple_cgp) {
-                bw_calc_history(
-                    &last_history_entry,
-                    prev_entry,
-                    wd->cgp_population->generation,
-                    wd->cgp_population->best_chromosome->fitness,
-                    -1,
-                    -1
-                );
+        /* change evolution params in baldwin mode ****************************/
 
-            } else {
-                bw_calc_history(
-                    &last_history_entry,
-                    prev_entry,
-                    wd->cgp_population->generation,
-                    arc_get(wd->cgp_archive, -1)->fitness,
-                    arc_get_original_fitness(wd->cgp_archive, -1),
-                    arc_get(wd->pred_archive, 0)->fitness
-                );
-            }
 
-            if (is_better || apply_baldwin) {
-                bw_add_history_entry(&wd->history, &last_history_entry);
-                DOUBLE_LOG(log_bw_history_entry, wd->log_file, &last_history_entry);
-
-                //bw_dump_history_asciiart(stdout, &wd->history);
-            }
+        if (apply_baldwin_now) {
+            // everything is done in predictors thread asynchronously
+            // no need for critical section here
+            wd->baldwin_state.apply_now = true;
         }
 
-        if (apply_baldwin) {
-            // Baldwin mode: change evolution params.
-            // Everything is done in predictors thread asynchronously-
-            // Enter critical section only if it seems that it is not set.
-            if (!wd->baldwin_state.apply_now) {
-                #pragma omp critical (BALDWIN_STATE)
-                {
-                    wd->baldwin_state.apply_now = true;
-                }
-            }
-        }
 
-        // append next entry to CSV
-        // if apply_baldwin == 1, CSV entry is written after update by pred thread
-        if (is_better || log_now || wd->finished) {
-            DOUBLE_LOG(log_cgp_progress, wd->log_file, wd->cgp_population, fitness_get_cgp_evals());
+        /* calculate and append current history entry *************************/
 
-            // lock for best circuit in archive so it won't be overwritten
-            // in the middle of the dump
-            #pragma omp critical (CGP_ARCHIVE__PRED_POP)
-            {
+
+        if (need_history_entry_calc) {
+            ga_fitness_t active_predictor_fitness = -1;
+            int pred_length = -1;
+            int pred_used_length = -1;
+
+            if (wd->config->algorithm != simple_cgp) {
                 #pragma omp critical (PRED_ARCHIVE__CGP_POP)
                 {
-                    _log_cgp_csv(wd->config->algorithm,
-                        &last_history_entry, wd->cgp_population,
-                        wd->cgp_archive, wd->pred_archive, wd->history_file);
+                    ga_chr_t predictor = arc_get(wd->pred_archive, 0);
+                    pred_used_length = ((pred_genome_t) predictor->genome)->used_pixels,
+                    active_predictor_fitness = predictor->fitness;
                 }
+
+                pred_length = pred_get_length();
             }
 
-            fflush(wd->log_file);
-            fflush(wd->history_file);
+            history_calc_entry(
+                &current_history_entry,
+                history_last(&wd->history),
+                wd->cgp_population->generation,
+                real_fitness,
+                predicted_fitness,
+                active_predictor_fitness,
+                fitness_get_cgp_evals(),
+                pred_length,
+                pred_used_length
+            );
         }
 
-        if (wd->finished && signal >= 0) {
-            #pragma omp critical (PRED_ARCHIVE__CGP_POP)
-            {
-                DOUBLE_LOG(log_cgp_finished, wd->log_file, wd->cgp_population);
-            }
+        if (need_history_entry_append) {
+            history_append_entry(&wd->history, &current_history_entry);
         }
 
-        if (signal > 0) {
-            return signal;
+
+        /* fire log events ****************************************************/
+
+
+        if (is_better) {
+            logger_fire(&wd->loggers, better_cgp, &current_history_entry);
+        } else if (log_tick_now) {
+            logger_fire(&wd->loggers, log_tick, &current_history_entry);
+        }
+
+        if (apply_baldwin_now) {
+            logger_fire(&wd->loggers, baldwin_triggered, &current_history_entry);
+        }
+
+        if (received_signal) {
+            logger_fire(&wd->loggers, signal, abs(received_signal), &current_history_entry);
+        }
+
+        if (wd->finished) {
+            logger_fire(&wd->loggers, finished, finish_reason, &current_history_entry);
+        }
+
+
+        /* return signal code, if terminated by signal ************************/
+
+
+        if (received_signal > 0) {
+            return received_signal;
         }
     }
 
@@ -259,71 +276,57 @@ void pred_main(algo_data_t *wd)
             ga_next_generation(wd->pred_population);
         }
 
-        // If evolution params should be changed now, do it
-        // This insane nesting is a small optimization - if state is false,
-        // nothing happens, if true, aquire lock and check again, just to be sure
-        // However, apply_now is never set to false outside this function, so it
-        // is not really necessary to check again.
+        // if evolution params should be changed now, do it
+        // no lock necessary
         if (wd->baldwin_state.apply_now) {
-            #pragma omp critical (BALDWIN_STATE)
-            {
-                if (wd->baldwin_state.apply_now) {
-                    bw_update_t result;
+            bw_update_t result;
+            int generation = wd->cgp_population->generation;
 
-                    // update evolution params
-                    bw_update_params(&wd->config->bw_config, &wd->history, &result);
+            // update evolution params
+            bw_update_params(&wd->config->bw_config, &wd->history, &result);
 
-                    if (result.predictor_length_changed) {
-                        DOUBLE_LOG(log_predictors_length_change, wd->log_file,
-                            result.old_predictor_length, result.new_predictor_length);
+            if (result.predictor_length_changed) {
+                logger_fire(&wd->loggers, pred_length_changed,
+                    generation,
+                    result.old_predictor_length,
+                    result.new_predictor_length);
 
-                        // recalculate predictors' phenotypes
-                        pred_pop_calculate_phenotype(wd->pred_population);
-                        #pragma omp critical (PRED_ARCHIVE__CGP_POP)
-                        {
-                            pred_calculate_phenotype(arc_get(wd->pred_archive, 0)->genome);
-                        }
+                // recalculate predictors' phenotypes
+                pred_pop_calculate_phenotype(wd->pred_population);
+                #pragma omp critical (PRED_ARCHIVE__CGP_POP)
+                {
+                    pred_calculate_phenotype(arc_get(wd->pred_archive, 0)->genome);
+                }
 
-                        // reevaluate predictors & write new row to CSV
-                        #pragma omp critical (CGP_ARCHIVE__PRED_POP)
-                        {
-                            ga_reevaluate_pop(wd->pred_population);
-                            #pragma omp critical (PRED_ARCHIVE__CGP_POP)
-                            {
-                                ga_reevaluate_chr(wd->pred_population, arc_get(wd->pred_archive, 0));
-                            }
-
-                            _log_cgp_csv(wd->config->algorithm,
-                                bw_get(&wd->history, -1), wd->cgp_population,
-                                wd->cgp_archive, wd->pred_archive, wd->history_file);
-                        }
+                // reevaluate predictors & write new row to CSV
+                #pragma omp critical (CGP_ARCHIVE__PRED_POP)
+                {
+                    ga_reevaluate_pop(wd->pred_population);
+                    #pragma omp critical (PRED_ARCHIVE__CGP_POP)
+                    {
+                        ga_reevaluate_chr(wd->pred_population,
+                            arc_get(wd->pred_archive, 0));
                     }
-
-                    // no lock on CGP population here, it should not matter
-                    wd->baldwin_state.last_applied_generation = wd->cgp_population->generation;
-                    wd->baldwin_state.apply_now = false;
                 }
             }
+
+            // no lock on CGP population here, it should not matter
+            wd->baldwin_state.last_applied_generation = generation;
+            wd->baldwin_state.apply_now = false;
         }
 
-       // log progress
-       bool is_better = ga_is_better(wd->pred_population->problem_type, wd->pred_population->best_fitness, arc_get(wd->pred_archive, 0)->fitness);
-       bool log_interval = wd->config->log_interval && (wd->pred_population->generation % wd->config->log_interval) == 0;
-
-       // log progress
-       if (is_better || log_interval) {
-           DOUBLE_LOG_PRED(log_pred_progress, wd->log_file, wd->pred_population, wd->pred_archive);
-       }
+        bool is_better = ga_is_better(wd->pred_population->problem_type,
+            wd->pred_population->best_fitness,
+            arc_get(wd->pred_archive, 0)->fitness);
 
         // update archive if necessary
         if (is_better) {
-            // log
-            DOUBLE_LOG_PRED(
-                log_pred_change,
-                wd->log_file,
+
+            logger_fire(&wd->loggers,
+                better_pred,
                 arc_get(wd->pred_archive, 0)->fitness,
-                wd->pred_population->best_fitness,
-                (pred_genome_t) wd->pred_population->best_chromosome->genome);
+                wd->pred_population->best_fitness
+            );
 
             // store and invalidate CGP fitness
             #pragma omp critical (PRED_ARCHIVE__CGP_POP)

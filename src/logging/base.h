@@ -21,9 +21,13 @@
 #pragma once
 
 
+#include <stdlib.h>
 #include <sys/time.h>
 
+#include "history.h"
+
 #include "../ga.h"
+#include "../config.h"
 
 
 /*
@@ -59,14 +63,14 @@ struct logger_base;
 typedef struct logger_base *logger_t;
 
 /* event handlers */
-typedef void (*handler_started_t)(logger_t logger);
-typedef void (*handler_finished_t)(logger_t logger, finish_reason_t reason);
-typedef void (*handler_better_cgp_t)(logger_t logger, ga_fitness_t predicted_fitness, ga_fitness_t real_fitness);
-typedef void (*handler_baldwin_triggered_t)(logger_t logger);
-typedef void (*handler_log_tick_t)(logger_t logger);
-typedef void (*handler_better_pred_t)(logger_t logger);
-typedef void (*handler_pred_length_changed_t)(logger_t logger, unsigned int old_length, unsigned int new_length);
-typedef void (*handler_signal_t)(logger_t logger, int signal);
+typedef void (*handler_started_t)(logger_t logger, history_entry_t *state);
+typedef void (*handler_finished_t)(logger_t logger, finish_reason_t reason, history_entry_t *state);
+typedef void (*handler_better_cgp_t)(logger_t logger, history_entry_t *state);
+typedef void (*handler_baldwin_triggered_t)(logger_t logger, history_entry_t *state);
+typedef void (*handler_log_tick_t)(logger_t logger, history_entry_t *state);
+typedef void (*handler_signal_t)(logger_t logger, int signal, history_entry_t *state);
+typedef void (*handler_better_pred_t)(logger_t logger, ga_fitness_t old_fitness, ga_fitness_t new_fitness);
+typedef void (*handler_pred_length_changed_t)(logger_t logger, int cgp_generation, unsigned int old_length, unsigned int new_length);
 
 /* "destructor" */
 typedef void (*logger_destructor_t)(logger_t logger);
@@ -76,6 +80,9 @@ struct logger_base {
     /* time */
     struct timeval usertime_start;
     struct timeval wallclock_start;
+
+    /* program configuration */
+    config_t *config;
 
     /* event handlers */
     handler_started_t handler_started;
@@ -95,7 +102,7 @@ struct logger_base {
 /**
  * Base logger initializer
  */
-void logger_init_time(logger_t logger);
+void logger_init_base(logger_t logger, config_t *config);
 
 
 /**
@@ -117,3 +124,29 @@ struct timeval logger_get_usertime(logger_t logger);
  * Returns elapsed wall clock
  */
 struct timeval logger_get_wallclock(logger_t logger);
+
+
+/**
+ * Formats elapsed usertime as XXmYY.ZZs
+ */
+int logger_snprintf_usertime(logger_t logger, char *buffer, int buffer_size);
+
+
+/**
+ * Formats elapsed wall clock as XXmYY.ZZs
+ */
+int logger_snprintf_wallclock(logger_t logger, char *buffer, int buffer_size);
+
+
+/**
+ * Create devnull logger (which does nothing)
+ * @param logger
+ */
+static inline logger_t logger_devnull_create(config_t *config)
+{
+    logger_t logger = (logger_t) malloc(sizeof(struct logger_base));
+    if (logger == NULL) return NULL;
+
+    logger_init_base(logger, config);
+    return logger;
+}

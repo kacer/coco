@@ -23,17 +23,29 @@
 
 
 static int _timeval_subtract(struct timeval *out, struct timeval *x, struct timeval *y);
+int _snprintf_time(char *buffer, int buffer_size, struct timeval *time);
 
 
 /**
  * Base logger initializer
  */
-void logger_init_time(logger_t logger)
+void logger_init_base(logger_t logger, config_t *config)
 {
+    logger->config = config;
+
     struct rusage resource_usage;
     getrusage(RUSAGE_SELF, &resource_usage);
     logger->usertime_start = resource_usage.ru_utime;
     gettimeofday(&logger->wallclock_start, NULL);
+
+    logger->handler_started = NULL;
+    logger->handler_finished = NULL;
+    logger->handler_better_cgp = NULL;
+    logger->handler_baldwin_triggered = NULL;
+    logger->handler_log_tick = NULL;
+    logger->handler_better_pred = NULL;
+    logger->handler_pred_length_changed = NULL;
+    logger->handler_signal = NULL;
 }
 
 
@@ -59,6 +71,27 @@ struct timeval logger_get_wallclock(logger_t logger)
     gettimeofday(&end, NULL);
     _timeval_subtract(&diff, &end, &logger->wallclock_start);
     return diff;
+}
+
+
+
+/**
+ * Formats elapsed usertime as XXmYY.ZZs
+ */
+int logger_snprintf_usertime(logger_t logger, char *buffer, int buffer_size)
+{
+    struct timeval tmp = logger_get_usertime(logger);
+    return _snprintf_time(buffer, buffer_size, &tmp);
+}
+
+
+/**
+ * Formats elapsed wall clock as XXmYY.ZZs
+ */
+int logger_snprintf_wallclock(logger_t logger, char *buffer, int buffer_size)
+{
+    struct timeval tmp = logger_get_wallclock(logger);
+    return _snprintf_time(buffer, buffer_size, &tmp);
 }
 
 
@@ -96,4 +129,22 @@ static int _timeval_subtract(struct timeval *out, struct timeval *x, struct time
 
     /* Return 1 if result is negative. */
     return x->tv_sec < y->tv_sec;
+}
+
+
+/**
+ * Formats elapsed time as XXmYY.ZZZs
+ */
+int _snprintf_time(char *buffer, int buffer_size, struct timeval *time)
+{
+    long minutes = time->tv_sec / 60;
+    long seconds = time->tv_sec % 60;
+    long microseconds = time->tv_usec;
+
+    if (microseconds < 0) {
+        microseconds = 1 - microseconds;
+        seconds--;
+    }
+
+    return snprintf(buffer, buffer_size, "%ldm%ld.%06lds", minutes, seconds, microseconds);
 }

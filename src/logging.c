@@ -182,12 +182,12 @@ void log_cgp_change(FILE *fp, ga_fitness_t previous_best, ga_fitness_t new_best)
  * Logs CGP history entry
  * @param history
  */
-void log_bw_history_entry(FILE *fp, bw_history_entry_t *history)
+void log_bw_history_entry(FILE *fp, history_entry_t *history)
 {
     log_entry_prolog(fp, SECTION_CGP);
     fprintf(fp, "CGP velocity %.5lf (" FITNESS_FMT " / %d)\n",
         history->velocity,
-        history->delta_fitness,
+        history->delta_real_fitness,
         history->delta_generation);
 }
 
@@ -393,7 +393,7 @@ FILE *init_cgp_history_file(const char *dir, const char *file)
  * @param pred_used_length
  * @param best_ever
  */
-void log_cgp_history(FILE *fp, bw_history_entry_t *hist, long cgp_evals,
+void log_cgp_history(FILE *fp, history_entry_t *hist, long cgp_evals,
     int pred_length, int pred_used_length, ga_fitness_t best_ever)
 {
     assert(fp != NULL);
@@ -405,8 +405,8 @@ void log_cgp_history(FILE *fp, bw_history_entry_t *hist, long cgp_evals,
 
     fprintf(fp, "%d,", hist->generation);
     fprintf(fp, FITNESS_FMT ",", hist->predicted_fitness);
-    fprintf(fp, FITNESS_FMT ",", hist->fitness);
-    fprintf(fp, FITNESS_FMT ",", hist->fitness? (hist->predicted_fitness / hist->fitness) : 0);
+    fprintf(fp, FITNESS_FMT ",", hist->real_fitness);
+    fprintf(fp, FITNESS_FMT ",", hist->real_fitness? (hist->predicted_fitness / hist->real_fitness) : 0);
     fprintf(fp, FITNESS_FMT ",", best_ever);
     fprintf(fp, FITNESS_FMT ",", hist->active_predictor_fitness);
     fprintf(fp, "%d,", pred_length);
@@ -416,7 +416,7 @@ void log_cgp_history(FILE *fp, bw_history_entry_t *hist, long cgp_evals,
     fprintf(fp, "%10g,", hist->velocity);
 
     fprintf(fp, "%d,", hist->delta_generation);
-    fprintf(fp, FITNESS_FMT ",", hist->delta_fitness);
+    fprintf(fp, FITNESS_FMT ",", hist->delta_real_fitness);
     fprintf(fp, "%10g,", hist->delta_velocity);
 
     fprintf(fp, "%10g,", wallclock_diff.tv_sec / 60.0);

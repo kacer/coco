@@ -55,7 +55,7 @@ typedef struct {
     archive_t pred_archive;
 
     // history
-    bw_history_t history;
+    history_t history;
 
     // baldwin (colearning state)
     // used always - to store history

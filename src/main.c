@@ -45,6 +45,7 @@
 #include <limits.h>
 
 // signal handlers
+volatile sig_atomic_t terminated = 0;
 volatile sig_atomic_t interrupted = 0;
 volatile sig_atomic_t cpu_limit_reached = 0;
 
@@ -52,7 +53,7 @@ volatile sig_atomic_t cpu_limit_reached = 0;
 const int SIGINT_GENERATIONS_GAP = 1000;
 
 // special `check_signals` return value indicating first catch of SIGINT
-const int SIGINT_FIRST = -1;
+const int SIGINT_FIRST = -SIGINT;
 
 
 /**
@@ -62,6 +63,16 @@ void sigint_handler(int _)
 {
     signal(SIGINT, sigint_handler);
     interrupted = 1;
+}
+
+
+/**
+ * Handles SIGTERM. Sets `terminated` flag.
+ */
+void sigterm_handler(int _)
+{
+    signal(SIGTERM, sigterm_handler);
+    terminated = 1;
 }
 
 
@@ -87,7 +98,15 @@ int check_signals(int current_generation)
     // SIGXCPU
     if (cpu_limit_reached) {
         fprintf(stderr, "SIGXCPU received!\n");
+        cpu_limit_reached = false;
         return SIGXCPU;
+    }
+
+    // SIGTERM
+    if (terminated) {
+        fprintf(stderr, "SIGTERM received!\n");
+        terminated = false;
+        return SIGTERM;
     }
 
     // SIGINT
@@ -176,13 +195,14 @@ int main(int argc, char *argv[])
     config.random_seed = rand_seed_from_time();
 
     // baldwin
-    bw_init_history(&work_data.history);
+    history_init(&work_data.history);
 
     // loggers list
     logger_init_list(&work_data.loggers);
 
-    logger_add(&work_data.loggers,
-        logger_text_create(fopen("cocolog/test.log", "w")));
+    FILE *_test_log = fopen("cocolog/test.log", "w");
+    logger_add(&work_data.loggers, logger_text_create(work_data.config, _test_log));
+    logger_add(&work_data.loggers, logger_text_create(work_data.config, stdout));
 
     // images
     img_image_t img_original;
@@ -397,7 +417,7 @@ int main(int argc, char *argv[])
         If no loggers are set, use the devnull one
      */
     if (work_data.loggers.count == 0) {
-        logger_add(&work_data.loggers, logger_devnull_create());
+        logger_add(&work_data.loggers, logger_devnull_create(work_data.config));
     }
 
 
@@ -415,11 +435,6 @@ int main(int argc, char *argv[])
 
     printf("Configuration:\n");
     config_save_file(stdout, &config);
-
-    printf("Algorithm: %s\n", config_algorithm_names[config.algorithm]);
-    printf("Stop at generation: %d\n", config.max_generations);
-    printf("Initial \"PSNR\" value:         %.10g\n",
-        img_psnr(img_original, img_noisy));
 
     ga_evaluate_pop(work_data.cgp_population);
 
@@ -442,6 +457,7 @@ int main(int argc, char *argv[])
 
     // install signal handlers
     signal(SIGINT, sigint_handler);
+    signal(SIGTERM, sigterm_handler);
     signal(SIGXCPU, sigxcpu_handler);
 
     switch (config.algorithm) {
@@ -542,6 +558,7 @@ int main(int argc, char *argv[])
     img_destroy(img_noisy);
 
     logger_destroy_list(&work_data.loggers);
+    fclose(_test_log);
 
     fclose(work_data.log_file);
     fclose(work_data.history_file);

@@ -29,4 +29,4 @@
  * Create text logger
  * @param target file handle
  */
-logger_t logger_text_create(FILE *target);
+logger_t logger_text_create(config_t *config, FILE *target);

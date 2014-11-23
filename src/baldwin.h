@@ -22,6 +22,8 @@
 
 
 #include "ga.h"
+#include "logging/history.h"
+
 
 #define BW_HISTORY_LENGTH 7
 
@@ -71,34 +73,6 @@ typedef struct {
 
 
 typedef struct {
-    int generation;
-    int delta_generation;
-
-    ga_fitness_t predicted_fitness;
-    ga_fitness_t active_predictor_fitness;
-
-    ga_fitness_t fitness;
-    ga_fitness_t delta_fitness;
-
-    double velocity;
-    double delta_velocity;
-} bw_history_entry_t;
-
-
-typedef struct {
-    bw_history_entry_t last_change;
-    bw_history_entry_t log[BW_HISTORY_LENGTH];
-
-    /* number of stored items */
-    int stored;
-
-    /* pointer to beginning of ring buffer - where new item will be
-       stored */
-    int pointer;
-} bw_history_t;
-
-
-typedef struct {
     bool predictor_length_changed;
     int old_predictor_length;
     int new_predictor_length;
@@ -112,78 +86,6 @@ typedef struct {
 
 
 /**
- * Initializes history data structure
- * @param history
- */
-void bw_init_history(bw_history_t *history);
-
-
-/**
- * Calculate history entry values
- * @param  history
- * @param  generation
- * @param  real_fitness
- * @param  predicted_fitness
- * @param  active_predictor_fitness
- * @return pointer to newly inserted entry
- */
-void bw_calc_history(bw_history_entry_t *entry, bw_history_entry_t *prev,
-    int generation, ga_fitness_t real_fitness, ga_fitness_t predicted_fitness,
-    ga_fitness_t active_predictor_fitness);
-
-
-/**
- * Adds entry to history
- * @param  history
- * @param  entry
- * @return pointer to newly inserted entry
- */
-bw_history_entry_t *bw_add_history_entry(bw_history_t *history,
-    bw_history_entry_t *entry);
-
-
-/**
- * Adds entry to history
- * @param  history
- * @param  generation
- * @param  real_fitness
- * @param  predicted_fitness
- * @param  active_predictor_fitness
- * @return pointer to newly inserted entry
- */
-bw_history_entry_t *bw_add_history(bw_history_t *history, int generation,
-    ga_fitness_t real_fitness, ga_fitness_t predicted_fitness,
-    ga_fitness_t active_predictor_fitness);
-
-
-/**
- * Returns real index of item in ring buffer
- */
-static inline int bw_real_index(bw_history_t *history, int index)
-{
-    if (history->stored < BW_HISTORY_LENGTH) {
-        int real = index % history->stored;
-        if (real < 0) real += history->stored;
-        return real;
-
-    } else {
-        int real = (history->pointer + index) % BW_HISTORY_LENGTH;
-        if (real < 0) real += BW_HISTORY_LENGTH;
-        return real;
-    }
-}
-
-
-/**
- * Returns item stored on given index
- */
-static inline bw_history_entry_t *bw_get(bw_history_t *history, int index)
-{
-    return &history->log[bw_real_index(history, index)];
-}
-
-
-/**
  * Calculate absolute predictor length increments values
  */
 void bw_init_absolute_increments(bw_config_t *config, int base);
@@ -194,12 +96,4 @@ void bw_init_absolute_increments(bw_config_t *config, int base);
  * @param  history
  * @return Info about what has been changed and how
  */
-void bw_update_params(bw_config_t *config, bw_history_t *history, bw_update_t *result);
-
-
-/**
- * Dumps history to file as ASCII art
- * @param fp
- * @param history
- */
-void bw_dump_history_asciiart(FILE *fp, bw_history_t *history);
+void bw_update_params(bw_config_t *config, history_t *history, bw_update_t *result);

@@ -26,105 +26,6 @@
 #include "logging.h"
 
 
-/**
- * Initializes history data structure
- * @param history
- */
-void bw_init_history(bw_history_t *history)
-{
-    history->last_change.generation = 0;
-    history->last_change.fitness = 0;
-    history->last_change.velocity = 0;
-    history->last_change.delta_generation = 0;
-    history->last_change.delta_fitness = 0;
-    history->last_change.delta_velocity = 0;
-
-    history->log[0].generation = 0;
-    history->log[0].fitness = 0;
-    history->log[0].velocity = 0;
-    history->log[0].delta_generation = 0;
-    history->log[0].delta_fitness = 0;
-    history->log[0].delta_velocity = 0;
-
-    history->stored = 1;
-    history->pointer = 1;
-}
-
-
-/**
- * Calculate history entry values
- * @param  history
- * @param  generation
- * @param  real_fitness
- * @param  predicted_fitness
- * @param  active_predictor_fitness
- * @return pointer to newly inserted entry
- */
-void bw_calc_history(bw_history_entry_t *entry, bw_history_entry_t *prev,
-    int generation, ga_fitness_t real_fitness, ga_fitness_t predicted_fitness,
-    ga_fitness_t active_predictor_fitness)
-{
-    entry->generation = generation;
-    entry->fitness = real_fitness;
-    entry->predicted_fitness = predicted_fitness;
-    entry->active_predictor_fitness = active_predictor_fitness;
-
-    entry->delta_generation = generation - prev->generation;
-    entry->delta_fitness = entry->fitness - prev->fitness;
-
-    entry->velocity = entry->delta_fitness / entry->delta_generation;
-    entry->delta_velocity = entry->velocity - prev->velocity;
-}
-
-
-/**
- * Adds entry to history
- * @param  history
- * @param  entry
- * @return pointer to newly inserted entry
- */
-bw_history_entry_t *bw_add_history_entry(bw_history_t *history,
-    bw_history_entry_t *entry)
-{
-    bw_history_entry_t *new = &history->log[history->pointer];
-    memcpy(new, entry, sizeof(bw_history_entry_t));
-
-    if (new->delta_fitness != 0) {
-        memcpy(&history->last_change, new, sizeof(bw_history_entry_t));
-    }
-
-    if (history->stored < BW_HISTORY_LENGTH) {
-        history->stored++;
-    }
-    history->pointer = (history->pointer + 1) % BW_HISTORY_LENGTH;
-
-    return new;
-}
-
-
-/**
- * Adds entry to history
- * @param  history
- * @param  generation
- * @param  real_fitness
- * @param  predicted_fitness
- * @param  active_predictor_fitness
- * @return pointer to newly inserted entry
- */
-bw_history_entry_t *bw_add_history(bw_history_t *history, int generation,
-    ga_fitness_t real_fitness, ga_fitness_t predicted_fitness,
-    ga_fitness_t active_predictor_fitness)
-{
-    bw_history_entry_t *prev = bw_get(history, -1);
-    bw_history_entry_t new;
-
-    bw_calc_history(&new, prev, generation, real_fitness, predicted_fitness,
-        active_predictor_fitness);
-
-    return bw_add_history_entry(history, &new);
-}
-
-
 static inline int bw_relative_to_absolute(double coef, int base) {
     /*
         Simple and works every time:
@@ -142,23 +43,23 @@ static inline int bw_relative_to_absolute(double coef, int base) {
  * @param  history
  * @return
  */
-double bw_get_velocity(bw_algorithm_t alg, bw_history_t *history)
+double history_get_velocity(bw_algorithm_t alg, history_t *history)
 {
     if (alg == bwalg_last) {
-        return bw_get(history, -1)->velocity;
+        return history_get(history, -1)->velocity;
 
     } else if (alg == bwalg_avg3) {
         // doesn't matter if there are less than 3 items, we get duplicates
-        double a = bw_get(history, -1)->velocity;
-        double b = bw_get(history, -2)->velocity;
-        double c = bw_get(history, -3)->velocity;
+        double a = history_get(history, -1)->velocity;
+        double b = history_get(history, -2)->velocity;
+        double c = history_get(history, -3)->velocity;
         return (a + b + c) / 3;
 
     } else if (alg == bwalg_avg7w) {
         double sum = 0;
         double divider = 0;
         for (int i = 1; i <= history->stored; i++) {
-            double velo = bw_get(history, -i)->velocity;
+            double velo = history_get(history, -i)->velocity;
             int weight = 8 - i;
             sum += velo * weight;
             divider += weight;
@@ -169,9 +70,9 @@ double bw_get_velocity(bw_algorithm_t alg, bw_history_t *history)
 
     } else if (alg == bwalg_median3) {
         // doesn't matter if there are less than 3 items, we get duplicates
-        double a = bw_get(history, -1)->velocity;
-        double b = bw_get(history, -2)->velocity;
-        double c = bw_get(history, -3)->velocity;
+        double a = history_get(history, -1)->velocity;
+        double b = history_get(history, -2)->velocity;
+        double c = history_get(history, -3)->velocity;
 
         if (a >= b && a >= c) {
             // a is greatest
@@ -194,15 +95,15 @@ double bw_get_velocity(bw_algorithm_t alg, bw_history_t *history)
 /**
  * Gets coefficient according to some symreg function
  */
-double bw_get_coef(bw_algorithm_t alg, bw_history_t *history)
+double history_get_coef(bw_algorithm_t alg, history_t *history)
 {
-    double a = bw_get(history, -1)->velocity;
-    double b = bw_get(history, -2)->velocity;
-    double c = bw_get(history, -3)->velocity;
-    double d = bw_get(history, -4)->velocity;
-    double e = bw_get(history, -5)->velocity;
-    double f = bw_get(history, -6)->velocity;
-    double g = bw_get(history, -7)->velocity;
+    double a = history_get(history, -1)->velocity;
+    double b = history_get(history, -2)->velocity;
+    double c = history_get(history, -3)->velocity;
+    double d = history_get(history, -4)->velocity;
+    double e = history_get(history, -5)->velocity;
+    double f = history_get(history, -6)->velocity;
+    double g = history_get(history, -7)->velocity;
 
     return (0.984805307321727
         + 2.92388275504055*e
@@ -229,9 +130,9 @@ double bw_get_coef(bw_algorithm_t alg, bw_history_t *history)
  * @param  history
  * @return Info about what has been changed and how
  */
-void bw_update_params(bw_config_t *config, bw_history_t *history, bw_update_t *result)
+void bw_update_params(bw_config_t *config, history_t *history, bw_update_t *result)
 {
-    bw_history_entry_t *last = bw_get(history, -1);
+    history_entry_t *last = history_get(history, -1);
 
     int old_length = pred_get_length();
     int new_length = old_length;
@@ -239,11 +140,9 @@ void bw_update_params(bw_config_t *config, bw_history_t *history, bw_update_t *r
     result->new_predictor_length = old_length;
     result->predictor_length_changed = false;
 
-    double inaccuracy = last->predicted_fitness / last->fitness;
-
     // if inaccuracy raises over threshold, do big increment,
     // set as percentage from maximal size
-    if (inaccuracy > config->inaccuracy_tolerance) {
+    if (last->fitness_inaccuracy > config->inaccuracy_tolerance) {
         new_length = round(old_length * config->inaccuracy_coef);
         /*
         int increment = (100.0 / config->inaccuracy_coef) * pred_get_max_length();
@@ -253,11 +152,11 @@ void bw_update_params(bw_config_t *config, bw_history_t *history, bw_update_t *r
 
     } else {
         if (config->algorithm == bwalg_symreg) {
-            double coefficcient = bw_get_coef(config->algorithm, history);
+            double coefficcient = history_get_coef(config->algorithm, history);
             new_length = round(old_length * coefficcient);
 
         } else {
-            double velocity = bw_get_velocity(config->algorithm, history);
+            double velocity = history_get_velocity(config->algorithm, history);
 
             if (fabs(velocity) <= config->zero_epsilon) {
                 // no change
@@ -295,106 +194,3 @@ void bw_update_params(bw_config_t *config, bw_history_t *history, bw_update_t *r
         pred_set_length(new_length);
     }
 }
-
-
-/**
- * Dumps history to file as ASCII art
- * @param fp
- * @param history
- */
-void bw_dump_history_asciiart(FILE *fp, bw_history_t *history) {
-    int len = history->stored;
-
-    // boxes top
-    fprintf(fp, "+--------+---------++");
-    for (int i = 0; i < len; i++) {
-        fprintf(fp, "---------+");
-    }
-    fprintf(fp, "\n");
-
-    // generations
-    fprintf(fp, "|      G |");
-    fprintf(fp, " %7d ||", history->last_change.generation);
-    for (int i = 0; i < len; i++) {
-        fprintf(fp, " %7d |", bw_get(history, i)->generation);
-    }
-    fprintf(fp, "\n");
-
-    // fitness
-    fprintf(fp, "|     rf |");
-    fprintf(fp, " %7.3lf ||", history->last_change.fitness);
-    for (int i = 0; i < len; i++) {
-        fprintf(fp, " %7.3lf |", bw_get(history, i)->fitness);
-    }
-    fprintf(fp, "\n");
-
-    // predicted fitness
-    fprintf(fp, "|     pf |");
-    fprintf(fp, " %7.3lf ||", history->last_change.predicted_fitness);
-    for (int i = 0; i < len; i++) {
-        fprintf(fp, " %7.3lf |", bw_get(history, i)->predicted_fitness);
-    }
-    fprintf(fp, "\n");
-
-    // predicted fitness
-    fprintf(fp, "|  predf |");
-    fprintf(fp, " %7.3lf ||", history->last_change.active_predictor_fitness);
-    for (int i = 0; i < len; i++) {
-        fprintf(fp, " %7.3lf |", bw_get(history, i)->active_predictor_fitness);
-    }
-    fprintf(fp, "\n");
-
-    // divider
-    fprintf(fp, "+--------+---------++");
-    for (int i = 0; i < len; i++) {
-        fprintf(fp, "---------+");
-    }
-    fprintf(fp, "\n");
-
-    // delta generations
-    fprintf(fp, "|     dG |");
-    fprintf(fp, " %7d ||", history->last_change.delta_generation);
-    for (int i = 0; i < len; i++) {
-        fprintf(fp, " %7d |", bw_get(history, i)->delta_generation);
-    }
-    fprintf(fp, "\n");
-
-    // delta fitness
-    fprintf(fp, "|     df |");
-    fprintf(fp, " %7.3lf ||", history->last_change.delta_fitness);
-    for (int i = 0; i < len; i++) {
-        fprintf(fp, " %7.3lf |", bw_get(history, i)->delta_fitness);
-    }
-    fprintf(fp, "\n");
-
-    // divider
-    fprintf(fp, "+--------+---------++");
-    for (int i = 0; i < len; i++) {
-        fprintf(fp, "---------+");
-    }
-    fprintf(fp, "\n");
-
-    // velocity
-    fprintf(fp, "|    f/G |");
-    fprintf(fp, " %7.3lf ||", history->last_change.velocity);
-    for (int i = 0; i < len; i++) {
-        fprintf(fp, " %7.3lf |", bw_get(history, i)->velocity);
-    }
-    fprintf(fp, "\n");
-
-    // delta velocity = acceleration
-    fprintf(fp, "| d(f/G) |");
-    fprintf(fp, " %7.3lf ||", history->last_change.delta_velocity);
-    for (int i = 0; i < len; i++) {
-        fprintf(fp, " %7.3lf |", bw_get(history, i)->delta_velocity);
-    }
-    fprintf(fp, "\n");
-
-    // boxes bottom
-    fprintf(fp, "+--------+---------++");
-    for (int i = 0; i < len; i++) {
-        fprintf(fp, "---------+");
-    }
-    fprintf(fp, "\n");
-}
-

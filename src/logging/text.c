@@ -19,6 +19,7 @@
 
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 
 #include "text.h"
 
@@ -43,26 +44,30 @@ static inline FILE *_get_fp(logger_t logger) {
 /* formatting */
 #define FITNESS_FMT "%.10g"
 
+#define _USERTIME_STR \
+    char _usertime_str[100]; \
+    logger_snprintf_usertime(logger, _usertime_str, 100);
+
 
 /* event handlers */
-void logger_text_started(logger_t logger);
-void logger_text_finished(logger_t logger, finish_reason_t reason);
-void logger_text_better_cgp(logger_t logger, ga_fitness_t predicted_fitness, ga_fitness_t real_fitness);
-void logger_text_baldwin_triggered(logger_t logger);
-void logger_text_log_tick(logger_t logger);
-void logger_text_better_pred(logger_t logger);
-void logger_text_pred_length_changed(logger_t logger, unsigned int old_length, unsigned int new_length);
-void logger_text_signal(logger_t logger, int signal);
+static void handle_started(logger_t logger, history_entry_t *state);
+static void handle_finished(logger_t logger, finish_reason_t reason, history_entry_t *state);
+static void handle_better_cgp(logger_t logger, history_entry_t *state);
+static void handle_baldwin_triggered(logger_t logger, history_entry_t *state);
+static void handle_log_tick(logger_t logger, history_entry_t *state);
+static void handle_signal(logger_t logger, int signal, history_entry_t *state);
+static void handle_better_pred(logger_t logger, ga_fitness_t old_fitness, ga_fitness_t new_fitness);
+static void handle_pred_length_changed(logger_t logger, int cgp_generation, unsigned int old_length, unsigned int new_length);
 
 /* "destructor" */
-void logger_text_destruct(logger_t logger);
+static void logger_text_destruct(logger_t logger);
 
 
 /**
  * Create text logger
  * @param logger
  */
-logger_t logger_text_create(FILE *target)
+logger_t logger_text_create(config_t *config, FILE *target)
 {
     assert(target != NULL);
 
@@ -74,15 +79,15 @@ logger_t logger_text_create(FILE *target)
     // this is the same as &logger->base
     logger_t base = (logger_t) logger;
 
-    logger_init_time(base);
-    base->handler_started = logger_text_started;
-    base->handler_finished = logger_text_finished;
-    base->handler_better_cgp = logger_text_better_cgp;
-    base->handler_baldwin_triggered = logger_text_baldwin_triggered;
-    base->handler_log_tick = logger_text_log_tick;
-    base->handler_better_pred = logger_text_better_pred;
-    base->handler_pred_length_changed = logger_text_pred_length_changed;
-    base->handler_signal = logger_text_signal;
+    logger_init_base(base, config);
+    base->handler_started = handle_started;
+    base->handler_finished = handle_finished;
+    base->handler_better_cgp = handle_better_cgp;
+    base->handler_baldwin_triggered = handle_baldwin_triggered;
+    base->handler_log_tick = handle_log_tick;
+    base->handler_better_pred = handle_better_pred;
+    base->handler_pred_length_changed = handle_pred_length_changed;
+    base->handler_signal = handle_signal;
     base->destructor = logger_text_destruct;
 
     return base;
@@ -92,59 +97,75 @@ logger_t logger_text_create(FILE *target)
 /**
  * Frees any resources allocated by text logger
  */
-void logger_text_destruct(logger_t logger)
+static void logger_text_destruct(logger_t logger)
 {
     free(logger);
 }
 
 
-void logger_text_started(logger_t logger)
+static void handle_started(logger_t logger, history_entry_t *state)
 {
-    fprintf(_get_fp(logger), "Evolution starts now.\n");
+    fprintf(_get_fp(logger),
+        "Evolution starts now.\n"
+        "Generation %d: Fitness predicted / real: " FITNESS_FMT " / " FITNESS_FMT "\n",
+        state->generation, state->predicted_fitness, state->real_fitness);
 }
 
 
-void logger_text_finished(logger_t logger, finish_reason_t reason)
+static void handle_finished(logger_t logger, finish_reason_t reason, history_entry_t *state)
 {
-
+    fprintf(_get_fp(logger),
+        "Generation %d: Evolution stopped. %s\n",
+        state->generation,
+        reason == generation_limit? "Generation limit reached."
+        : reason == target_fitness? "Target fitness achieved."
+        : reason == signal_received? "Signal received."
+        : "");
 }
 
 
-void logger_text_better_cgp(logger_t logger, ga_fitness_t predicted_fitness, ga_fitness_t real_fitness)
+static void handle_better_cgp(logger_t logger, history_entry_t *state)
 {
-    fprintf(_get_fp(logger), "Better filter found. "
-        "Predicted / real = " FITNESS_FMT " / " FITNESS_FMT "\n",
-        predicted_fitness, real_fitness);
+    handle_log_tick(logger, state);
 }
 
 
-void logger_text_baldwin_triggered(logger_t logger)
+static void handle_baldwin_triggered(logger_t logger, history_entry_t *state)
 {
-
+    fprintf(_get_fp(logger),
+        "Generation %d: Baldwin triggered. Inaccuracy: %5g\n",
+        state->generation, state->fitness_inaccuracy);
 }
 
 
-void logger_text_log_tick(logger_t logger)
+static void handle_log_tick(logger_t logger, history_entry_t *state)
 {
-
+    _USERTIME_STR;
+    fprintf(_get_fp(logger),
+        "Generation %d: Fitness predicted / real: " FITNESS_FMT " / " FITNESS_FMT ". Usertime %s\n",
+        state->generation, state->predicted_fitness, state->real_fitness, _usertime_str);
 }
 
 
-void logger_text_better_pred(logger_t logger)
+static void handle_signal(logger_t logger, int signal, history_entry_t *state)
 {
-
+    fprintf(_get_fp(logger),
+        "Generation %d: Signal %d (%s) received\n",
+        state->generation, signal, strsignal(signal));
 }
 
 
-void logger_text_pred_length_changed(logger_t logger, unsigned int old_length, unsigned int new_length)
+static void handle_better_pred(logger_t logger, ga_fitness_t old_fitness, ga_fitness_t new_fitness)
 {
-
+    fprintf(_get_fp(logger),
+        "Predictor's fitness changed " FITNESS_FMT " --> " FITNESS_FMT "\n",
+        old_fitness, new_fitness);
 }
 
 
-void logger_text_signal(logger_t logger, int signal)
+static void handle_pred_length_changed(logger_t logger, int cgp_generation, unsigned int old_length, unsigned int new_length)
 {
-
-
-
+    fprintf(_get_fp(logger),
+        "Generation %d: Predictor's length changed %d --> %d\n",
+        cgp_generation, old_length, new_length);
 }
