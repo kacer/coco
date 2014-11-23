@@ -27,19 +27,10 @@
 #include "archive.h"
 #include "baldwin.h"
 #include "predictors.h"
+#include "logging/logging.h"
 
 
-/**
- * Checks for SIGXCPU and SIGINT signals
- *
- * Defined in main.c
- *
- * @return Received signal code
- */
-extern int check_signals(int current_generation);
-
-
-typedef struct {
+typedef struct algo_data {
     // config
     config_t *config;
 
@@ -54,7 +45,7 @@ typedef struct {
     archive_t pred_archive;
 
     // history
-    bw_history_t history;
+    history_t history;
 
     // baldwin (colearning state)
     // used always - to store history
@@ -63,6 +54,13 @@ typedef struct {
     // log files
     FILE *log_file;
     FILE *history_file;
+
+    // loggers
+    logger_list_t loggers;
+
+    // source images - in fact used only to provide them to loggers
+    img_image_t img_original;
+    img_image_t img_noisy;
 
     // indicates that the algorithm should terminate ASAP
     bool finished;

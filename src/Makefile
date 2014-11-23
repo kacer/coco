@@ -19,23 +19,25 @@
 # _XOPEN_SOURCE=700 required by scandir and alphasort from vault.c
 
 CC=gcc
-CFLAGS=-rdynamic -g -Wall -std=c11 -fopenmp -O2 -D_XOPEN_SOURCE=700 \
+CFLAGS=-g -Wall -std=c11 -fopenmp -O0 -D_XOPEN_SOURCE=700 \
 	-DSSE2 -DxAVX2 -DDEBUG -DxVERBOSE -DxCGP_LIMIT_FUNCS
 LIBS=-lm -lc
 
 SOURCES=main.c cpu.c ga.c cgp/cgp_core.c cgp/cgp_dump.c cgp/cgp_load.c cgp/cgp_avx.c cgp/cgp_sse.c \
 	predictors.c image.c fitness.c fitness_avx.c fitness_sse.c \
-	archive.c config.c logging.c algo.c baldwin.c
+	archive.c config.c algo.c baldwin.c utils.c \
+	logging/history.c logging/base.c logging/text.c logging/csv.c logging/summary.c
 
 EXECUTABLE=coco
 OFILES= main.o cpu.o ga.o cgp/cgp_core.o cgp/cgp_dump.o cgp/cgp_load.o cgp/cgp_avx.o cgp/cgp_sse.o \
 	predictors.o image.o fitness.o fitness_avx.o fitness_sse.o \
-	archive.o config.o logging.o algo.o baldwin.o
+	archive.o config.o algo.o baldwin.o utils.o \
+	logging/history.o logging/base.o logging/text.o logging/csv.o logging/summary.o
 
 EXECUTABLE_APPLY=coco_apply
 OFILES_APPLY= image.o ga.o cgp/cgp_core.o cgp/cgp_load.o main_apply.o
 
-CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_15.png -g 30000 -a baldwin -S 100 -I 50 -k 10000
+CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_15.png -g 10000 -a cgp -S 100 -I 25 -k 10000
 ANSELM_HOST=anselm
 ANSELM_PATH=~/xwigla00
 MERLIN_HOST=merlin
@@ -46,11 +48,12 @@ MERLIN_PATH=~/coco
 all: $(EXECUTABLE) $(EXECUTABLE_APPLY)
 
 clean:
-	rm -f *.o cgp/*.o
+	rm -f *.o cgp/*.o logging/*.o
 	rm -rf cocolog/*
 	rm -f $(EXECUTABLE) $(EXECUTABLE).exe $(EXECUTABLE).exe.stackdump
 	rm -f $(EXECUTABLE_APPLY) $(EXECUTABLE_APPLY).exe $(EXECUTABLE_APPLY).exe.stackdump
 	rm -f xwigla00.zip xwigla00.tar.gz
+	rm -f *.expand cgp/*.expand logging/*.expand
 
 rebuild: clean all
 
@@ -113,10 +116,14 @@ valgrind: $(EXECUTABLE)
 	rm -rf cocolog/*
 	valgrind --track-origins=yes --leak-check=full ./$(EXECUTABLE) $(CMDLINE)
 
+leaks: $(EXECUTABLE)
+	rm -rf cocolog/*
+	valgrind --track-origins=yes --leak-check=full --show-reachable=yes ./$(EXECUTABLE) $(CMDLINE)
+
 callgraph:
 	$(MAKE) CFLAGS='$(CFLAGS) -fdump-rtl-expand' clean all
-	ls *.expand | grep -v 'main_apply' | xargs egypt --omit stbi_load,stbi_write_png,log_entry_prolog,can_use_sse2 | dot -Grankdir=LR  -Tpng -o callgraph.png
-	rm *.expand
+	find -name '*.expand' | grep -v 'main_apply' | xargs egypt --omit stbi_load,stbi_write_png,log_entry_prolog,can_use_sse2 | dot -Grankdir=LR  -Tpng -o callgraph.png
+	rm *.expand cgp/*.expand logging/*.expand
 
 # general rules
 

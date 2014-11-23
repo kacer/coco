@@ -20,5 +20,13 @@
 
 #pragma once
 
+#include <stdio.h>
 
-#define MAX_FILENAME_LENGTH 1000
+#include "base.h"
+
+
+/**
+ * Create CSV logger
+ * @param target file handle
+ */
+logger_t logger_csv_create(config_t *config, FILE *target);
