@@ -91,6 +91,10 @@ void fitness_init(img_image_t original, img_image_t noisy,
 void fitness_deinit()
 {
     img_windows_destroy(_noisy_image_windows);
+
+    for (int i = 0; i < WINDOW_SIZE; i++) {
+        free(_noisy_image_simd[i]);
+    }
 }
 
 
