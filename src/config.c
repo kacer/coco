@@ -34,7 +34,6 @@
 #include "config.h"
 #include "cpu.h"
 #include "cgp/cgp.h"
-#include "logging.h"  /* for FITNESS_FMT */
 
 
 #define OPT_MAX_GENERATIONS 'g'

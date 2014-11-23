@@ -24,7 +24,6 @@
 #include <string.h>
 #include <getopt.h>
 #include <ctype.h>
-#include <signal.h>
 
 #ifdef _OPENMP
   #include <omp.h>
@@ -32,99 +31,16 @@
 
 #include "cpu.h"
 #include "algo.h"
-#include "files.h"
+#include "utils.h"
 #include "image.h"
 #include "random.h"
 #include "config.h"
 #include "cgp/cgp.h"
 #include "fitness.h"
 #include "archive.h"
-#include "logging.h"
 #include "predictors.h"
 
 #include <limits.h>
-
-// signal handlers
-volatile sig_atomic_t terminated = 0;
-volatile sig_atomic_t interrupted = 0;
-volatile sig_atomic_t cpu_limit_reached = 0;
-
-// if SIGINT is received twice within this gap, program exits
-const int SIGINT_GENERATIONS_GAP = 1000;
-
-// special `check_signals` return value indicating first catch of SIGINT
-const int SIGINT_FIRST = -SIGINT;
-
-
-/**
- * Handles SIGINT. Sets `interrupted` flag.
- */
-void sigint_handler(int _)
-{
-    signal(SIGINT, sigint_handler);
-    interrupted = 1;
-}
-
-
-/**
- * Handles SIGTERM. Sets `terminated` flag.
- */
-void sigterm_handler(int _)
-{
-    signal(SIGTERM, sigterm_handler);
-    terminated = 1;
-}
-
-
-/**
- * Handles SIGXCPU. Sets `cpu_limit_reached` flag.
- */
-void sigxcpu_handler(int _)
-{
-    signal(SIGXCPU, sigxcpu_handler);
-    cpu_limit_reached = 1;
-}
-
-
-/**
- * Checks for SIGXCPU and SIGINT signals
- * @return Received signal code
- */
-int check_signals(int current_generation)
-{
-    // when SIGINT was received last time
-    static long interrupted_generation = -1;
-
-    // SIGXCPU
-    if (cpu_limit_reached) {
-        fprintf(stderr, "SIGXCPU received!\n");
-        cpu_limit_reached = false;
-        return SIGXCPU;
-    }
-
-    // SIGTERM
-    if (terminated) {
-        fprintf(stderr, "SIGTERM received!\n");
-        terminated = false;
-        return SIGTERM;
-    }
-
-    // SIGINT
-    if (interrupted) {
-        if (interrupted_generation >= 0
-            &&  interrupted_generation > current_generation - SIGINT_GENERATIONS_GAP) {
-            fprintf(stderr, "SIGINT received and terminating!\n");
-            return SIGINT;
-        }
-
-        fprintf(stderr, "SIGINT received!\n");
-        interrupted = 0;
-        interrupted_generation = current_generation;
-        return SIGINT_FIRST;
-    }
-
-    return 0;
-}
 
 
 // configuration
@@ -167,7 +83,7 @@ static config_t config = {
     .bw_increase_fast_increment_percent = 0,
 
     .log_interval = 0,
-    .log_dir = "cocolog",
+    .log_dir = "",
 };
 
 
@@ -199,14 +115,12 @@ int main(int argc, char *argv[])
 
     // loggers list
     logger_init_list(&work_data.loggers);
-
-    FILE *_test_log = fopen("cocolog/test.log", "w");
-    logger_add(&work_data.loggers, logger_text_create(work_data.config, _test_log));
     logger_add(&work_data.loggers, logger_text_create(work_data.config, stdout));
 
-    // images
-    img_image_t img_original;
-    img_image_t img_noisy;
+    // log files (used in the case of default logging enabled)
+    FILE *log_progress_file;
+    FILE *log_csv_file;
+
 
     // application exit code
     int retval = 0;
@@ -215,42 +129,7 @@ int main(int argc, char *argv[])
         Log system configuration
      */
 
-    #ifdef _OPENMP
-        printf("OpenMP is enabled. CPUs: %d. Max threads: %d.\n",
-            omp_get_num_procs(), omp_get_max_threads());
-
-            /*
-                Nested parallelism is essential and must be explicitly
-                enabled. Otherwise the population evaluation will be
-                serialised.
-             */
-            omp_set_nested(true);
-
-    #else
-
-        printf("OpenMP is disabled, coevolution is not available.\n");
-
-    #endif
-
-    #ifdef AVX2
-        if (can_use_intel_core_4th_gen_features()) {
-            printf("AVX2 is enabled.\n");
-        } else {
-            printf("AVX2 is enabled, but not supported by CPU.\n");
-        }
-    #else
-        printf("AVX2 is disabled. Recompile with -DAVX2 defined to enable.\n");
-    #endif
-
-    #ifdef SSE2
-        if (can_use_sse2()) {
-            printf("SSE2 is enabled.\n");
-        } else {
-            printf("SSE2 is enabled, but not supported by CPU.\n");
-        }
-    #else
-        printf("SSE2 is disabled. Recompile with -DSSE2 defined to enable.\n");
-    #endif
+    print_sysinfo();
 
     /*
         Load configuration and images and init log directory and files
@@ -267,30 +146,39 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if ((img_original = img_load(config.input_image)) == NULL) {
+    if ((work_data.img_original = img_load(config.input_image)) == NULL) {
         fprintf(stderr, "Failed to load original image or no filename given.\n");
         config_ok = false;
     }
 
-    if ((img_noisy = img_load(config.noisy_image)) == NULL) {
+    if ((work_data.img_noisy = img_load(config.noisy_image)) == NULL) {
         fprintf(stderr, "Failed to load noisy image or no filename given.\n");
         config_ok = false;
     }
 
-    int log_create_dirs_retval = log_create_dirs(config.log_dir);
-    if (log_create_dirs_retval != 0) {
-        fprintf(stderr, "Error initializing results directory: %s\n", strerror(log_create_dirs_retval));
-        config_ok = false;
-    }
+    if (strlen(config.log_dir)) {
+        int create_dir_retval = create_dir(config.log_dir);
+        if (create_dir_retval != 0) {
+            fprintf(stderr, "Error initializing results directory: %s\n", strerror(create_dir_retval));
+            config_ok = false;
+        }
 
-    if ((work_data.log_file = open_log_file(config.log_dir, "progress.log", true)) == NULL) {
-        fprintf(stderr, "Failed to open 'progress.log' in results dir for writing.\n");
-        config_ok = false;
-    }
+        if ((log_progress_file = open_file(config.log_dir, "progress.log")) == NULL) {
+            fprintf(stderr, "Failed to open 'progress.log' in results dir for writing.\n");
+            config_ok = false;
+        }
 
-    if ((work_data.history_file = init_cgp_history_file(config.log_dir, "cgp_history.csv")) == NULL) {
-        fprintf(stderr, "Failed to open 'cgp_history.csv' in results dir for writing.\n");
-        config_ok = false;
+        if ((log_csv_file = open_file(config.log_dir, "cgp_history.csv")) == NULL) {
+            fprintf(stderr, "Failed to open 'cgp_history.csv' in results dir for writing.\n");
+            config_ok = false;
+        }
+
+        logger_add(&work_data.loggers,
+            logger_text_create(work_data.config, log_progress_file));
+        logger_add(&work_data.loggers,
+            logger_csv_create(work_data.config, log_csv_file));
+        logger_add(&work_data.loggers,
+            logger_summary_create(work_data.config, config.log_dir, true));
     }
 
     if (!config_ok) {
@@ -303,6 +191,15 @@ int main(int argc, char *argv[])
         Initialize data structures etc.
      */
 
+    #ifdef _OPENMP
+        /*
+            Nested parallelism is essential and must be explicitly
+            enabled. Otherwise the population evaluation will be
+            serialized.
+         */
+        omp_set_nested(true);
+    #endif
+
     // random number generator
     rand_init_seed(config.random_seed);
 
@@ -313,7 +210,7 @@ int main(int argc, char *argv[])
     if (config.algorithm != simple_cgp) {
 
         // calculate absolute predictors sizes
-        int img_size = img_original->width * img_original->height;
+        int img_size = work_data.img_original->width * work_data.img_original->height;
         int pred_min_size = config.pred_min_size * img_size;
         int pred_max_size = config.pred_size * img_size;
         int pred_initial_size;
@@ -394,7 +291,8 @@ int main(int argc, char *argv[])
     }
 
     // fitness function
-    fitness_init(img_original, img_noisy, work_data.cgp_archive, work_data.pred_archive);
+    fitness_init(work_data.img_original, work_data.img_noisy,
+        work_data.cgp_archive, work_data.pred_archive);
 
     /*
         Populations initialization
@@ -416,6 +314,7 @@ int main(int argc, char *argv[])
     /*
         If no loggers are set, use the devnull one
      */
+
     if (work_data.loggers.count == 0) {
         logger_add(&work_data.loggers, logger_devnull_create(work_data.config));
     }
@@ -444,21 +343,12 @@ int main(int argc, char *argv[])
         arc_insert(work_data.pred_archive, work_data.pred_population->best_chromosome);
     }
 
-    save_original_image(config.log_dir, img_original);
-    save_noisy_image(config.log_dir, img_noisy);
-    save_config(config.log_dir, &config);
-
-
     /*
         Evolution itself
      */
 
-    log_init_time();
-
     // install signal handlers
-    signal(SIGINT, sigint_handler);
-    signal(SIGTERM, sigterm_handler);
-    signal(SIGXCPU, sigxcpu_handler);
+    init_signals();
 
     switch (config.algorithm) {
 
@@ -489,60 +379,9 @@ int main(int argc, char *argv[])
 
 
     /*
-        Dump summary and clean-up
+        Clean-up
      */
 
-    ga_fitness_t best_fitness;
-    ga_chr_t best_chromosome;
-    if (config.algorithm == simple_cgp) {
-        best_chromosome = work_data.cgp_population->best_chromosome;
-    } else {
-        best_chromosome = work_data.cgp_archive->best_chromosome_ever;
-    }
-    best_fitness = best_chromosome->fitness;
-
-    // dump best circuit and image
-    char buffer[MAX_FILENAME_LENGTH + 1];
-
-    snprintf(buffer, MAX_FILENAME_LENGTH + 1, "%s/best_circuit.txt", config.log_dir);
-    FILE *circuit_file_txt = fopen(buffer, "w");
-    if (circuit_file_txt) {
-        log_cgp_circuit(circuit_file_txt, work_data.cgp_population->generation, best_chromosome);
-        fclose(circuit_file_txt);
-    } else {
-        fprintf(stderr, "Failed to open %s!\n", buffer);
-    }
-
-    snprintf(buffer, MAX_FILENAME_LENGTH + 1, "%s/best_circuit.chr", config.log_dir);
-    FILE *circuit_file_chr = fopen(buffer, "w");
-    if (circuit_file_chr) {
-        cgp_dump_chr_compat(best_chromosome, circuit_file_chr);
-        fclose(circuit_file_chr);
-    } else {
-        fprintf(stderr, "Failed to open %s!\n", buffer);
-    }
-
-    // save best filtered image
-    save_best_image(config.log_dir, best_chromosome, img_noisy);
-
-    // dump evolution summary
-    log_final_summary(stdout, work_data.cgp_population->generation,
-        best_fitness, fitness_get_cgp_evals());
-    printf("\n");
-    log_time(stdout);
-    printf("\n");
-    config_save_file(stdout, &config);
-
-    FILE *summary_file;
-    if ((summary_file = open_log_file(config.log_dir, "summary.log", false)) == NULL) {
-        fprintf(stderr, "Failed to open 'summary.log' in results dir for writing.\n");
-
-    } else {
-        log_final_summary(summary_file, work_data.cgp_population->generation,
-            best_fitness, fitness_get_cgp_evals());
-        fprintf(summary_file, "\n");
-        log_time(summary_file);
-    }
 
     ga_destroy_pop(work_data.cgp_population);
 
@@ -554,14 +393,13 @@ int main(int argc, char *argv[])
     cgp_deinit();
     fitness_deinit();
 
-    img_destroy(img_original);
-    img_destroy(img_noisy);
+    img_destroy(work_data.img_original);
+    img_destroy(work_data.img_noisy);
 
     logger_destroy_list(&work_data.loggers);
-    fclose(_test_log);
 
-    fclose(work_data.log_file);
-    fclose(work_data.history_file);
+    fclose(log_progress_file);
+    fclose(log_csv_file);
 
     return retval;
 }

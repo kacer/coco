@@ -23,7 +23,6 @@
 
 #include "baldwin.h"
 #include "predictors.h"
-#include "logging.h"
 
 
 static inline int bw_relative_to_absolute(double coef, int base) {

@@ -17,13 +17,18 @@
  *   \___)     (___/
  */
 
+
 #pragma once
 
 #include <assert.h>
 
-#include "base.h"
-#include "text.h"
 #include "history.h"
+#include "base.h"
+
+/* various logger implementations */
+#include "csv.h"
+#include "text.h"
+#include "summary.h"
 
 
 /* maximal number of active loggers */

@@ -19,39 +19,9 @@
 
 
 #include "algo.h"
+#include "utils.h"
 #include "fitness.h"
 
-/*
-static inline void _log_cgp_csv(
-    algorithm_t algorithm,
-    history_entry_t *last_entry,
-    ga_pop_t cgp_population,
-    archive_t cgp_archive,
-    archive_t pred_archive,
-    FILE *history_file)
-{
-    if (algorithm == simple_cgp) {
-        log_cgp_history(
-            history_file,
-            last_entry,
-            fitness_get_cgp_evals(),
-            -1,
-            -1,
-            cgp_population->best_chromosome->fitness
-        );
-
-    } else {
-        log_cgp_history(
-            history_file,
-            last_entry,
-            fitness_get_cgp_evals(),
-            pred_get_length(),
-            ((pred_genome_t) arc_get(pred_archive, 0)->genome)->used_pixels,
-            cgp_archive->best_chromosome_ever->fitness
-        );
-    }
-}
-*/
 
 bool _should_apply_baldwin(bool is_better, algo_data_t *wd)
 {
@@ -75,6 +45,9 @@ bool _should_apply_baldwin(bool is_better, algo_data_t *wd)
  */
 int cgp_main(algo_data_t *wd)
 {
+    history_entry_t current_history_entry;
+    finish_reason_t finish_reason;
+
     /* A. log start */
     logger_fire(&wd->loggers, started, history_last(&wd->history));
 
@@ -83,9 +56,6 @@ int cgp_main(algo_data_t *wd)
         ga_fitness_t cgp_parent_fitness;
         ga_fitness_t predicted_fitness;
         ga_fitness_t real_fitness = 0;
-
-        history_entry_t current_history_entry;
-        finish_reason_t finish_reason;
 
 
         /* advance to next generation *****************************************/
@@ -247,7 +217,13 @@ int cgp_main(algo_data_t *wd)
         }
 
         if (wd->finished) {
-            logger_fire(&wd->loggers, finished, finish_reason, &current_history_entry);
+            #pragma omp critical (CGP_ARCHIVE__PRED_POP)
+            {
+                #pragma omp critical (PRED_ARCHIVE__CGP_POP)
+                {
+                    logger_fire(&wd->loggers, finished, finish_reason, &current_history_entry, wd);
+                }
+            }
         }
 
 
@@ -281,15 +257,13 @@ void pred_main(algo_data_t *wd)
         if (wd->baldwin_state.apply_now) {
             bw_update_t result;
             int generation = wd->cgp_population->generation;
+            int old_used_length = ((pred_genome_t) arc_get(wd->pred_archive, 0)->genome)->used_pixels;
+            int new_used_length;
 
             // update evolution params
             bw_update_params(&wd->config->bw_config, &wd->history, &result);
 
             if (result.predictor_length_changed) {
-                logger_fire(&wd->loggers, pred_length_changed,
-                    generation,
-                    result.old_predictor_length,
-                    result.new_predictor_length);
 
                 // recalculate predictors' phenotypes
                 pred_pop_calculate_phenotype(wd->pred_population);
@@ -298,7 +272,9 @@ void pred_main(algo_data_t *wd)
                     pred_calculate_phenotype(arc_get(wd->pred_archive, 0)->genome);
                 }
 
-                // reevaluate predictors & write new row to CSV
+                new_used_length = ((pred_genome_t) arc_get(wd->pred_archive, 0)->genome)->used_pixels;
+
+                // reevaluate predictors
                 #pragma omp critical (CGP_ARCHIVE__PRED_POP)
                 {
                     ga_reevaluate_pop(wd->pred_population);
@@ -308,6 +284,13 @@ void pred_main(algo_data_t *wd)
                             arc_get(wd->pred_archive, 0));
                     }
                 }
+
+                logger_fire(&wd->loggers, pred_length_changed,
+                    generation,
+                    result.old_predictor_length,
+                    result.new_predictor_length,
+                    old_used_length,
+                    new_used_length);
             }
 
             // no lock on CGP population here, it should not matter

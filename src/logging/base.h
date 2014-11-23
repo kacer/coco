@@ -30,27 +30,6 @@
 #include "../config.h"
 
 
-/*
-    Important events:
-
-    algo started
-    algo terminated
-
-    better cgp found
-    baldwin triggered
-    log interval
-
-    better predictor found
-    predictor length changed
-
-    sigint received
-    sigxcpu received
-    target generation
-    target fitness
-
- */
-
-
 typedef enum {
     generation_limit,
     target_fitness,
@@ -61,16 +40,19 @@ typedef enum {
 /* solves cyclic type dependency */
 struct logger_base;
 typedef struct logger_base *logger_t;
+struct algo_data; // declared in algo.h
 
 /* event handlers */
 typedef void (*handler_started_t)(logger_t logger, history_entry_t *state);
-typedef void (*handler_finished_t)(logger_t logger, finish_reason_t reason, history_entry_t *state);
+typedef void (*handler_finished_t)(logger_t logger, finish_reason_t reason, history_entry_t *state, struct algo_data *work_data);
 typedef void (*handler_better_cgp_t)(logger_t logger, history_entry_t *state);
 typedef void (*handler_baldwin_triggered_t)(logger_t logger, history_entry_t *state);
 typedef void (*handler_log_tick_t)(logger_t logger, history_entry_t *state);
 typedef void (*handler_signal_t)(logger_t logger, int signal, history_entry_t *state);
 typedef void (*handler_better_pred_t)(logger_t logger, ga_fitness_t old_fitness, ga_fitness_t new_fitness);
-typedef void (*handler_pred_length_changed_t)(logger_t logger, int cgp_generation, unsigned int old_length, unsigned int new_length);
+typedef void (*handler_pred_length_changed_t)(logger_t logger, int cgp_generation,
+    unsigned int old_length, unsigned int new_length,
+    unsigned int old_used_length, unsigned int new_used_length);
 
 /* "destructor" */
 typedef void (*logger_destructor_t)(logger_t logger);

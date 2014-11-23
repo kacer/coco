@@ -17,11 +17,13 @@
  *   \___)     (___/
  */
 
+
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
 
 #include "text.h"
+#include "../utils.h"
 
 
 struct logger_text {
@@ -40,10 +42,6 @@ static inline FILE *_get_fp(logger_t logger) {
     return ((logger_text_t) logger)->log_file;
 }
 
-
-/* formatting */
-#define FITNESS_FMT "%.10g"
-
 #define _USERTIME_STR \
     char _usertime_str[100]; \
     logger_snprintf_usertime(logger, _usertime_str, 100);
@@ -51,13 +49,14 @@ static inline FILE *_get_fp(logger_t logger) {
 
 /* event handlers */
 static void handle_started(logger_t logger, history_entry_t *state);
-static void handle_finished(logger_t logger, finish_reason_t reason, history_entry_t *state);
+static void handle_finished(logger_t logger, finish_reason_t reason, history_entry_t *state, struct algo_data *work_data);
 static void handle_better_cgp(logger_t logger, history_entry_t *state);
 static void handle_baldwin_triggered(logger_t logger, history_entry_t *state);
 static void handle_log_tick(logger_t logger, history_entry_t *state);
 static void handle_signal(logger_t logger, int signal, history_entry_t *state);
 static void handle_better_pred(logger_t logger, ga_fitness_t old_fitness, ga_fitness_t new_fitness);
-static void handle_pred_length_changed(logger_t logger, int cgp_generation, unsigned int old_length, unsigned int new_length);
+static void handle_pred_length_changed(logger_t logger, int cgp_generation, unsigned int old_length, unsigned int new_length,
+    unsigned int old_used_length, unsigned int new_used_length);
 
 /* "destructor" */
 static void logger_text_destruct(logger_t logger);
@@ -112,7 +111,8 @@ static void handle_started(logger_t logger, history_entry_t *state)
 }
 
 
-static void handle_finished(logger_t logger, finish_reason_t reason, history_entry_t *state)
+static void handle_finished(logger_t logger, finish_reason_t reason, history_entry_t *state,
+    struct algo_data *work_data)
 {
     fprintf(_get_fp(logger),
         "Generation %d: Evolution stopped. %s\n",
@@ -163,7 +163,9 @@ static void handle_better_pred(logger_t logger, ga_fitness_t old_fitness, ga_fit
 }
 
 
-static void handle_pred_length_changed(logger_t logger, int cgp_generation, unsigned int old_length, unsigned int new_length)
+static void handle_pred_length_changed(logger_t logger, int cgp_generation,
+    unsigned int old_length, unsigned int new_length,
+    unsigned int old_used_length, unsigned int new_used_length)
 {
     fprintf(_get_fp(logger),
         "Generation %d: Predictor's length changed %d --> %d\n",

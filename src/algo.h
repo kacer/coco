@@ -30,17 +30,7 @@
 #include "logging/logging.h"
 
 
-/**
- * Checks for SIGXCPU and SIGINT signals
- *
- * Defined in main.c
- *
- * @return Received signal code
- */
-extern int check_signals(int current_generation);
-
-
-typedef struct {
+typedef struct algo_data {
     // config
     config_t *config;
 
@@ -67,6 +57,10 @@ typedef struct {
 
     // loggers
     logger_list_t loggers;
+
+    // source images - in fact used only to provide them to loggers
+    img_image_t img_original;
+    img_image_t img_noisy;
 
     // indicates that the algorithm should terminate ASAP
     bool finished;
