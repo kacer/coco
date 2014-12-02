@@ -55,7 +55,8 @@ static void handle_baldwin_triggered(logger_t logger, history_entry_t *state);
 static void handle_log_tick(logger_t logger, history_entry_t *state);
 static void handle_signal(logger_t logger, int signal, history_entry_t *state);
 static void handle_better_pred(logger_t logger, ga_fitness_t old_fitness, ga_fitness_t new_fitness);
-static void handle_pred_length_changed(logger_t logger, int cgp_generation, unsigned int old_length, unsigned int new_length,
+static void handle_pred_length_change_scheduled(logger_t logger, int new_predictor_length, history_entry_t *state);
+static void handle_pred_length_change_applied(logger_t logger, int cgp_generation, unsigned int old_length, unsigned int new_length,
     unsigned int old_used_length, unsigned int new_used_length);
 
 /* "destructor" */
@@ -85,7 +86,8 @@ logger_t logger_text_create(config_t *config, FILE *target)
     base->handler_baldwin_triggered = handle_baldwin_triggered;
     base->handler_log_tick = handle_log_tick;
     base->handler_better_pred = handle_better_pred;
-    base->handler_pred_length_changed = handle_pred_length_changed;
+    base->handler_pred_length_change_scheduled = handle_pred_length_change_scheduled;
+    base->handler_pred_length_change_applied = handle_pred_length_change_applied;
     base->handler_signal = handle_signal;
     base->destructor = logger_text_destruct;
 
@@ -163,11 +165,19 @@ static void handle_better_pred(logger_t logger, ga_fitness_t old_fitness, ga_fit
 }
 
 
-static void handle_pred_length_changed(logger_t logger, int cgp_generation,
+static void handle_pred_length_change_scheduled(logger_t logger, int new_predictor_length, history_entry_t *state)
+{
+    fprintf(_get_fp(logger),
+        "Generation %d: Predictor's length change scheduled %d --> %d\n",
+        state->generation, state->pred_length, new_predictor_length);
+}
+
+
+static void handle_pred_length_change_applied(logger_t logger, int cgp_generation,
     unsigned int old_length, unsigned int new_length,
     unsigned int old_used_length, unsigned int new_used_length)
 {
     fprintf(_get_fp(logger),
-        "Generation %d: Predictor's length changed %d --> %d\n",
+        "Generation %d: Predictor's length change applied   %d --> %d\n",
         cgp_generation, old_length, new_length);
 }

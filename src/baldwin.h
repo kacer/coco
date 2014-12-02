@@ -80,7 +80,7 @@ typedef struct {
 
 
 typedef struct {
-    bool apply_now;
+    int new_predictor_length;
     int last_applied_generation;
 } bw_state_t;
 
@@ -92,8 +92,9 @@ void bw_init_absolute_increments(bw_config_t *config, int base);
 
 
 /**
- * Updates evolution parameters according to history
+ * Returns new predictor length
+ * @param  config
  * @param  history
- * @return Info about what has been changed and how
+ * @return New length or zero if no change should happen
  */
-void bw_update_params(bw_config_t *config, history_t *history, bw_update_t *result);
+int bw_get_new_predictor_length(bw_config_t *config, history_t *history);

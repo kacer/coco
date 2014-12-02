@@ -45,7 +45,8 @@ void logger_init_base(logger_t logger, config_t *config)
     logger->handler_baldwin_triggered = NULL;
     logger->handler_log_tick = NULL;
     logger->handler_better_pred = NULL;
-    logger->handler_pred_length_changed = NULL;
+    logger->handler_pred_length_change_scheduled = NULL;
+    logger->handler_pred_length_change_applied = NULL;
     logger->handler_signal = NULL;
 }
 

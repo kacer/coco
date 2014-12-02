@@ -125,19 +125,17 @@ double history_get_coef(bw_algorithm_t alg, history_t *history)
 
 
 /**
- * Updates evolution parameters according to history
+ * Returns new predictor length
+ * @param  config
  * @param  history
- * @return Info about what has been changed and how
+ * @return New length or zero if no change should happen
  */
-void bw_update_params(bw_config_t *config, history_t *history, bw_update_t *result)
+int bw_get_new_predictor_length(bw_config_t *config, history_t *history)
 {
     history_entry_t *last = history_get(history, -1);
 
     int old_length = pred_get_length();
     int new_length = old_length;
-    result->old_predictor_length = old_length;
-    result->new_predictor_length = old_length;
-    result->predictor_length_changed = false;
 
     // if inaccuracy raises over threshold, do big increment,
     // set as percentage from maximal size
@@ -188,8 +186,8 @@ void bw_update_params(bw_config_t *config, history_t *history, bw_update_t *resu
     }
 
     if (new_length != old_length) {
-        result->new_predictor_length = new_length;
-        result->predictor_length_changed = true;
-        pred_set_length(new_length);
+        return new_length;
+    } else {
+        return 0;
     }
 }

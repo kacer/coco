@@ -95,7 +95,7 @@ static pred_metadata_t pred_metadata;
 static algo_data_t work_data = {
     .config = &config,
     .baldwin_state = {
-        .apply_now = false,
+        .new_predictor_length = 0,
         .last_applied_generation = 0,
     },
     .finished = false,

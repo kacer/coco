@@ -155,10 +155,18 @@ int cgp_main(algo_data_t *wd)
         /* change evolution params in baldwin mode ****************************/
 
 
+        // thread-safe copy
+        int new_predictor_length = 0;
+
         if (apply_baldwin_now) {
             // everything is done in predictors thread asynchronously
-            // no need for critical section here
-            wd->baldwin_state.apply_now = true;
+            new_predictor_length = bw_get_new_predictor_length(&wd->config->bw_config, &wd->history);
+            if (new_predictor_length != 0) {
+                #pragma omp critical (BALDWIN)
+                {
+                    wd->baldwin_state.new_predictor_length = new_predictor_length;
+                }
+            }
         }
 
 
@@ -208,8 +216,12 @@ int cgp_main(algo_data_t *wd)
             logger_fire(&wd->loggers, log_tick, &current_history_entry);
         }
 
-        if (apply_baldwin_now) {
-            logger_fire(&wd->loggers, baldwin_triggered, &current_history_entry);
+        if (received_signal) {
+            logger_fire(&wd->loggers, signal, abs(received_signal), &current_history_entry);
+        }
+
+        if (new_predictor_length != 0) {
+            logger_fire(&wd->loggers, pred_length_change_scheduled, new_predictor_length, &current_history_entry);
         }
 
         if (received_signal) {
@@ -254,16 +266,16 @@ void pred_main(algo_data_t *wd)
 
         // if evolution params should be changed now, do it
         // no lock necessary
-        if (wd->baldwin_state.apply_now) {
-            bw_update_t result;
-            int generation = wd->cgp_population->generation;
-            int old_used_length = ((pred_genome_t) arc_get(wd->pred_archive, 0)->genome)->used_pixels;
-            int new_used_length;
+        if (wd->baldwin_state.new_predictor_length) {
+            #pragma omp critical (BALDWIN)
+            {
+                int generation = wd->cgp_population->generation;
+                int old_length = pred_get_length();
+                int new_length = wd->baldwin_state.new_predictor_length;
+                int old_used_length = ((pred_genome_t) arc_get(wd->pred_archive, 0)->genome)->used_pixels;
+                int new_used_length;
 
-            // update evolution params
-            bw_update_params(&wd->config->bw_config, &wd->history, &result);
-
-            if (result.predictor_length_changed) {
+                pred_set_length(new_length);
 
                 // recalculate predictors' phenotypes
                 pred_pop_calculate_phenotype(wd->pred_population);
@@ -285,17 +297,17 @@ void pred_main(algo_data_t *wd)
                     }
                 }
 
-                logger_fire(&wd->loggers, pred_length_changed,
+                logger_fire(&wd->loggers, pred_length_change_applied,
                     generation,
-                    result.old_predictor_length,
-                    result.new_predictor_length,
+                    old_length,
+                    new_length,
                     old_used_length,
                     new_used_length);
-            }
 
-            // no lock on CGP population here, it should not matter
-            wd->baldwin_state.last_applied_generation = generation;
-            wd->baldwin_state.apply_now = false;
+                // no lock on CGP population here, it should not matter
+                wd->baldwin_state.last_applied_generation = generation;
+                wd->baldwin_state.new_predictor_length = 0;
+            }
         }
 
         bool is_better = ga_is_better(wd->pred_population->problem_type,

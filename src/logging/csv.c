@@ -40,7 +40,7 @@ static void handle_baldwin_triggered(logger_t logger, history_entry_t *state);
 static void handle_log_tick(logger_t logger, history_entry_t *state);
 static void handle_signal(logger_t logger, int signal, history_entry_t *state);
 static void handle_better_pred(logger_t logger, ga_fitness_t old_fitness, ga_fitness_t new_fitness);
-static void handle_pred_length_changed(logger_t logger, int cgp_generation, unsigned int old_length, unsigned int new_length, unsigned int old_used_length, unsigned int new_used_length);
+static void handle_pred_length_change_applied(logger_t logger, int cgp_generation, unsigned int old_length, unsigned int new_length, unsigned int old_used_length, unsigned int new_used_length);
 
 /* "destructor" */
 static void logger_csv_destruct(logger_t logger);
@@ -69,7 +69,7 @@ logger_t logger_csv_create(config_t *config, FILE *target)
     base->handler_baldwin_triggered = handle_baldwin_triggered;
     base->handler_log_tick = handle_log_tick;
     base->handler_better_pred = handle_better_pred;
-    base->handler_pred_length_changed = handle_pred_length_changed;
+    base->handler_pred_length_change_applied = handle_pred_length_change_applied;
     base->handler_signal = handle_signal;
     base->destructor = logger_csv_destruct;
 
@@ -215,7 +215,7 @@ static void handle_better_pred(logger_t logger, ga_fitness_t old_fitness, ga_fit
 }
 
 
-static void handle_pred_length_changed(logger_t logger, int cgp_generation,
+static void handle_pred_length_change_applied(logger_t logger, int cgp_generation,
     unsigned int old_length, unsigned int new_length,
     unsigned int old_used_length, unsigned int new_used_length)
 {

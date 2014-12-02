@@ -48,7 +48,6 @@ typedef struct algo_data {
     history_t history;
 
     // baldwin (colearning state)
-    // used always - to store history
     bw_state_t baldwin_state;
 
     // log files
