@@ -118,8 +118,8 @@ int main(int argc, char *argv[])
     logger_add(&work_data.loggers, logger_text_create(work_data.config, stdout));
 
     // log files (used in the case of default logging enabled)
-    FILE *log_progress_file;
-    FILE *log_csv_file;
+    FILE *log_progress_file = NULL;
+    FILE *log_csv_file = NULL;
 
 
     // application exit code
@@ -301,12 +301,14 @@ int main(int argc, char *argv[])
     work_data.cgp_population = cgp_init_pop(config.cgp_population_size);
     if (work_data.cgp_population == NULL) {
         fprintf(stderr, "Failed to initialize CGP population.\n");
+        return 1;
     }
 
     if (config.algorithm != simple_cgp) {
         work_data.pred_population = pred_init_pop(config.pred_population_size);
         if (work_data.pred_population == NULL) {
             fprintf(stderr, "Failed to initialize predictors population.\n");
+            return 1;
         }
     }
 
@@ -398,8 +400,8 @@ int main(int argc, char *argv[])
 
     logger_destroy_list(&work_data.loggers);
 
-    fclose(log_progress_file);
-    fclose(log_csv_file);
+    if (log_progress_file) fclose(log_progress_file);
+    if (log_csv_file) fclose(log_csv_file);
 
     return retval;
 }

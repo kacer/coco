@@ -47,7 +47,7 @@ ga_chr_t *_ga_allocate_chromosomes(int size, ga_alloc_genome_func_t alloc_func,
 
         if (new_chr == NULL) {
             for (int x = i - 1; x >= 0; x--) {
-                ga_free_chr(new_array[x], free_func);
+                ga_destroy_chr(new_array[x], free_func);
             }
             free(new_array);
             return NULL;
@@ -63,7 +63,7 @@ void _ga_free_chromosomes(ga_chr_t * arr, int size, ga_free_genome_func_t free_f
 {
 
     for (int i = 0; i < size; i++) {
-        ga_free_chr(arr[i], free_func);
+        ga_destroy_chr(arr[i], free_func);
     }
     free(arr);
 }
@@ -180,7 +180,7 @@ ga_chr_t ga_alloc_chr(ga_alloc_genome_func_t alloc_func)
  *
  * @param  problem-specific genome de-allocation function
  */
-void ga_free_chr(ga_chr_t chr, ga_free_genome_func_t free_func)
+void ga_destroy_chr(ga_chr_t chr, ga_free_genome_func_t free_func)
 {
     free_func(chr->genome);
     free(chr);

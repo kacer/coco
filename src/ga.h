@@ -246,7 +246,7 @@ ga_chr_t ga_alloc_chr(ga_alloc_genome_func_t alloc_func);
  *
  * @param  problem-specific genome de-allocation function
  */
-void ga_free_chr(ga_chr_t chr, ga_free_genome_func_t free_func);
+void ga_destroy_chr(ga_chr_t chr, ga_free_genome_func_t free_func);
 
 
 /**

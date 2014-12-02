@@ -169,6 +169,12 @@ void pred_free_genome(void *_genome)
     free(genome->_used_values);
     free(genome->_genes);
     if (_metadata->genome_type != permuted) free(genome->pixels);
+    if (can_use_simd()) {
+        free(genome->original_simd);
+        for (int i = 0; i < WINDOW_SIZE; i++) {
+            free(genome->pixels_simd[i]);
+        }
+    }
     free(genome);
 }
 
@@ -297,6 +303,7 @@ void pred_copy_genome(void *_dst, void *_src)
     }
 
     dst->used_pixels = src->used_pixels;
+    dst->_circular_offset = src->_circular_offset;
 }
 
 
@@ -382,6 +389,8 @@ void _crossover1p_repeated(pred_genome_t baby, pred_genome_t mom, pred_genome_t 
     // copy from dad
     memcpy(baby->_genes + split_point, dad->_genes + split_point,
         sizeof(pred_gene_t) * (_metadata->genotype_length - split_point));
+
+    baby->_circular_offset = mom->_circular_offset;
 }
 
 

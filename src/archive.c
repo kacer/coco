@@ -65,7 +65,7 @@ archive_t arc_create(int capacity, arc_func_vect_t methods, ga_problem_type_t pr
         items[i] = ga_alloc_chr(methods.alloc_genome);
         if (items[i] == NULL) {
             for (int x = i - 1; x >= 0; i--) {
-                ga_free_chr(items[x], methods.free_genome);
+                ga_destroy_chr(items[x], methods.free_genome);
             }
             free(arc);
             return NULL;
@@ -92,9 +92,11 @@ void arc_destroy(archive_t arc)
     if (!arc) return;
 
     for (int i = 0; i < arc->capacity; i++) {
-        ga_free_chr(arc->chromosomes[i], arc->methods.free_genome);
+        ga_destroy_chr(arc->chromosomes[i], arc->methods.free_genome);
     }
     free(arc->chromosomes);
+    free(arc->original_fitness);
+    ga_destroy_chr(arc->best_chromosome_ever, arc->methods.free_genome);
     free(arc);
 }
 
