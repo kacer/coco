@@ -1,0 +1,274 @@
+% -*- root: projekt.tex -*-
+%=========================================================================
+% (c) Michal Bidlo, Bohuslav Křena, 2008
+
+\chapter{Úvod}
+
+\blind
+
+%% \section{Obrazové filtry}
+
+Tato zpráva je strukturována následovně: Kapitola 2 se zabývá evolučními algoritmy, zejména kartézským genetickým programováním, použitím koevoluce za účelem snížení výpočetní náročnosti a souběžným učením. Kapitola 3 se zabývá návrhem programu pro tvorbu obrazových filtrů použitím koevolučního algoritmu se souběžným učením, který bude implementován v~diplomové práci.
+
+\chapter{Evoluční algoritmy}
+
+První evoluční algoritmy se v~literatuře objevují od 50. let 20. století. Postupně a nezávisle na sobě vzniklo několik podobných evolučních metod (například evoluční strategie, evoluční programování nebo genetické algoritmy), které se v~různých obměnách používají i dnes. Až s~rozšířením spolupráce mezi těmito nezávislými výzkumnými týmy v~90. letech vznikl pojem \uv{evoluční algoritmus}.
+
+Evoluční algoritmy jsou stoachastické optimalizační metody inspirované přírodou, konkrétně Darwinovou teorií evoluce. Ačkoliv pojmy používané v~evolučních algoritmech vycházejí z~biologie, jejich význam není vždy přesně stejný. Mezi základní pojmy patří:
+
+\begin{itemize}
+    \item\emph{Gen} je základním stavebním blokem kandidátního řešení, je omezen předem danou abecedou (binární čísla, písmena\ldots),
+    \item\emph{Chromozom}, \emph{jedinec} nebo \emph{genotyp} je posloupnost genů kódující kandidátní řešení,
+    \item\emph{Fenotyp} je dekódovaný genotyp,
+    \item\emph{Populace} je konečná množina chromozomů,
+    \item\emph{Fitness} udává \uv{kvalitu} jedince s~ohledem na řešený problém,
+    \item\emph{Fitness funkce} přiřazuje každému jedinci hodnotu fitness,
+    \item\emph{Diverzita} udává rozmanitost populace, tj. nakolik se od sebe chromozomy v~populaci navzájem liší,
+    \item\emph{Rodiče} jsou podmnožina populace, ze které budou vytvořeni \emph{potomci}.
+\end{itemize}
+
+Typickým rysem evolučních algoritmů je to, že pracují s~populací několika kandidátních řešení, od kterých odvozují nová řešení pomocí speciálních biologií inspirovaných operátorů. Jednoduchý evoluční algoritmus lze zapsat takto:
+
+\begin{enumerate}
+    \item Náhodně vygeneruj populaci o~dané velikosti.
+    \item Opakuj dokud není splněna ukončovací podmínka:
+    \begin{enumerate}
+        \item z~populace vyber rodiče a vytvoř potomky,
+        \item některé jedince v~populaci nahraď potomky.
+    \end{enumerate}
+    \item Výsledkem je jedinec s~nejvyšší fitness (nejlepší nalezené řešení problému).
+\end{enumerate}
+
+Nevýhodou evolučních algoritmů je velké množství parametrů a podproblémů. Před samotným výpočtem pomocí evolučního algoritmu je třeba si položit například tyto otázky:
+
+\begin{itemize}
+    \item Jak se budou kódovat kandidátní řešení do genotypu?
+    \item Kolik jedinců má být v~populaci?
+    \item Jak se budou vybírat rodiče nové populace?
+    \item Jak se budou tvořit potomci?
+    \item Kolik jedinců v~populaci má být nahrazeno potomky?
+\end{itemize}
+
+Je třeba brát v~potaz i jejich stochastickou povahu, z~čehož plyne, že pro porovnání různých algoritmů (nebo různých hodnot parametrů) je potřeba statisticky vyhodnotit větší množství běhů \cite{HandbookEA} \cite{Modra}.
+
+\section{Genetický algoritmus}
+
+Genetický algoritmus byl vytvořen Johnem Hollandem v~sedmdesátých letech. Samotný termín \uv{genetický algoritmus} se začal běžně používat až po publikaci dizertační práce Kena De Jonga v~roce 1975. Do širšího povědomí se dostává v~půlce osmdesátých let, kdy se ukázalo, že jej lze použít k~řešení řadě obtížných úloh.
+
+%Existují i hybridní genetické algoritmy, ve kterých se uplatňuje lokální prohledávání.
+
+Schéma genetického algoritmu odpovídá obecnému evolučnímu algoritmu. Počáteční populace je vytvořena náhodně. V~každé iteraci se populace ohodnotí (určí se fitness jedinců) a podle zvoleného selekčního algoritmu se vyberou rodiče, ze kterých jsou pomocí operátorů křížení a mutace vytvořeni potomci. Kromě potomků je možné v~nové populaci zachovat i několik jedinců z~původní populace (s~případnou mutací). Pokud se používá \emph{elitismus}, je nejlepší jedinec vždy součástí nové populace \cite{HandbookEA} \cite{Modra}.
+
+
+\subsection{Reprezentace řešení}
+
+Genotyp v~genetickém algoritmu je často jednoduchá datová struktura, jako je pole bitů nebo čísel konstantní délky. V~případně binárního chromozomu může být vhodné použít Grayovo kódování, ve kterém se dvě po sobě jdoucí hodnoty liší vždy pouze jedním bitem. To pomáhá překonat tzv. Hammingovu bariéru, kdy malá změna v~genotypu způsobí velkou změnu ve fenotypu a naopak.
+
+
+\subsection{Selekce rodičů}
+
+Volbu $K$ rodičů z~populace lze provést několika způsoby. Nejjednodušší je prosté seřazení jedinců podle jejich fitness, rodiči se pak stává $K$ jedinců s~nejvyšší fitness.
+
+U~\emph{proporciální selekce} je pravděpodobnost, že se konkrétní jedinec stane rodičem, přímo úměrná jeho fitness:
+
+\begin{equation*}
+p_i = \frac{f_i}{\sum_{j=1}^N{f_j}}
+\end{equation*}
+
+\noindent{}Lze si to představit jako ruletu, kde každá výseč odpovídá jednomu jedinci a čím vyšší má tento jedinec fitness, tím je výseč větší. Pokud má ale jeden nebo více jedinců výrazně vyšší fitness než zbytek, zmenšuje se diverzita populace -- rodiči se téměř vždy stávají titíž jedinci. Jedním ze způsobů, jak se tento problém řeší je, že se jedinci seřadí podle velikosti fitness a pravděpodobnost výběru je úměrná pořadí jedince a ne přímo jeho fitness.
+
+Jiným přístupem k~výběru rodičů je \emph{turnajová selekce}. Do turnajového kola je náhodně zvoleno dva nebo více jedinců. Vítězem kola se stává jedinec s~nejvyšší fitness a ten se stává rodičem. Turnaj se opakuje tolikrát, kolik rodičů je potřeba zvolit \cite{Modra}.
+
+
+\subsection{Křížení}
+
+Křížení je stěžejním bodem genetického algoritmu. Během něj jsou kombinovány geny ze dvou nebo více chromozomů, čímž vznikne nový jedinec. Obrázek \ref{obrKrizeni} znázorňuje tři základní mechanismy: jednobodové, vícebodové a uniformní křížení. U~jednobodového křížení je náhodně zvolen bod, ve kterém se chromozomy rozdělí a geny za tímto bodem si mezi sebou vymění. U~vícebodového křížení je těchto bodů několik a je možné geny promíchat důkladněji. V~případě uniformního křížení se rozhoduje, zda dojde k~prohození nebo ne, u~každého genu zvlášť \cite{Modra}.
+
+\begin{figure}[htb]
+    \centering
+    \subfigure[Jednobodové]{
+        \centering
+            \includegraphics[width=0.27\textwidth]{fig/crossover1.pdf}
+    }
+    \subfigure[Vícebodové]{
+        \centering
+            \includegraphics[width=0.27\textwidth]{fig/crossover2.pdf}
+        }
+    \subfigure[Uniformní]{
+        \centering
+            \includegraphics[width=0.27\textwidth]{fig/crossoverU.pdf}
+        }
+    \caption{Tři základní mechanismy křížení v~genetickém algoritmu.}
+    \label{obrKrizeni}
+\end{figure}
+
+
+\subsection{Mutace}
+
+Mutace je malá změna genotypu, která se s~malou pravděpodobností provádí u~potomků vzniklých křížením. V~případě binárně kódovaného chromozomu mutace spočívá v~překlopení několika náhodně zvolených bitů. U~celočíselného kódování je hodnota genu nahrazena náhodným číslem. Pokud je z~povahy problému hodnota genu omezená výčtem nebo intervalem, je vhodné, aby výsledkem mutace nebyla nepřípustná hodnota. \cite{Modra}.
+
+\section{Kartézské genetické programování}
+
+Další variantu evolučního algoritmu, genetické programování, představil koncem 80. let 20. století John Koza. Zabývá automatizovanou tvorbou celých programů, kdy neřeší jak má program pracovat, pouze co má být jeho výstupem. John Koza pracoval s~jazykem LISP, pro který je vhodná reprezentace programu pomocí stromů, existují ale i jiné způsoby kódování programů do chromozomu, například kartézské genetické programování (CGP), které vytvořil Julian Miller koncem devadesátých let.
+
+V~kartézském genetickém programování se programy kódují jako orientované acyklické grafy, reprezentované dvourozměrnou kartézskou mřížkou výpočetních uzlů (funkčních bloků) o~předem daných rozměrech $n_c \times n_r$ (viz obrázek \ref{obrCGP}). Počet primárních vstupů $n_i$ a výstupů $n_o$ je fixní. Každý výpočetní uzel vykonává nějakou funkci z~předem daného seznamu. Pro různé problémy je vhodné používat odpovídající funkce, například pro tvorbu logických obvodů to jsou dostupná logická hradla, pro symbolickou regresi to mohou být aritmetické operace apod. Vstupy funkčních bloků jsou napojeny buď na některý z~primárních vstupů, nebo na výstup uzlu umístěného v~některém sloupci nalevo. O~kolik sloupců doleva je možné uzly propojovat určuje parametr $l$-back. Pokud je roven jedné, je možné propojovat pouze uzly ze sousedních sloupců, pokud je $l$-back roven počtu sloupců $n_c$, lze uzly propojovat libovolně. Zpětné vazby a cykly nejsou v~CGP povoleny.
+
+\begin{figure}[htb]
+    \centering\includegraphics[width=0.8\textwidth]{fig/cgp.pdf}
+    \caption{Program v~kartézském genetickém programování. Uzly 5, 7 a 9 jsou neaktivní.}
+    \label{obrCGP}
+\end{figure}
+
+Chromozom je pak posloupnost celých čísel konstantní délky, jednotlivé geny určují propojení a funkci výpočetních uzlů. Na konci chromozomu je pro každý primární výstup jeden gen obsahující číslo uzlu, jehož výstup má být použit. Oproti genotypu je velikost fenotypu variabilní, protože některé výpočetní uzly mohou zůstat nepoužité, pokud nejsou propojeny přímo či nepřímo na primární výstupy programu. Takovým uzlům se říká \emph{neaktivní bloky}. Nikdy ale nepřesáhne velikost genotypu. Výhodou je omezený prohledávací prostor, nehrozí tak jako u~stromové reprezentace, že by délka programu během evoluce rostla nad únosnou mez. Ten lze dále omezovat parametrem $l$-back a omezením množiny dostupných funkcí.
+
+
+\subsection{Průběh evoluce}
+
+Schéma evoluce opět odpovídá obecnému evolučnímu algoritmu. Počáteční populace je opět vygenerována náhodně. Oproti genetickému algoritmu kartézské genetické programování nepoužívá křížení. Po ohodnocení všech jedinců je nejlepší z~nich určen rodičem. Ostatní jedinci jsou nahrazeni náhodnými mutacemi rodiče.
+
+Mutace mění náhodně hodnotu některých genů jedince. Jejich počet se běžně volí jako procento z~celkového počtu genů, označované jako \emph{míra mutace} $\mu_r$. Geny nelze nahrazovat libovolnými hodnotami, je třeba brát ohled na parametr $l$-back, počet primárních vstupů a počet dostupných funkcí pro výpočetní uzly.
+
+Ne každá mutace vede na změnu fenotypu -- může dojít například ke změně funkce funkčního bloku nepřipojeného na výstup nebo propojení mezi neaktivními bloky, popř. může dojít ke změně v~aktivní části programu, která ale nemá vliv na jeho funkci. Ukazuje se ale, že i tyto \emph{neutrální mutace} jsou prospěšné pro funkci algoritmu. Proto pokud je v~populaci několik nejlepších jedinců se stejnou hodnotou fitness, je vhodné vybírat jako rodiče toho, který nebyl rodičem v~předchozí generaci, tj. chromozom, který byl odvozen z~předchozího rodiče neutrální mutací. V~opačném případě, kdy se jako rodič použije pouze za jedinec s~vyšší hodnotou fitness, evoluce nachází méně kvalitní programy \cite{ZelenaCGP}.
+
+
+\subsection{Výpočet fitness}
+
+K~vyhodnocení fitness jedince je třeba projít všechny prvky testovací množiny. Každý z~nich se skládá ze dvou částí -- vstupních hodnot, které se přiloží na primární vstupy kartézského programu, a očekávané výstupní hodnoty. Protože výpočet fitness je časově nejnáročnější částí evoluce, je vhodné mít množinu trénovacích dat co nejmenší. Samotný výpočet lze provádět \uv{zleva doprava}, kdy jsou postupně vypočítávány výstupy všech funkčních bloků, bez ohledu na to, zda jsou použity ve fenotypu nebo ne. Druhou možností, kdy se pracuje pouze s~aktivními bloky, je postupovat rekurzivním sestupem od výstupů programu ke vstupům. Nevýhodou je, že některé uzly se mohou vyhodnotit vícekrát. Nabízí se oba přístupy zkombinovat, kdy se směrem od výstupů nejprve určí, které bloky jsou aktivní, a poté se směrem od vstupů programu vypočítají výstupy těchto bloků a tím i výstupy celého programu.
+
+\section{Návrh obrazových filtrů evolučními algoritmy}
+
+Jedním z~problémů, který lze řešit pomocí evolučních algoritmů je návrh obrazových filtrů, které se používají jako jeden z~prvních kroků u~zpracování obrazových dat. Čím lépe filtr dokáže obnovit poškozené části obrazu, tím lepší výsledky lze získat v~dalších krocích algoritmu, jako je například segmentace nebo klasifikace.
+
+Většina hardwarových i softwarových implementací obrazových filtrů pracuje s~lokálním okolím pixelů, nejčastěji jde o~9-okolí nebo 25-okolí. Novou hodnotu pixelu určuje funkce, na jejímž vstupu jsou hodnoty všech pixelů ve zvoleném okolí. Tato funkce se postupně aplikuje na celý obrázek. Tento princip znázorňuje obrázek \ref{obrIFokoli}.
+
+\begin{figure}[htb]
+    \centering\includegraphics[width=0.9\textwidth]{fig/filter.pdf}
+    \caption{Princip filtrace obrazu.}
+    \label{obrIFokoli}
+\end{figure}
+
+Existují různé typy šumů, pro které jsou vhodné různé typy obrazových filtrů. Poměrně častý je impulzní šum, který vzniká kvůli nefunkčním pixelům v~kameře, chybným paměťovým buňkám nebo chybám při přenosu dat. Poškozené body mají buď náhodnou hodnotu (výstřelový šum) nebo mají vždy minimální nebo maximální možnou hodnotu (šum typu sůl a pepř). Pro výstřelový šum je vhodný mediánový filtr, u~kterého je opravená hodnota pixelu určena jako medián jeho okolí, jeho nevýhodou je ztráta detailů nedostatečná kvalita výstupu při intenzivnějším šumu-
+
+Evoluční algoritmy lze při návrhu obrazových filtrů použít různými způsoby. Jednou možností je vzít již existující obrazový filtr, u~nějž se pomocí genetického algoritmu optimalizuje nastavení jeho parametrů tak, aby se dosáhlo co nejlepších výsledků v~zamýšleném prostředí. Evoluční algoritmy lze použít také přímo pro návrh nových obrazových filtrů. Zvláště výhodné je to u~nelineárních filtrů, pro jejichž analýzu a návrh schází vhodný matematický aparát a jejich tvorba je tak obtížnější než v~případě lineárních filtrů.
+
+Jako vhodné pro tuto úlohu se ukazuje kartézské genetické programování \cite{ZelenaIF}. Na vstup kartézského programu je přivedeno zvolené okolí pixelu, výstupem je vyfiltrovaný pixel. Jako fitness funkce se nejčastěji používá špičková hodnota poměru signál/šum v~decibelech (Peak Signal to Noise Ratio, PSNR) nebo v~hardware snáze implementovatelná střední odchylka pixelů (Mean Difference Per Pixel, MDPP). Tyto funkce jsou definovány jako:
+
+\begin{equation}
+    \label{eqPSNR}
+    \mathit{PSNR} = 10 \log_{10} \frac{255^2}{\frac{1}{MN} \sum\limits_{i,j} \left( v\left( i, j \right) - w\left( i, j \right)  \right)^2 }
+\end{equation}
+
+\begin{equation}
+    \label{eqMDPP}
+    \mathit{MDPP} = \frac{1}{MN} \sum\limits_i^M \sum\limits_j^N \left| v\left( i, j \right) - w\left( i, j \right) \right|
+\end{equation}
+
+\noindent{}kde $M$ a $N$ označují rozměry obrázku, $v$ vyfiltrovaný a $w$ původní obrázek.
+
+Pro výpočet fitness kandidátního filtru, musíme vyfiltrovat celý obrázek, kdy každý pixel v~obrázku můžeme považovat za jeden případ fitness. Protože i pro poměrně malé obrázky je těchto případů několik tisíc, je výpočet fitness časově velmi náročný.
+
+\section{Koevoluce v~kartézském genetickém programování}
+
+Jedním ze způsobů, jak řešit problém velkého množství případů fitness je použití koevolučního algoritmu. Oproti dosud zmíněným evolučním algoritmům zde existuje několik různých populací, které na sebe navzájem působí a ovlivňují svůj vývoj. Fitness jedince nezávisí pouze na jeho genetických předpokladech, ale určuje se podle toho, jak \uv{dobrý} je při interakci s~jedinci z~jiných populací.
+
+Populace mohou být stejného druhu, které jsou navzájem oddělené bariérou a vyvíjejí se nezávisle na sobě až na občasné interakce, kdy někteří jedinci migrují mezi podpopulacemi, například pokud některá z~nich uvízne v~lokálním extrému. V~některých případech je vhodné mít několik populací různého druhu. Některé složitější problémy lze dekomponovat na několik jednodušších, které mohou být reprezentovány různými chromozomy. Jedinci spolu spolupracují na řešení úlohy a jejich kvalita závisí na kvalitě ostatních jedinců. V~tomto případě mluvíme o~\emph{kooperativní koevoluci}. Další variantou je \emph{soutěživá koevoluce}, kdy jedinci jedné populace slouží k~testování kvality jedinců jiné populace. V~tomto případě není fitness funkce statická, ale závisí na jedincích ve druhé populaci.
+
+Použitím koevoluce lze řešit problém velkého množství případů fitness v~úloze návrhu obrazových filtrů, kdy kromě populace kandidátních filtrů existuje populace, která nějakým způsobem pomáhá vybrat vhodnou podmnožinu pixelů, která slouží k~ohodnocování filtrů namísto celého obrázku.
+
+
+\subsection{Koevoluční řešení symbolické regrese}
+
+Koevoluční výpočet za účelem snížení výpočetní náročnosti byl poprvé úspěšně použit na úloze symbolické regrese \cite{SikuEuroGP}. Zde jsou použity dvě populace: populace kartézských programů (kandidátních řešení symbolické regrese) a populace tzv. prediktorů fitness. Prediktory určují podmnožinu trénovacích dat, která má být použita k~ohodnocení kandidátních programů. Kromě těchto populací je součástí řešení archiv sdílený oběma populacemi, který obsahuje několik kartézských programů. Celé schéma populací a interakcí mezi nimi znázorňuje obrázek \ref{obrKoevoluce}.
+
+\begin{figure}[htb]
+    \centering\includegraphics[width=0.9\textwidth]{fig/coevolution.pdf}
+    \caption{Schéma koevoluce CGP a prediktorů fitness.}
+    \label{obrKoevoluce}
+\end{figure}
+
+Evoluce kandidátních programů probíhá pomocí kartézského genetického programování. Ve skutečnosti existují dvě různé fitness funkce: $f_{\mathit{exact}}$, ve které byla použita celá trénovací množina, a $f_{\mathit{predicted}}$, omezená pouze na některé případy fitness. Označíme-li kandidátní program jako $s$, velikost trénovací množiny jako $k$ a délku prediktoru fitness (velikost podmnožiny trénovacích dat) jako $m$, můžeme je zapsat jako:
+
+\begin{equation}
+    \label{eqFexact}
+    f_{\mathit{exact}} \left( s \right) = \frac{1}{k} \sum\limits_{j=1}^{k} g \left( y \left( j \right) \right)
+\end{equation}
+
+\begin{equation}
+    \label{eqFpredicted}
+    f_{\mathit{predicted}} \left( s \right) = \frac{1}{m} \sum\limits_{j=1}^{m} g \left( y \left( j \right) \right)
+\end{equation}
+
+Pokud je během evoluce nalezen jedinec s~lepší predikovanou fitness (vypočtenou funkcí $f_{\mathit{predicted}}$) než nejlepší jedinec v~předchozí generaci, je umístěn do archivu sdíleného s~populací prediktorů. Ten je rozdělen na dvě části -- první z~nich obsahuje nejlepší nalezená řešení, do druhé části jsou pravidelně umisťovány náhodně vygenerované programy, čímž je zajištěna větší diverzita jedinců v~archivu. Každý jedinec umístěný do archivu je ohodnocen pomocí celé trénovací množiny (funkcí $f_{\mathit{exact}}$).
+
+Evoluce prediktorů fitness je řízena genetickým algoritmem. Chromozom má podobu pole ukazatelů do trénovací množiny o~konstantní délce. Potomci jsou tvořeni pomocí jednobodového křížení a mutace, navíc nejhorší jedinec v~populaci je nahrazen náhodně vygenerovaným jedincem. Fitness prediktoru je určena jako střední absolutní odchylka skutečné a predikované fitness všech jedinců v~archivu:
+
+\begin{equation}
+    \label{eqFpredictorSR}
+    f \left( p \right) = \frac{1}{u} \sum\limits_{i=1}^{u} g \left| f_{\mathit{exact}} \left( s \left( i \right) \right) - f_{\mathit{predicted}} \left( s \left( i \right) \right) \right|
+\end{equation}
+
+
+
+\noindent{}kde $p$ označuje prediktor a $u$ počet jedinců v~archivu. Prediktor s~nejnižší odchylkou je pak použit pro ohodnocování řešení z~populace kartézských programů.
+
+V~článku \cite{SikuEuroGP} byl tento koevoluční algoritmus porovnán s~běžným CGP na pěti různých funkcích, kdy trénovací množina pro každou z~nich obsahovala 200 funkčních bodů. Ukázalo se, že koevolucí lze nalézt přijatelné řešení s~použití mnohem menšího počtu evaluací kandidátních programů než u~standardního CGP. Také se ukázalo, že zatímco standardní CGP nenalezlo přijatelné řešení v~23,6\,\% běhů, koevoluční algoritmus byl úspěšný ve všech případech. Co se výpočetní náročnosti týče, byl koevoluční přístup přibližně dvakrát až pětkrát rychlejší, podle hledané funkce.
+
+
+\subsection{Koevoluční návrh obrazových filtrů}
+
+Podobně jako symbolickou regresi lze pomocí koevoluce akcelerovat i evoluční návrh obrazových filtrů. Opět existují dvě populace, kandidátních filtrů v~CGP a podmnožin případů fitness, také je použit sdílený archiv obrazových filtrů. Jednotlivé položky trénovacích dat jsou složeny z~devítiokolí poškozeného pixelu a hodnoty téhož pixelu v~původním obrázku (což je očekávaný výstup filtru).
+
+V~článku \cite{SikuPPSN} jsou zmíněny dva různé koevoluční přístupy. V~prvním případě šlo o~koevoluci s~prediktory fitness (CFP, coevolution of fitness predictors), podobně jako u~řešení symbolické regrese popsané výše. Fitness filtrů byla určena pomocí funkce MDPP (viz rovnice \ref{eqMDPP}), fitness prediktorů pak jako:
+
+\begin{equation}
+    \label{eqFpredictorIF}
+    f_{\mathit{CFP}} \left( p \right) = \frac{1}{T} \sum\limits_{i=1}^{T} \left| \mathit{MDPP_{exact}} \left( s \left( i \right) \right) - \mathit{MDPP_{partial}} \left( s \left( i \right) \right) \right|
+\end{equation}
+
+\noindent{}kde $T$ označuje počet položek v~archivu filtrů a $\mathit{MDPP_{partial}}$ je střední odchylka podmnožiny pixelů určených prediktorem:
+
+\begin{equation}
+    \label{eqMDPPPartial}
+    \mathit{MDPP_{partial}} = \frac{1}{K} \sum\limits_l^K \left| v\left( l \right) - w\left( l \right) \right|
+\end{equation}
+
+\noindent{}kde $K$ označuje počet případů fitness, $v$ vyfiltrovaný a $w$ původní obrázek. Cílem evoluce prediktorů je minimalizace hodnoty fitness.
+
+Ve druhém případě je použita soutěživá koevoluce (CC, competitive coevolution). Podmnožiny případů fitness zde neslouží jako prediktory fitness, ale jako testy. Na populaci filtrů lze nahlížet jako na \uv{hostitele} a na testy jako na \uv{parazity}. Cílem filtrů je správně vyřešit všechny případy fitness obsažené v~testu, cílem populace testů je najít takové případy fitness, které nalezené filtry nejsou schopny vyřešit správně.
+Cílem evoluce testů je tedy nalezení podmnožiny pixelů s~maximalní střední odchylkou, fitness funkci lze odvodit z~rovnice \ref{eqMDPPPartial} následovně:
+
+\begin{equation}
+    \label{eqFtestsIF}
+    f_{\mathit{CC}} = \frac{1}{T} \sum\limits_{i=1}^{T} \frac{1}{K} \sum\limits_l^K \left| v\left( l \right) - w\left( l \right) \right|
+\end{equation}
+
+Podobně jako u~prediktorů je nejlepší nalezený test použit pro ohodnocení populace filtrů. V~obou variantách jsou nejlepší nalezené filtry umisťovány do archivu, který pak slouží k~ohodnocování prediktorů či testů.
+
+V~porovnání se standardním CGP bylo dosaženo přijatelné kvality filtrů při použití podmnožiny případů fitness o~velikosti pouze 15\,\% celkového počtu pixelů v~obrázku. V~tomto případě byl koevoluční výpočet přibližně třikrát rychlejší než standardní CGP. Oba zmíněné koevoluční přístupy (prediktory fitness i testy) vykazují podobné výsledky \cite{SikuPPSN}.
+
+\subsection{Akcelerace koevolučního návrhu v~hardware}
+
+Koevoluční CGP bylo také úspěšně implementováno v~hardware na rekonfigurovatelném obvodu (FPGA). Tato implementace byla testována na úloze návrhu obrazových filtrů, kdy byl měřen čas potřebný na dosažení 10~000 generací CGP. Největšího zrychlení bylo dosaženo při použití chromozomů o~délce 25\,\% všech případů fitness, kdy bylo dosaženo 58násobné zrychlení oproti optimalizované\footnote{Pomocí OpenMP a vektorových (SIMD) instrukcí z~instrukční sady SSE 4.1.} softwarové implementaci \cite{Hrbacek}.
+
+\subsection{Otevřené problémy koevoluce}
+
+Jak bylo ukázáno, použitím koevoluce lze zkrátit dobu potřebnou pro nalezení přijatelného řešení, v~některých případech až pětinásobně, a dokonce koevoluce poměrně spolehlivě nachází řešení v~případech, kdy standardní CGP selhává. Na druhou stranu je zapotřebí poměrně velké množství běhů k~nalezení ideálního nastavení. Kromě velikosti populací, počtu kandidátních řešení v~archivu jde zejména o~délku chromosomu v~populaci podmnožin případů fitness, kdy se pro různé úlohy je vhodné jiné nastavení. Při suboptimální konfiguraci pak nemusí být dosaženo takového urychlení výpočtu, jako by bylo možné, anebo kvalita nalezených řešení nemusí být přijatelná. Například v~případě úlohy symbolické regrese bylo potřeba provést více než sto tisíc nezávislých běhů \cite{SikuEuroGP}, než bylo nalezeno nejvhodnější nastavení.
+
+
+
+
+\subsection{Gergely}
+
+
+
+\section{Souběžné učení v~koevolučních algoritmech}
+
+\Blind
+
+\chapter{Návrh obrazových filtrů pomocí souběžného učení}
+
+\Blind
+
+\chapter{Závěr}
+
+\Blind

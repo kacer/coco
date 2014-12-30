@@ -4,6 +4,7 @@
 #===========================================
 # asi budete chtit prejmenovat:
 CO=projekt
+VLNA=obsah.tex
 
 .PHONY: clean pack
 
@@ -18,6 +19,7 @@ $(CO).ps: $(CO).dvi literatura-latin2.bib
 	dvips $(CO)
 
 $(CO).pdf: clean literatura-latin2.bib
+	vlna -l $(VLNA)
 	pdflatex $(CO)
 	bibtex $(CO)
 	pdflatex $(CO)

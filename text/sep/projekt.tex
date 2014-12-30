@@ -34,22 +34,41 @@
 
 %zde muzeme vlozit vlastni balicky
 
-\usepackage[pdftex]{graphicx}
+\usepackage{graphicx}
 \usepackage{epstopdf}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{enumerate}
+\usepackage{enumitem}
 \usepackage{subfigure}
+\usepackage{blindtext}
+\usepackage[usenames,dvipsnames,svgnames,table]{xcolor}
 \usepackage{xfrac}
 \usepackage{diagbox}
 \usepackage[Algoritmus]{algorithm}
 \usepackage{algpseudocode}
+\usepackage{import}
 
-\usepackage{mathtools}
-\usepackage{longtable}
-\usepackage{listings}
-\usepackage[font=footnotesize,labelsep=period]{caption}
-\setlength{\captionmargin}{30pt}
-\lstset{basicstyle=\ttfamily\small, columns=fixed}
+\definecolor{blind}{gray}{0.7}
+\newcommand{\blind}[1][\value{blindtext}]{{\color{blind}\blindtext[#1]}}
+\newcommand{\Blind}[1][\value{Blindtext}]{{\color{blind}\Blindtext[#1]}}
+
+\definecolor{darkred}{RGB}{127,0,0}
+\definecolor{darkgreen}{RGB}{0,127,0}
+\definecolor{green}{RGB}{0,220,0}
+
+\colorlet{todo}{red}
+\newcommand{\todo}[1]{{\color{todo} {[[#1]]} }}
+\newcommand\crule[3][black]{\textcolor{#1}{\rule{#2}{#3}}}
+\newcommand\placeholder[1]{{\crule[blind]{\textwidth}{#1}}}
+
+\usepackage[font=small,labelsep=period]{caption}
+%\setlength{\captionmargin}{30pt}
 
 %\mathchardef\mhyphen="2D
+
 
 % =======================================================================
 % balíček "hyperref" vytváří klikací odkazy v pdf, pokud tedy použijeme pdflatex
@@ -73,11 +92,11 @@
 %---------------------------------------------------------------------------
 \projectinfo{
   %Prace
-  project=DP,            %typ prace BP/SP/DP/DR
+  project=SP,            %typ prace BP/SP/DP/DR
   year=2015,             %rok
   date=\today,           %datum odevzdani
   %Nazev prace
-  title.cs={Koučení v koevolučních algoritmech},  %nazev prace v cestine
+  title.cs={Souběžné učení v koevolučních algoritmech},  %nazev prace v cestine
   title.en={Colearning in Coevolutionary Algorithms}, %nazev prace v anglictine
   %Autor
   author={Michal Wiglasz},   %jmeno prijmeni autora
@@ -127,6 +146,8 @@
   \maketitle
   % Obsah
   % ----------------------------------------------
+  \setcounter{secnumdepth}{2}
+  \setcounter{tocdepth}{1}
   \tableofcontents
 
   % Seznam obrazku a tabulek (pokud prace obsahuje velke mnozstvi obrazku, tak se to hodi)
