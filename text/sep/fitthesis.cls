@@ -77,8 +77,8 @@
 \def\@cite@CS{Citace}
 \def\@copyright@CS{Tato práce vznikla jako školní dílo na Vysokém učení technickém v Brně, Fakultě informačních technologií.
 Práce je chráněna autorským zákonem a její užití bez udělení oprávnění autorem je nezákonné, s výjimkou zákonem definovaných případů.}
-\def\@tdecl@CS{Declaration}
-\def\@tackn@CS{Acknowledgements}
+\def\@tdecl@CS{Prohlášení}
+\def\@tackn@CS{Poděkování}
 
 \newif\ifnasel
 \def\ifEqString#1#2#3#4{\def\testa{#1}\def\testb{#2}%

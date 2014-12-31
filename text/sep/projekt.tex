@@ -49,7 +49,7 @@
 \usepackage{diagbox}
 \usepackage[Algoritmus]{algorithm}
 \usepackage{algpseudocode}
-\usepackage{import}
+\usepackage{multicol}
 
 \definecolor{blind}{gray}{0.7}
 \newcommand{\blind}[1][\value{blindtext}]{{\color{blind}\blindtext[#1]}}
@@ -112,15 +112,15 @@
   %bud pomoci nasledujicich parametru nebo pomoci vyhrazenych maker (viz dale)
   %===========================================================================
   %Klicova slova
-  keywords.cs={Klíčová slova v českém jazyce.}, %klicova slova v ceskem jazyce
-  keywords.en={Klíčová slova v anglickém jazyce.}, %klicova slova v anglickem jazyce
+  keywords.cs={Koevoluční algoritmy, kartézské genetické programování, evoluční algoritmy, Baldwinův efekt, plasticita fitness, prediktory fitness, zpracování obrazu}, %klicova slova v ceskem jazyce
+  keywords.en={Coevolutionary alghorithms, cartesian genetic programming, evolutionary algorithms, Baldwin effect, fitness plasticity, fitness predictors, image processing}, %klicova slova v anglickem jazyce
   %Abstract
   abstract.cs={Výtah (abstrakt) práce v českém jazyce.}, % abstrakt v ceskem jazyce
   abstract.en={Výtah (abstrakt) práce v anglickém jazyce.}, % abstrakt v anglickem jazyce
   %Prohlaseni
-  declaration={Prohlašuji, že jsem tuto bakalářskou práci vypracoval samostatně pod vedením pana ...},
+  declaration={Prohlašuji, že jsem tento semestrální projekt vypracoval samostatně pod vedením Ing. Michaely Šikulové.},
   %Podekovani (nepovinne)
-  acknowledgment={Zde je možné uvést poděkování vedoucímu práce a těm, kteří poskytli odbornou pomoc.} % nepovinne
+  acknowledgment={Rád bych poděkoval Ing. Michaele Šikulové za cenné rady, podnětné konzultace a odbornou pomoc při řešení této práce.} % nepovinne
 }
 
 %Abstrakt (cesky, anglicky)
@@ -147,7 +147,7 @@
   % Obsah
   % ----------------------------------------------
   \setcounter{secnumdepth}{2}
-  \setcounter{tocdepth}{1}
+  %\setcounter{tocdepth}{1}
   \tableofcontents
 
   % Seznam obrazku a tabulek (pokud prace obsahuje velke mnozstvi obrazku, tak se to hodi)
