@@ -11,6 +11,7 @@
 \newif\ifczech \let\ifczech\iftrue
 \newif\ifcover \let\ifcover\iffalse
 \newif\ifPrint \let\ifPrint\iffalse
+\newif\ifzadani \let\ifzadani\iffalse
 \newif\ifWis   \let\ifWis\iftrue
 
 
@@ -20,6 +21,7 @@
 \DeclareOption{english}{\let\ifczech\iffalse}
 \DeclareOption{cover}{\let\ifcover\iftrue}
 \DeclareOption{print}{\let\ifWis\iffalse \let\ifPrint\iftrue}
+\DeclareOption{zadani}{\let\ifzadani\iftrue}
 
 \DeclareOption*{}
 \ProcessOptions\relax
@@ -155,6 +157,7 @@ Práce je chráněna autorským zákonem a její užití bez udělení oprávně
 \define@key{projinfo}{abstract.en}{\def\@tabstract@EN{#1}}
 \define@key{projinfo}{declaration}{\def\@declaration{#1}}
 \define@key{projinfo}{acknowledgment}{\def\@acknowledgment{#1}}
+\define@key{projinfo}{zadaniPdf}{\def\@zadani{#1}}
 
 %Vychozi hodnoty
 \setkeys{projinfo}{
@@ -165,6 +168,9 @@ Práce je chráněna autorským zákonem a její užití bez udělení oprávně
 }%
 
 \def\projectinfo{\setkeys{projinfo}}
+
+%PDF zadani
+\newcommand{\zadaniPdf}[1]{\def\@zadaniPdf{#1}}
 
 %Prohlaseni
 \newcommand{\declaration}[1]{\def\@declaration{#1}}
@@ -349,9 +355,13 @@ Práce je chráněna autorským zákonem a její užití bez udělení oprávně
 
 \newpage\fontfamily{\familydefault}\selectfont%
 %=================================================================================
+\ifzadani
+\includepdf[pages={1},offset={14mm -20mm}]{\@zadani}
+\else
 \newpage\fontfamily{\familydefault}\selectfont%
 \thispagestyle{empty}\null%
 Zde bude vložen originál zadání.
+\fi
 \clearpage
 %=================================================================================
 \makeabstract\makedeclaration

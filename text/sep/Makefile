@@ -20,16 +20,10 @@ $(CO).ps: $(CO).dvi literatura-latin2.bib
 
 $(CO).pdf: clean literatura-latin2.bib
 	vlna -l $(VLNA)
-	pdflatex $(CO)
+	pdflatex -synctex=-1 $(CO)
 	bibtex $(CO)
-	pdflatex $(CO)
-	pdflatex $(CO)
-
-$(CO).dvi: $(CO).tex literatura-latin2.bib
-	latex $(CO)
-	bibtex $(CO)
-	latex $(CO)
-	latex $(CO)
+	pdflatex -synctex=-1 $(CO)
+	pdflatex -synctex=-1 $(CO)
 
 desky:
 #	latex desky

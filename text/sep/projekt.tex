@@ -50,6 +50,18 @@
 \usepackage[Algoritmus]{algorithm}
 \usepackage{algpseudocode}
 \usepackage{multicol}
+\usepackage{pdfpages}
+\usepackage{pdfsync}
+
+% \usepackage[
+%     backend=biber,      % if we want unicode
+%     style=iso-numeric, % or iso-numeric for numeric citation method
+%     babel=other,        % to support multiple languages in bibliography
+%     sortlocale=cs_CZ,   % locale of main language, it is for sorting
+%     bibencoding=UTF8,   % this is necessary only if bibliography file is in different encoding than main document
+%     sorting=nty
+% ]{biblatex}
+% \bibliography{literatura}
 
 \definecolor{blind}{gray}{0.7}
 \newcommand{\blind}[1][\value{blindtext}]{{\color{blind}\blindtext[#1]}}
@@ -108,37 +120,23 @@
   supervisor={Michaela Šikulová}, %jmeno prijmeni skolitele
   supervisor.title.p=Ing.,   %titul pred jmenem (nepovinne)
   %supervisor.title.a={Ph.D.},    %titul za jmenem (nepovinne)
-  %Klicova slova, abstrakty, prohlaseni a podekovani je mozne definovat
-  %bud pomoci nasledujicich parametru nebo pomoci vyhrazenych maker (viz dale)
-  %===========================================================================
-  %Klicova slova
-  keywords.cs={Koevoluční algoritmy, kartézské genetické programování, evoluční algoritmy, Baldwinův efekt, plasticita fitness, prediktory fitness, zpracování obrazu}, %klicova slova v ceskem jazyce
-  keywords.en={Coevolutionary alghorithms, cartesian genetic programming, evolutionary algorithms, Baldwin effect, fitness plasticity, fitness predictors, image processing}, %klicova slova v anglickem jazyce
-  %Abstract
-  abstract.cs={Výtah (abstrakt) práce v českém jazyce.}, % abstrakt v ceskem jazyce
-  abstract.en={Výtah (abstrakt) práce v anglickém jazyce.}, % abstrakt v anglickem jazyce
-  %Prohlaseni
-  declaration={Prohlašuji, že jsem tento semestrální projekt vypracoval samostatně pod vedením Ing. Michaely Šikulové.},
-  %Podekovani (nepovinne)
-  acknowledgment={Rád bych poděkoval Ing. Michaele Šikulové za cenné rady, podnětné konzultace a odbornou pomoc při řešení této práce.} % nepovinne
+  zadaniPdf={../zadani.pdf}
 }
 
 %Abstrakt (cesky, anglicky)
-%\abstract[cs]{Do tohoto odstavce bude zapsán výtah (abstrakt) práce v českém jazyce.}
-%\abstract[en]{Do tohoto odstavce bude zapsán výtah (abstrakt) práce v anglickém jazyce.}
+\abstract[cs]{Tato práce se zabývá tvorbou obrazových filtrů pomocí souběžného učení v~koevolučním algoritmu. V~první části textu jsou popsány evoluční algoritmy, zejména genetický algoritmus a kartézské genetické programování. Dále je představena jejich praktická aplikace na úloze návrhu obrazových filtrů. Poté je uvedeno, jak lze zavedením koevoluce s~druhou populací urychlit hledání vhodného řešení. V~poslední teoretické části se text zabývá vztahem učení a evoluce, Baldwinovým efektem a plasticitou fitness a uvádí několik příkladů použití učení v~evolučních algoritmech. V~závěrečné kapitole je navržen systém pro tvorbu obrazových filtrů využívající souběžné učení v~koevolučním algoritmu, který bude implementován v~navazující diplomové práci.}
+
+\abstract[en]{This project deals with image filter design using colearning in coevolutionary algorithm. First part of thesis describes evolutionary algorithms, mainly genetic algorithm and cartesian genetic programming, and their practical usage on the task of image filter design. Then it is shown how the search for the solution can be accelerated by introducing coevolution with second population. The following part deals with the relationship between learning and evolution, Baldwin effect and fitness plasticity and provides several examples how learning was used in evolutionary algorithms. The last chapter of the thesis describes the concept of the proposed algorithm that generates image filters using colearning in coevolutionary algorithm. The proposed algorithm will be implemented as a part of the master's thesis.}
 
 %Klicova slova (cesky, anglicky)
-%\keywords[cs]{Sem budou zapsána jednotlivá klíčová slova v českém jazyce, oddělená čárkami.}
-%\keywords[en]{Sem budou zapsána jednotlivá klíčová slova v anglickém jazyce, oddělená čárkami.}
+\keywords[cs]{Koevoluční algoritmy, kartézské genetické programování, evoluční algoritmy, Baldwinův efekt, plasticita fitness, prediktory fitness, zpracování obrazu.}
+\keywords[en]{Coevolutionary alghorithms, cartesian genetic programming, evolutionary algorithms, Baldwin effect, fitness plasticity, fitness predictors, image processing.}
 
 %Prohlaseni
-%\declaration{Prohlašuji, že jsem tuto bakalářskou práci vypracoval samostatně pod vedením pana X...
-%Další informace mi poskytli...
-%Uvedl jsem všechny literární prameny a publikace, ze kterých jsem čerpal.}
+\declaration{Prohlašuji, že jsem tento semestrální projekt vypracoval samostatně pod vedením Ing. Michaely Šikulové. Uvedl jsem všechny literární prameny a publikace, ze kterých jsem čerpal.}
 
 %Podekovani (nepovinne)
-%\acknowledgment{V této sekci je možno uvést poděkování vedoucímu práce a těm, kteří poskytli odbornou pomoc
-%(externí zadavatel, konzultant, apod.).}
+\acknowledgment{Rád bych poděkoval Ing. Michaele Šikulové za cenné rady, podnětné konzultace a odbornou pomoc při řešení této práce.}
 
 \begin{document}
   % Vysazeni titulnich stran
@@ -160,6 +158,7 @@
 
   % Pouzita literatura
   % ----------------------------------------------
+
 \ifczech
   \bibliographystyle{czechiso}
 \else
@@ -167,6 +166,7 @@
 %  \bibliographystyle{alpha}
 \fi
   \begin{flushleft}
+  %\printbibliography[title={Literatura}]
   \inputencoding{latin2}
   \bibliography{literatura-latin2} % viz. literatura.bib
   \end{flushleft}
