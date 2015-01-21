@@ -72,7 +72,7 @@ minirun: $(EXECUTABLE)
 	./$(EXECUTABLE) -i ../images/10x10.png -n ../images/10x10_sp25.png -a baldwin -g 1000 -S 75 -I 50 -N 50
 
 tar:
-	cd .. && tar czf xwigla00.tar.gz src/*.c src/*.h src/Makefile src/tests/* src/stb/* # images/* #-C doc/ doc.pdf
+	cd .. && tar czf xwigla00.tar.gz src/*.c src/*.h src/*/*.c src/*/*.h src/Makefile src/tests/* src/stb/* # images/* #-C doc/ doc.pdf
 
 anselmup: tar
 	find -type f | xargs chmod ug+rw
