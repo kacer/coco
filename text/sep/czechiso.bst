@@ -38,7 +38,7 @@
  %---------------------------------------------------------------------
 
 ENTRY
-  { address
+  { location
     archive
     author
     booktitle
@@ -215,6 +215,9 @@ FUNCTION {tie.or.space.prefix}
 
 FUNCTION {capitalize}
 { "u" change.case$ "t" change.case$ }
+
+FUNCTION {uppercase}
+{ "u" change.case$ "t" }
 
 FUNCTION {space.word}
 { " " swap$ * " " * }
@@ -644,7 +647,12 @@ FUNCTION {n.dashify}
 
 FUNCTION {word.in}
 { bbl.in capitalize
-  " " * }
+  ": " * }
+
+FUNCTION {word.unpublished}
+{
+  "Nevydáno"
+}
 
 FUNCTION {format.date}
 {
@@ -1036,13 +1044,13 @@ FUNCTION {format.incoll.inproc.crossref}
 FUNCTION {format.org.or.pub}
 { 't :=
   ""
-  address empty$ t empty$ and
+  location empty$ t empty$ and
     'skip$
     {
-      address "address" bibinfo.check *
+      location "location" bibinfo.check *
       t empty$
         'skip$
-        { address empty$
+        { location empty$
             'skip$
             { ": " * }
           if$
@@ -1052,11 +1060,11 @@ FUNCTION {format.org.or.pub}
     }
   if$
 }
-FUNCTION {format.publisher.address}
+FUNCTION {format.publisher.location}
 { publisher "publisher" bibinfo.warn format.org.or.pub
 }
 
-FUNCTION {format.organization.address}
+FUNCTION {format.organization.location}
 { organization "organization" bibinfo.check format.org.or.pub
 }
 
@@ -1108,7 +1116,7 @@ FUNCTION {book}
     { format.bvolume output
   new.sentence
       format.number.series output
-      format.publisher.address output
+      format.publisher.location output
     }
     {
   new.sentence
@@ -1117,8 +1125,9 @@ FUNCTION {book}
   if$
   format.edition output
   format.date "year" output.check
-  format.isbn output
   format.book.pages output
+  new.sentence
+  format.isbn output
   format.doi output
   format.note output
   format.eprint output
@@ -1132,7 +1141,7 @@ FUNCTION {booklet}
   format.title "title" output.check
   new.sentence
   howpublished "howpublished" bibinfo.check output
-  address "address" bibinfo.check output
+  location "location" bibinfo.check output
   format.date output
   format.isbn output
   format.book.pages output
@@ -1164,7 +1173,7 @@ FUNCTION {inbook}
       format.chapter.pages "chapter and pages" output.check
   new.sentence
       format.number.series output
-      format.publisher.address output
+      format.publisher.location output
     }
     {
       format.chapter.pages "chapter and pages" output.check
@@ -1174,11 +1183,14 @@ FUNCTION {inbook}
   if$
   format.edition output
   format.date "year" output.check
+  format.pages "pages" output.check
   crossref missing$
-    { format.isbn output }
+    {
+      new.sentence
+      format.isbn output
+    }
     'skip$
   if$
-  format.pages "pages" output.check
   format.doi output
   format.note output
   format.eprint output
@@ -1196,16 +1208,22 @@ FUNCTION {incollection}
     { format.in.ed.booktitle "booktitle" output.check
       format.number.series output
       format.chapter.pages output
-      format.publisher.address output
+      format.publisher.location output
       format.edition output
       format.date "year" output.check
-      format.isbn output
     }
     { format.incoll.inproc.crossref output.nonnull
       format.chapter.pages output
     }
   if$
   format.pages "pages" output.check
+  crossref missing$
+    {
+      new.sentence
+      format.isbn output
+    }
+    'skip$
+  if$
   format.doi output
   format.note output
   format.eprint output
@@ -1222,9 +1240,9 @@ FUNCTION {inproceedings}
     { format.in.ed.booktitle "booktitle" output.check
       format.number.series output
       publisher empty$
-        { format.organization.address output }
+        { format.organization.location output }
         { organization "organization" bibinfo.check output
-          format.publisher.address output
+          format.publisher.location output
         }
       if$
       format.date "year" output.check
@@ -1248,7 +1266,7 @@ FUNCTION {manual}
     { organization "organization" bibinfo.check
       duplicate$ empty$ 'pop$
         { output
-          address "address" bibinfo.check output
+          location "location" bibinfo.check output
         }
       if$
     }
@@ -1260,14 +1278,14 @@ FUNCTION {manual}
   author empty$
     { organization empty$
         {
-          address "address" bibinfo.check output
+          location "location" bibinfo.check output
         }
         'skip$
       if$
     }
     {
       organization "organization" bibinfo.check output
-      address "address" bibinfo.check output
+      location "location" bibinfo.check output
     }
   if$
   format.edition output
@@ -1288,7 +1306,7 @@ FUNCTION {mastersthesis}
   new.sentence
   bbl.mthesis format.thesis.type output.nonnull
   school "school" bibinfo.warn output
-  address "address" bibinfo.check output
+  location "location" bibinfo.check output
   format.date "year" output.check
   format.doi output
   format.note output
@@ -1321,7 +1339,7 @@ FUNCTION {phdthesis}
   new.sentence
   bbl.phdthesis format.thesis.type output.nonnull
   school "school" bibinfo.warn output
-  address "address" bibinfo.check output
+  location "location" bibinfo.check output
   format.date "year" output.check
   format.doi output
   format.note output
@@ -1345,16 +1363,16 @@ FUNCTION {proceedings}
     { publisher empty$
         'skip$
         {
-          format.publisher.address output
+          format.publisher.location output
         }
       if$
     }
     { publisher empty$
         {
-          format.organization.address output }
+          format.organization.location output }
         {
           organization "organization" bibinfo.check output
-          format.publisher.address output
+          format.publisher.location output
         }
       if$
      }
@@ -1378,7 +1396,7 @@ FUNCTION {techreport}
   new.sentence
   format.tr.number output.nonnull
   institution "institution" bibinfo.warn output
-  address "address" bibinfo.check output
+  location "location" bibinfo.check output
   format.date "year" output.check
   format.doi output
   format.note output

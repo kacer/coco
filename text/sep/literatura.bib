@@ -8,9 +8,9 @@
     title = {Evoluční hardware: Od automatického generování
         patentovatelných invencí k sebemodifikujícím se strojům},
     pages = {328},
-    xseries = {Edice Gerstner},
+    series = {Edice Gerstner, sv.~4},
     year = {2009},
-    address = {Praha},
+    location = {Praha},
     publisher = {Academia},
     ISBN = {978-80-200-1729-1},
     language = {czech}
@@ -53,11 +53,11 @@
 
 
 @book{Handbook,
-    author = {Rozenberg, Grzegorz and Bck, Thomas and Kok, Joost N.},
+    author = {Rozenberg, Grzegorz and Bäck, Thomas and Kok, Joost N.},
     title = {Handbook of Natural Computing},
     year = {2011},
     isbn = {978-3-540-92909-3},
-    edition = {1st},
+    _edition = {1},
     fullpublisher = {Springer Publishing Company, Incorporated},
     publisher = {Springer},
 }
@@ -66,11 +66,12 @@
 @incollection{HandbookEA,
     author = {Kenneth De Jong},
     title = {Generalized Evolutionary Algorithms},
+    _editor = {Rozenberg, Grzegorz and Bäck, Thomas and Kok, Joost N.},
     booktitle = {Handbook of Natural Computing},
     pages = {626--635},
     year = 2011,
     isbn = {978-3-540-92909-3},
-    edition = {1st},
+    _edition = {1st},
     fullpublisher = {Springer Publishing Company, Incorporated},
     publisher = {Springer},
 }
@@ -82,7 +83,7 @@
     pages = {638--669},
     year = 2011,
     isbn = {978-3-540-92909-3},
-    edition = {1st},
+    _edition = {1},
     fullpublisher = {Springer Publishing Company, Incorporated},
     publisher = {Springer},
 }
@@ -95,7 +96,7 @@
     pages = {710--734},
     year = 2011,
     isbn = {978-3-540-92909-3},
-    edition = {1st},
+    _edition = {1},
     fullpublisher = {Springer Publishing Company, Incorporated},
     publisher = {Springer},
 }
@@ -108,7 +109,7 @@
     pages = {988--1028},
     year = 2011,
     isbn = {978-3-540-92909-3},
-    edition = {1st},
+    _edition = {1},
     fullpublisher = {Springer Publishing Company, Incorporated},
     publisher = {Springer},
 }
@@ -117,46 +118,65 @@
 @incollection{SikuEuroGP,
     title={Coevolution in cartesian genetic programming},
     author={Michaela Šikulová and Lukáš Sekanina},
-    key={Sikulova M.; Sekanina L.},
+    key={Sikulova Michaela; Sekanina Lukas},
     booktitle={Genetic Programming},
     pages={182--193},
     year={2012},
-    publisher={Springer}
+    publisher={Springer},
+    isbn={978-3-642-29138-8},
+    series={Lecture Notes in Computer Science},
+    number={7244},
+    _editor={Moraglio, Alberto and Silva, Sara and Krawiec, Krzysztof and Machado, Penousal and Cotta, Carlos},
 }
 
 
 @incollection{SikuPPSN,
     title={Acceleration of evolutionary image filter design using coevolution in cartesian GP},
     author={Michaela Sikulova and Lukas Sekanina},
-    key={Sikulova M.; Sekanina L.},
+    key={Sikulova Michaela; Sekanina Lukas},
     booktitle={Parallel Problem Solving from Nature-PPSN XII},
     pages={163--172},
     year={2012},
-    publisher={Springer}
+    publisher={Springer},
+    issn={0302-9743},
+    volume={},
+    isbn={978-3-642-32937-1},
+    series={Lecture Notes in Computer Science},
+    number={7491},
 }
 
 
-@unpublished{Siku2015,
-    title={Indirectly Encoded Fitness Predictors Coevolved with Cartesian Programs},
-    author={Michaela Šikulová and Jiří Hulva},
-    key={Sikulova M.; Hulva J.},
-    booktitle={},
-    pages={},
-    year={2015},
-    publisher={}
+@unpublished{Siku2015unpublished,
+   author = {Michaela Šikulová and Jiří Hulva and Lukáš Sekanina},
+   key={Sikulova Michaela; Hulva Jiri; Sekanina Lukas},
+   title = {Indirectly Encoded Fitness Predictors Coevolved with Cartesian Programs},
+   note = {2015, 12 s. Nevydáno},
+   _pages = {12},
+   _year = {2015}
 }
+
+
+@inproceedings{Siku2015,
+   author = {Michaela Šikulová and Jiří Hulva and Lukáš Sekanina},
+   key={Sikulova Michaela; Hulva Jiri; Sekanina Lukas},
+   title = {Indirectly Encoded Fitness Predictors Coevolved with
+    Cartesian Programs},
+   booktitle = {Proc. of the 18th European Conference on Genetic Programming},
+   _pages = {12},
+   _year = {2015},
+   note={2015, 12 s. V tisku},
+}
+
 
 
 @inproceedings{Hrbacek,
     author = {Radek Hrbáček and Michaela Šikulová},
-    key={Hrbacek R.; Sikulova M.},
+    key={Hrbacek Radek; Sikulova Michaela},
     title = {Coevolutionary Cartesian Genetic Programming in FPGA},
     pages = {431--438},
-    booktitle = {Advances in Artificial Life, ECAL 2013, Proceedings of the
-        Twelfth European Conference on the Synthesis and Simulation
-        of Living Systems},
+    booktitle = {Advances in Artificial Life, ECAL 2013},
     year = {2013},
-    location = {Cambridge, US},
+    location = {Cambridge (USA)},
     publisher = {MIT Press},
     ISBN = {978-0-262-31709-2},
     language = {english},
@@ -165,12 +185,12 @@
 
 @inproceedings{SikuKomjathy,
     author = {Michaela Sikulova and Gergely Komjathy and Lukas Sekanina},
-    key={Sikulova M.; Komjathy G.; Sekanina L.},
+    key={Sikulova Michaela; Komjathy Gergely; Sekanina Lukas},
     title = {Towards Compositional Coevolution in Evolutionary Circuit Design},
     pages = {157--164},
     booktitle = {2014 IEEE International Conference on Evolvable Systems Proceedings},
     year = {2014},
-    location = {Piscataway, US},
+    location = {Piscataway (USA)},
     publisher = {Institute of Electrical and Electronics Engineers},
     ISBN = {978-1-4799-4479-8},
     language = {english},
@@ -198,7 +218,10 @@
     journal={Evolutionary Computation},
     volume={4},
     number={3},
-    year={1997}
+    year={1996},
+    pages={271--295},
+    publisher={MIT Press},
+    issn={1063-6560},
 }
 
 
@@ -209,39 +232,76 @@
     volume={1},
     number={3},
     pages={495--502},
-    year={1987}
+    year={1987},
+    issn={0891-2513},
 }
 
 
 @inproceedings{EllefsenBalancing,
     title={Balancing the Costs and Benefits of Learning Ability},
     author={Kai Olav Ellefsen},
-    booktitle={Advances in Artificial Life, ECAL},
-    volume={12},
     pages={292--299},
-    year={2013}
+    booktitle = {Advances in Artificial Life, ECAL 2013},
+    volume = {12},
+    year = {2013},
+    location = {Cambridge (USA)},
+    publisher = {MIT Press},
+    ISBN = {978-0-262-31709-2},
+    language = {english},
 }
 
 
 @inproceedings{UllahPlasticCGP,
-    author={Ullah, F. and Khan, G.M. and Mahmud, S.A.},
-    booktitle={Computers Informatics (ISCI), 2012 IEEE Symposium on},
+    author={Fahad Ullah and Gul Muhammad Khan and Sahibzada A. Mahmud},
+    booktitle={2012 IEEE Symposium on Computers and Informatics (ISCI)},
     title={Exploiting developmental plasticity in Cartesian Genetic Programming},
     year={2012},
     month={March},
     pages={180--184},
-    keywords={directed graphs;genetic algorithms;Cartesian genetic programming;binary multiplexing functions;developmental plasticity;digital circuits;directed graph;evolutionary algorithm;genetic architecture;genetic evolution;image recognition test;phenotype;prime number test;Biological cells;Evolutionary computation;Genetic programming;Real time systems;Testing;Training;computational development;developmental plasticity;genetic programming;machine learning},
-    doi={10.1109/ISCI.2012.6222690}
+    isbn={978-1-4673-1685-9},
 }
 
 
 @inproceedings{KhatirPlasticCGP,
     author={Khatir, M. and Jahangir, A.H. and Beigy, H.},
-    booktitle={Evolutionary Computation, 2008. CEC 2008. (IEEE World Congress on Computational Intelligence). IEEE Congress on},
+    booktitle={Evolutionary Computation, 2008. CEC 2008.(IEEE World Congress on Computational Intelligence). IEEE Congress on},
     title={Investigating the Baldwin effect on Cartesian Genetic Programming efficiency},
     year={2008},
     month={June},
     pages={2360--2364},
-    keywords={digital circuits;genetic algorithms;network synthesis;Baldwin effect;Cartesian genetic programming efficiency;complex search space;digital circuit design problem;evolutionary design;two-step evolutionary scenario;Biological cells;Circuits;Evolution (biology);Evolutionary computation;Genetic programming;Plastics;Baldwin Effect;Cartesian Genetic Programming;Digital Circuit;Phenotypic Plasticity;Reinforcement Learning},
-    doi={10.1109/CEC.2008.4631113}
 }
+
+
+@article{Hillis,
+    author = {Hillis, W. Daniel},
+    title = {Co-evolving parasites improve simulated evolution as an optimization procedure},
+    journal = {Physica D: Nonlinear Phenomena},
+    issue_date = {June 1990},
+    volume = {42},
+    number = {1--3},
+    month = jun,
+    year = {1990},
+    issn = {0167-2789},
+    pages = {228--234},
+    numpages = {7},
+    acmid = {87560},
+    publisher = {Elsevier Science Publishers B. V.},
+    address = {Amsterdam, The Netherlands, The Netherlands},
+}
+
+
+@incollection{Miller2000,
+    year={2000},
+    isbn={978-3-540-67339-2},
+    booktitle={Genetic Programming},
+    series={Lecture Notes in Computer Science},
+    number={1802},
+    _editor={Poli, Riccardo and Banzhaf, Wolfgang and Langdon, WilliamB. and Miller, Julian and Nordin, Peter and Fogarty, TerenceC.},
+    _doi={10.1007/978-3-540-46239-2_9},
+    title={Cartesian Genetic Programming},
+    publisher={Springer Berlin Heidelberg},
+    author={Miller, Julian F. and Thomson, Peter},
+    pages={121--132},
+    language={english}
+}
+

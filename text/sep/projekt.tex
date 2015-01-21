@@ -9,7 +9,7 @@
 % připomínky posílejte na e-mail: bidlom AT fit.vutbr.cz
 % vim: set syntax=tex encoding=latin2:
 %============================================================================
-\documentclass[cover]{fitthesis} % odevzdani do wisu - odkazy, na ktere se da klikat
+\documentclass[cover,zadani,print]{fitthesis} % odevzdani do wisu - odkazy, na ktere se da klikat
 %\documentclass[cover,print]{fitthesis} % pro tisk - na odkazy se neda klikat
 %\documentclass[english,print]{fitthesis} % pro tisk - na odkazy se neda klikat
 %      \documentclass[english]{fitthesis}
@@ -42,7 +42,7 @@
 \usepackage{array}
 \usepackage{enumerate}
 \usepackage{enumitem}
-\usepackage{subfigure}
+\usepackage[normal]{subfigure}
 \usepackage{blindtext}
 \usepackage[usenames,dvipsnames,svgnames,table]{xcolor}
 \usepackage{xfrac}
@@ -53,15 +53,16 @@
 \usepackage{pdfpages}
 \usepackage{pdfsync}
 
-% \usepackage[
-%     backend=biber,      % if we want unicode
-%     style=iso-numeric, % or iso-numeric for numeric citation method
-%     babel=other,        % to support multiple languages in bibliography
-%     sortlocale=cs_CZ,   % locale of main language, it is for sorting
-%     bibencoding=UTF8,   % this is necessary only if bibliography file is in different encoding than main document
-%     sorting=nty
-% ]{biblatex}
-% \bibliography{literatura}
+\usepackage[
+    backend=biber,      % if we want unicode
+    style=iso-numeric, % or iso-numeric for numeric citation method
+    babel=other,        % to support multiple languages in bibliography
+    sortlocale=cs_CZ,   % locale of main language, it is for sorting
+    bibencoding=UTF8,   % this is necessary only if bibliography file is in different encoding than main document
+    sorting=nty,
+    maxnames=3
+]{biblatex}
+\bibliography{literatura}
 
 \definecolor{blind}{gray}{0.7}
 \newcommand{\blind}[1][\value{blindtext}]{{\color{blind}\blindtext[#1]}}
@@ -120,17 +121,17 @@
   supervisor={Michaela Šikulová}, %jmeno prijmeni skolitele
   supervisor.title.p=Ing.,   %titul pred jmenem (nepovinne)
   %supervisor.title.a={Ph.D.},    %titul za jmenem (nepovinne)
-  zadaniPdf={../zadani.pdf}
+  zadaniPdf={../zadani-bw.pdf}
 }
 
 %Abstrakt (cesky, anglicky)
-\abstract[cs]{Tato práce se zabývá tvorbou obrazových filtrů pomocí souběžného učení v~koevolučním algoritmu. V~první části textu jsou popsány evoluční algoritmy, zejména genetický algoritmus a kartézské genetické programování. Dále je představena jejich praktická aplikace na úloze návrhu obrazových filtrů. Poté je uvedeno, jak lze zavedením koevoluce s~druhou populací urychlit hledání vhodného řešení. V~poslední teoretické části se text zabývá vztahem učení a evoluce, Baldwinovým efektem a plasticitou fitness a uvádí několik příkladů použití učení v~evolučních algoritmech. V~závěrečné kapitole je navržen systém pro tvorbu obrazových filtrů využívající souběžné učení v~koevolučním algoritmu, který bude implementován v~navazující diplomové práci.}
+\abstract[cs]{Kartézské genetické programování je druh genetického programování, ve kterém jsou kandidátní programy reprezentovány jako orientované acyklické grafy. Bylo ukázáno, že je možné evoluci urychlit použitím koevoluce, kde se ve druhé populaci vyvíjí prediktory fitness. Prediktory fitness slouží k přibližnému určení kvality kandidátních řešení. Nevýhodou koevolučního přístupu je nutnost provést mnoho časově náročných experimentů pro určení nejvýhodnější velikosti prediktoru pro daný problém. V této práci je představena nová reprezentace prediktorů fitness s plastickým fenotypem, založená na principech souběžného učení v evolučních algoritmech. Plasticita fenotypu umožňuje odvodit různé fenotypy ze stejného genotypu. Díky tomu je možné adaptovat velikost prediktoru na současný průběh evoluce a obtížnost řešeného problému. Navržený algoritmus bude implementován v navazující diplomové práci a vyhodnocen na úloze návrhu obrazových filtrů.}
 
-\abstract[en]{This project deals with image filter design using colearning in coevolutionary algorithm. First part of thesis describes evolutionary algorithms, mainly genetic algorithm and cartesian genetic programming, and their practical usage on the task of image filter design. Then it is shown how the search for the solution can be accelerated by introducing coevolution with second population. The following part deals with the relationship between learning and evolution, Baldwin effect and fitness plasticity and provides several examples how learning was used in evolutionary algorithms. The last chapter of the thesis describes the concept of the proposed algorithm that generates image filters using colearning in coevolutionary algorithm. The proposed algorithm will be implemented as a part of the master's thesis.}
+\abstract[en]{Cartesian genetic programming (CGP) is a form of genetic programming where candidate programs are represented in the form of directed acyclic graphs. It was shown that CGP can be accelerated using coevolution with a population of fitness predictors which are used to estimate the quality of candidate solutions. The major disadvantage of the coevolutionary approach is the necessity of performing many time-consuming experiments to determine the best size of the fitness predictor for the particular task. This project introduces a new fitness predictor representation with phenotype plasticity, based on the principles of colearning in evolutionary algorithms. Phenotype plasticity allows to derive various phenotypes from the same genotype. This allows to adapt the size of the predictors to the current state of the evolution and difficulty of the solved problem. The proposed algorithm will be implemented as a part of the master's thesis and it will be evaluated in the task of evolutionary image filter design.}
 
 %Klicova slova (cesky, anglicky)
-\keywords[cs]{Koevoluční algoritmy, kartézské genetické programování, evoluční algoritmy, Baldwinův efekt, plasticita fitness, prediktory fitness, zpracování obrazu.}
-\keywords[en]{Coevolutionary alghorithms, cartesian genetic programming, evolutionary algorithms, Baldwin effect, fitness plasticity, fitness predictors, image processing.}
+\keywords[cs]{Koevoluční algoritmus, kartézské genetické programování, evoluční algoritmus, Baldwinův efekt, plasticita fitness, predikce fitness, zpracování obrazu.}
+\keywords[en]{Coevolutionary alghorithm, cartesian genetic programming, evolutionary algorithm, Baldwin effect, fitness plasticity, fitness predictor, image processing.}
 
 %Prohlaseni
 \declaration{Prohlašuji, že jsem tento semestrální projekt vypracoval samostatně pod vedením Ing. Michaely Šikulové. Uvedl jsem všechny literární prameny a publikace, ze kterých jsem čerpal.}
@@ -160,15 +161,15 @@
   % ----------------------------------------------
 
 \ifczech
-  \bibliographystyle{czechiso}
+  %\bibliographystyle{czechiso}
 \else
   \bibliographystyle{plain}
 %  \bibliographystyle{alpha}
 \fi
   \begin{flushleft}
-  %\printbibliography[title={Literatura}]
-  \inputencoding{latin2}
-  \bibliography{literatura-latin2} % viz. literatura.bib
+  \printbibliography[title={Literatura}]
+  %\inputencoding{latin2}
+  %\bibliography{literatura-latin2} % viz. literatura.bib
   \end{flushleft}
   \appendix
 

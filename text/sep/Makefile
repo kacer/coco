@@ -21,7 +21,8 @@ $(CO).ps: $(CO).dvi literatura-latin2.bib
 $(CO).pdf: clean literatura-latin2.bib
 	vlna -l $(VLNA)
 	pdflatex -synctex=-1 $(CO)
-	bibtex $(CO)
+	biber $(CO)
+	#bibtex $(CO)
 	pdflatex -synctex=-1 $(CO)
 	pdflatex -synctex=-1 $(CO)
 
