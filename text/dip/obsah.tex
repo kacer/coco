@@ -1,0 +1,516 @@
+% -*- root: projekt.tex -*-
+
+\chapter{Úvod}
+
+Rozvoj informačních technologií postupuje vpřed rychlým tempem a objevují se nové a efektivnější algoritmy. Přesto existují problémy, které neumíme řešit běžným \uv{inženýrským} přístupem, protože zatím nebyl objeven vhodný teoretický popis. I~pokud takový popis existuje, zahrnuje pouze podmnožinu všech možných reprezentací řešení. Prohledáváním v~prostoru všech možných kombinací dostupných výpočetních prvků pak můžeme nalézt řešení, kterých nelze dosáhnout konvenčními metodami, ale mohou mít některé velmi výhodné vlastnosti. I~když je dnes běžně dostupný dříve nepředstavitelný výpočetní výkon, je mnohdy nemožné prohledat celý prohledávací prostor a vybrat nejlepší řešení. Proto se používají metody, které se snaží usměrňovat prohledávání správným směrem a zároveň prohledávaný prostor co nejvíce zmenšit, to vše aniž by utrpěla kvalita nalezeného řešení.
+
+Mnohé metody umělé inteligence se inspirují v~přírodě, například neuronové sítě, mravenčí kolonie, výpočty simulující rojení hmyzu nebo evoluční algoritmy, které mají svůj základ v~Darwinově teorii o~vzniku druhů. Evoluční algoritmy se ukazují jako výhodné pro různé optimalizační problémy, ale také lze pomocí genetického programování automaticky tvořit počítačové programy, elektrické obvody, optické systémy a dokonce i umělecká díla.
+
+Jednou z~úspěšných aplikací genetického programování je automatizovaná tvorba obrazových filtrů. Ty umožňují zrekonstruovat obrázky poškozené při přenosu dat nebo kvůli nefunkčním bodům ve snímači fotoaparátu či kamery. Často jsou součástí předzpracování dat u~úloh zpracovávajících obraz a na jejich kvalitě závisí úspěšnost celého algoritmu. Také jsou významné v~kosmonautice, kde je obtížné zamezit chybám při přenosu fotografií na Zemi nebo dokonce opravit či vyměnit kameru umístěnou na vesmírné sondě.
+
+Tato práce se zabývá návrhem programu, který bude schopen tvořit obrazové filtry pomocí koevolučního algoritmu. Vedle obrazových filtrů se vyvíjí i populace tzv. prediktorů fitness, které slouží k~urychlení výpočtu kvality každého vytvořeného filtru. Protože výběr vhodné velikosti prediktorů není triviální a někdy je nutné ke stanovení správné hodnoty provést velké množství experimentů, je nově do algoritmu zahrnuto souběžné učení, jehož cílem je adaptovat velikost prediktorů na aktuální průběh evoluce filtrů.
+
+Tento semestrální projekt je strukturován následovně: Kapitola \ref{chEA} se zabývá evolučními algoritmy. Nejprve jsou představeny obecné principy evolučních algoritmů (v~části \ref{secEAGeneral}), genetický algoritmus \ref{secGA} a kartézské genetické programování \ref{secCGP}. Následuje popis návrhu obrazových filtrů \ref{secIF}. Předposlední část \ref{secCoev} je věnována koevolučním algoritmům, především ve spojitosti s~kartézským genetickým programováním, a závěrečná část \ref{secColearning} se zabývá souběžným učením, Baldwinovým efektem a plasticitou fitness. Kapitola \ref{chDesign} se zabývá návrhem řešení tvorby obrazových filtrů s~použitím koevolučního algoritmu se souběžným učením, které bude implementováno v~diplomové práci.
+
+\chapter{Evoluční algoritmy}
+\label{chEA}
+
+První evoluční algoritmy se v~literatuře objevují od 50. let 20. století. Postupně a nezávisle na sobě vzniklo několik podobných metod (například evoluční strategie, evoluční programování nebo genetické algoritmy), které se v~různých obměnách používají i dnes. Až s~rozšířením spolupráce mezi těmito nezávislými výzkumnými týmy v~90. letech vznikl pojem \uv{evoluční algoritmus} \cite{Modra}.
+
+\section{Základní principy evolučních algoritmů}
+\label{secEAGeneral}
+
+Evoluční algoritmy jsou stoachastické optimalizační metody inspirované přírodou, konkrétně Darwinovou teorií evoluce. Ačkoliv pojmy používané v~evolučních algoritmech vycházejí z~biologie, jejich význam není vždy přesně stejný. Mezi základní pojmy patří:
+
+\begin{itemize}
+    \item\emph{Gen} je základním stavebním blokem kandidátního řešení, je omezen předem danou abecedou (binární čísla, písmena apod.),
+    \item\emph{Alela} je konkrétní varianta genu,
+    \item\emph{Chromozom} nebo \emph{jedinec} reprezentuje jedno řešení ve stavovém prostoru,
+    \item\emph{Genotyp} je posloupnost genů kódující řešení,
+    \item\emph{Fenotyp} je kandidátní řešení odvozené z~genotypu,
+    \item\emph{Populace} je konečná množina kandidátních řešení,
+    \item\emph{Fitness} udává \uv{kvalitu} jedince s~ohledem na řešený problém,
+    \item\emph{Fitness funkce} přiřazuje každému jedinci právě jedno reálné číslo -- hodnotu fitness,
+    \item\emph{Diverzita} udává rozmanitost populace, tj. nakolik se od sebe chromozomy v~populaci navzájem liší.
+    %\item\emph{Rodiče} jsou podmnožina populace, ze které budou vytvořeni \emph{potomci}.
+\end{itemize}
+
+Typickým rysem evolučních algoritmů je to, že pracují s~populací několika kandidátních řešení, od kterých odvozují nová řešení pomocí speciálních biologií inspirovaných operátorů. Jednoduchý evoluční algoritmus lze zapsat takto:
+
+\begin{enumerate}
+    \item Náhodně vygeneruj populaci o~dané velikosti.
+    \item Opakuj dokud není splněna ukončovací podmínka:
+    \begin{enumerate}
+        \item z~populace vyber rodiče a vytvoř potomky,
+        \item některé jedince v~populaci nahraď potomky.
+    \end{enumerate}
+    \item Výsledkem je jedinec s~nejvyšší fitness (nejlepší nalezené řešení problému).
+\end{enumerate}
+
+Nevýhodou evolučních algoritmů je velké množství parametrů a podproblémů. Před samotným výpočtem pomocí evolučního algoritmu je třeba si položit například tyto otázky:
+
+\begin{itemize}
+    \item Jak se budou kódovat kandidátní řešení do genotypu?
+    \item Kolik jedinců má být v~populaci?
+    \item Jak se budou vybírat rodiče nové populace?
+    \item Jak se budou tvořit potomci?
+    \item Kolik jedinců v~populaci má být nahrazeno potomky?
+\end{itemize}
+
+Je třeba brát v~potaz i stochastickou povahu evolučních algoritmů, z~čehož plyne, že pro porovnání různých algoritmů (nebo různých hodnot parametrů) je potřeba statisticky vyhodnotit větší množství běhů \cite{HandbookEA, Modra}.
+
+
+\section{Genetický algoritmus}
+\label{secGA}
+
+Genetický algoritmus byl vytvořen Johnem Hollandem v~sedmdesátých letech. Samotný termín \uv{genetický algoritmus} se začal běžně používat až po publikaci dizertační práce Kena De Jonga v~roce 1975. Do širšího povědomí se dostává v~půlce osmdesátých let, kdy se ukázalo, že jej lze použít k~řešení řady obtížných úloh.
+
+%Existují i hybridní genetické algoritmy, ve kterých se uplatňuje lokální prohledávání.
+
+Schéma genetického algoritmu odpovídá obecnému evolučnímu algoritmu. Počáteční populace je vytvořena náhodně. V~každé iteraci se populace ohodnotí (určí se fitness jedinců) a podle zvoleného selekčního algoritmu se vyberou rodiče, ze kterých jsou pomocí operátorů křížení a mutace vytvořeni potomci. Kromě potomků je možné v~nové populaci zachovat i několik jedinců z~původní populace (s~případnou mutací). Pokud se používá \emph{elitismus}, je nejlepší jedinec vždy součástí nové populace \cite{Modra, HandbookGA}.
+
+
+\subsection{Reprezentace řešení}
+
+Genotyp v~genetickém algoritmu je často jednoduchá datová struktura, jako je vektor bitů nebo čísel konstantní délky. V~případně binárního chromozomu může být vhodné použít Grayovo kódování, ve kterém se dvě po sobě jdoucí hodnoty liší vždy pouze jedním bitem. To pomáhá překonat tzv. Hammingovu bariéru, kdy malá změna v~genotypu způsobí velkou změnu ve fenotypu a naopak\footnote{Například ve fenotypu je mezi čísly 15 a 16 malý rozdíl, ale v~binárním genotypu se liší o~5 bitů.} \cite{HandbookGA}.
+
+
+\subsection{Selekce rodičů}
+
+Volbu $K$ rodičů z~populace lze provést několika způsoby. Nejjednodušší je prosté seřazení jedinců podle jejich fitness, rodiči se pak stává $K$ jedinců s~nejvyšší fitness.
+
+U~\emph{ruletové selekce} je pravděpodobnost, že se konkrétní jedinec stane rodičem, přímo úměrná jeho fitness:
+
+\begin{equation*}
+p_i = \frac{f_i}{\sum_{j=1}^N{f_j}}
+\end{equation*}
+
+\noindent{}Lze si to představit jako ruletu, kde každá výseč odpovídá jednomu jedinci a čím vyšší má jedinec fitness, tím je příslušná výseč větší. Nevýhodou je, že pokud má jeden nebo více jedinců výrazně vyšší fitness než zbytek, stávají se tito jedinci téměř vždy rodiči a zmenšuje se diverzita populace. Jedním ze způsobů, jak lze tento problém řešit je, že se jedinci seřadí podle velikosti fitness a pravděpodobnost výběru je úměrná pořadí jedince a ne jeho fitness.
+
+Jiným přístupem k~výběru rodičů je \emph{turnajová selekce}. Do turnajového kola jsou náhodně vybráni dva nebo více jedinců. Vítězem kola se stává jedinec s~nejvyšší fitness a ten se stává rodičem. Turnaj se opakuje tolikrát, kolik rodičů je potřeba zvolit. Může se stát, že mezi rodiči se bude některý jedinec opakovat \cite{Modra}.
+
+
+
+\subsection{Křížení}
+
+Křížení je považováno za hlavní operátor genetického algoritmu. Během něj je vytvořen nový jedinec jako kombinace genů dvou nebo více chromozomů. Obrázek \ref{obrKrizeni} znázorňuje tři základní mechanismy: jednobodové, vícebodové a uniformní křížení. U~jednobodového křížení je náhodně zvolen bod, ve kterém se chromozomy rozdělí a geny za tímto bodem si mezi sebou vymění. U~vícebodového křížení je těchto bodů několik. V~případě uniformního křížení se rozhoduje, zda dojde k~prohození nebo ne, u~každého genu zvlášť \cite{Modra}.
+
+\begin{figure}[htb]
+    \centering
+    \subfigure[Jednobodové]{
+        \centering
+            \includegraphics[width=0.27\textwidth]{fig/crossover1.pdf}
+    }
+    \subfigure[Vícebodové]{
+        \centering
+            \includegraphics[width=0.27\textwidth]{fig/crossover2.pdf}
+        }
+    \subfigure[Uniformní]{
+        \centering
+            \includegraphics[width=0.27\textwidth]{fig/crossoverU.pdf}
+        }
+    \caption{Tři základní mechanismy křížení v~genetickém algoritmu.}
+    \label{obrKrizeni}
+\end{figure}
+
+
+\subsection{Mutace}
+
+Mutace je malá změna genotypu, která se s~malou pravděpodobností provádí u~potomků vzniklých křížením. V~případě binárně kódovaného chromozomu mutace spočívá v~překlopení několika náhodně zvolených bitů. U~celočíselného kódování je hodnota genu nahrazena náhodným číslem. Existují také speciální mutační operátory pro reálná čísla nebo pro permutačně kódované chromozomy. Pokud je z~povahy problému hodnota genu omezená výčtem nebo intervalem, je vhodné, aby výsledkem mutace nebyla nepřípustná hodnota, aby nevznikala neplatná řešení \cite{Modra}.
+
+\section{Kartézské genetické programování}
+\label{secCGP}
+
+Další variantu evolučního algoritmu, genetické programování, představil koncem 80.~let 20.~století John Koza. Umožňuje automatizovanou tvorbu celých programů, kdy neřeší jak má program pracovat, pouze co má být jeho výstupem. John Koza pracoval s~jazykem LISP, pro který je vhodná reprezentace programu pomocí stromů. Existují ale i jiné způsoby kódování programů do chromozomu, například ve formě kartézských programů. Kartézské genetické programování (CGP) představil Julian Miller koncem devadesátých let \cite{Miller2000}.
+
+V~CGP se programy kódují jako orientované acyklické grafy, reprezentované dvourozměrnou kartézskou mřížkou výpočetních uzlů (funkčních bloků) o~předem daných rozměrech. Příklad kartézského programu je zobrazen na obrázku \ref{obrCGP}. Počet primárních vstupů a výstupů je fixní. Každý výpočetní uzel vykonává nějakou funkci z~předem daného seznamu. Ten je vhodné přizpůsobit řešené úloze, například pro tvorbu logických obvodů to mohou být dostupná logická hradla, pro symbolickou regresi to mohou být aritmetické operace apod. Vstupy funkčních bloků jsou napojeny buď na některý z~primárních vstupů, nebo na výstup uzlu umístěného v~některém sloupci nalevo. O~kolik sloupců doleva je možné uzly propojovat určuje parametr $l$-back. Pokud je roven jedné, je možné propojovat pouze uzly ze sousedních sloupců, pokud je $l$-back roven počtu sloupců, lze uzly propojovat libovolně. Zpětné vazby a cykly nejsou v~CGP povoleny.
+
+\begin{figure}[htb]
+    \centering\includegraphics[width=0.8\textwidth]{fig/cgp.pdf}
+    \caption{Program v~kartézském genetickém programování. Uzly 5, 7 a 9 jsou neaktivní.}
+    \label{obrCGP}
+\end{figure}
+
+Chromozom je posloupnost celých čísel konstantní délky, jednotlivé geny určují funkci výpočetních uzlů a jejich propojení. Na konci chromozomu je pro každý primární výstup jeden gen obsahující číslo uzlu, jehož výstup má být použit. Velikost fenotypu je variabilní, ale nikdy nepřesáhne velikost genotypu. Je to proto, že ne všechny funkční bloky jsou přímo či nepřímo napojeny na primární výstupy programu -- hovoříme o~\emph{neaktivních blocích}.
+
+Výhodou kartézského genetického programování je omezený stavový prostor, nehrozí, že by délka programu během evoluce rostla nad únosnou mez, tak jako u~stromové reprezentace. Prohledávací prostor lze dále omezovat parametrem $l$-back a omezením množiny dostupných funkcí \cite{ZelenaCGP, Modra, HandbookGP}.
+
+\subsection{Průběh evoluce}
+\label{secCGPEvo}
+
+Schéma evoluce opět odpovídá obecnému evolučnímu algoritmu. Počáteční populace je vygenerována náhodně. Oproti genetickému algoritmu se u~kartézského genetického programování většinou nepoužívá křížení, protože jeho přínos pro konvergenci řešení není velký. Po ohodnocení všech jedinců je nejlepší z~nich určen rodičem. Ostatní jedinci jsou nahrazeni potomky -- náhodnými mutacemi rodiče. Tento způsob tvorby nových generací se označuje jako evoluční strategie $(1 + \lambda)$ \cite{Modra}.
+
+\subsection{Mutace}
+
+Mutace mění náhodně hodnotu některých genů jedince. Jejich počet se běžně volí jako procento z~celkového počtu genů, označované jako \emph{míra mutace}. Geny nelze nahrazovat libovolnými hodnotami, je třeba brát ohled na parametr $l$-back, počet primárních vstupů a počet dostupných funkcí pro výpočetní uzly:
+
+\begin{itemize}
+    \item U~genu kódujících funkci, je náhodně vygenerován index funkce ze seznamu dostupných funkcí.
+    \item U~genu kódujících vstup funkčního bloku jsou povolenými hodnotami:
+        \begin{itemize}
+            \item číslo primárního vstupu programu,
+            \item číslo některého uzlu ze sloupců nalevo, s~ohledem na parametr $l$-back.
+        \end{itemize}
+    \item U~genu kódujících primární výstup je náhodně vybráno číslo některého výpočetního uzlu nebo primárního vstupu.
+\end{itemize}
+
+Ne každá mutace vede na změnu fenotypu -- například může dojít ke změně funkce neaktivního bloku nebo propojení mezi neaktivními bloky. Ukazuje se ale, že i tyto tzv. \emph{neutrální mutace} jsou prospěšné pro konvergenci algoritmu. Proto pokud je v~populaci několik nejlepších jedinců se stejnou hodnotou fitness, je vhodné vybírat jako rodiče toho, který nebyl rodičem v~předchozí generaci, tj. chromozom, který vznikl neutrální mutací. V~opačném případě, kdy se rodičem může stát pouze jedinec s~vyšší hodnotou fitness, evoluce nachází méně kvalitní programy \cite{ZelenaCGP, Modra}.
+
+\subsection{Výpočet fitness}
+\label{secFitnessCalc}
+
+Genetické programování umožňuje automatizovaně vytvářet programy s~požadovaným chováním. Chování -- požadované odezvy programu na zadané vstupy -- je definováno v~tzv. \emph{trénovací množině}. Každý prvek této množiny reprezentuje jeden \emph{případ fitness}. Například pokud je cílem nalézt program aproximující polynom $x^4 + x^3 + x^2 +x$ nad množinou přirozených čísel menších než deset, je každé z~těchto čísel jedním případem fitness. V~případě programu $x^2 + 1$ je hodnota $2^2 + 1 = 5$ odezva programu pro případ fitness $2$. Fitness kandidátního řešení je pak určena jako součet odchylek požadovaného a skutečného výstupu programu pro všechny případy fitness z~trénovací množiny.
+
+U~složitějších problémů může být takových případů fitness velmi mnoho. Protože výpočet fitness je časově nejnáročnější částí evoluce, je vhodné do trénovací množiny zahrnout pouze část případů fitness a urychlit tak výpočet. Na druhou stranu je třeba velikost množiny a používané případy fitness zvolit tak, aby byly i pro kombinace vstupů neobsažené v~trénovací množině byly výstupy programu v~souladu s~požadovaným chováním.
+
+%Každý prvek této množiny tvoří jeden \emph{případ fitness}.
+
+%Případy fitness typicky tvoří malý vzorek stavového prostoru. Výběr tohoto vzorku a jeho velikosti zásadně ovlivňuje kvalitu nalezených programů a dobu běhu evoluce. Menší vzorek vede na
+
+%Genetické programování umožňuje automatizovaně vytvářet programy s požadovaným chováním. Jednotlivé prvky této množiny se označují jako \emph{případy fitness}. Každý případ fitness reprezentuje
+
+%Tato množina často obsahuje pouze část všech možných kombinací vstupů. Určení velikosti trénovací množiny a volba použitých případů fitness má zásadní vliv na kvalitu výstupních programů -- zda bude program natolik obecný, aby byl
+
+%K~vyhodnocení fitness jedince je třeba projít všechny prvky trénovací množiny. Každý z~nich se skládá ze dvou částí -- vstupních hodnot, které se přiloží na primární vstupy kartézského programu, a očekávané výstupní hodnoty. Protože výpočet fitness je časově nejnáročnější částí evoluce, je vhodné mít množinu trénovacích dat co nejmenší. Na druhou stranu příliš malá množina může způsobit, že program není schopen správně
+
+Samotný výpočet fitness lze provádět \uv{zleva doprava}, kdy jsou postupně vypočítávány výstupy všech funkčních bloků, bez ohledu na to, zda jsou použity ve fenotypu nebo ne. Druhou možností, kdy se pracuje pouze s~aktivními bloky, je postupovat rekurzivním sestupem od výstupů programu ke vstupům. Nevýhodou je, že některé uzly se mohou vyhodnotit vícekrát. Jako ideální se jeví nejprve určit aktivní bloky a poté směrem od vstupů programu vypočítat výstupy aktivních bloků a tím i celého programu. Aktivní bloky lze určit i bez použití rekurze, průchodem po jednotlivých uzlech od konce programu. Jako aktivní se nejprve označí uzly připojené na primární výstupy. Při průchodu pak platí, že pokud je uzel aktivní, označí se za aktivní i uzly připojené na jeho vstupy \cite{Modra, HandbookGP}.
+
+\section{Návrh obrazových filtrů evolučními algoritmy}
+\label{secIF}
+
+Jedna z~úloh, kterou lze řešit pomocí evolučních algoritmů je návrh obrazových filtrů \cite{ZelenaIF}. Ty se používají jako jeden z~prvních kroků u~úloh zpracování obrazových dat. Čím lépe filtr dokáže obnovit poškozené části obrazu, tím lepší výsledky lze získat v~dalších krocích algoritmu, jako je například segmentace nebo klasifikace.
+
+Většina hardwarových i softwarových implementací obrazových filtrů pracuje s~lokálním okolím pixelů, nejčastěji se používá okolí 9 nebo 25 pixelů. Novou hodnotu pixelu určuje funkce, na jejímž vstupu jsou hodnoty všech pixelů ve zvoleném okolí. Tato funkce se postupně aplikuje na celý obrázek. Tento princip znázorňuje obrázek \ref{obrIFokoli}.
+
+\begin{figure}[htb]
+    \centering\includegraphics[width=0.66\textwidth]{fig/filter.pdf}
+    \caption{Princip filtrace obrazu.}
+    \label{obrIFokoli}
+\end{figure}
+
+Obrazové filtry lze rozdělit na lineární a nelineární. U~lineárních platí princip superpozice a lze je charakterizovat pomocí impulzní odezvy. Výsledný obraz je dán konvolucí vstupního obrazu a impulzní odezvy -- na konvoluci lze nahlížet jako vážený součet zvoleného okolí pixelu. Nevýhodou lineárních filtrů je ztráta detailů. V~jejich případě není výsledný obraz dán konvolucí, ale nějakou nelineární funkcí, například mediánem hodnot okolních pixelů.
+
+Existují různé typy šumů, pro které jsou vhodné různé typy obrazových filtrů. Poměrně častý je impulzní šum, který vzniká kvůli nefunkčním pixelům v~kameře, chybným paměťovým buňkám nebo chybám při přenosu dat. Poškozené body mají buď mají vždy minimální nebo maximální možnou hodnotu (šum typu sůl a pepř) nebo mají náhodnou hodnotu (výstřelový šum). Pro impulzní šum je vhodný nelineární mediánový filtr, ale při intenzivnějším šumu je kvalita nedostatečná a také dochází ke ztrátě detailů.
+
+Evoluční algoritmy lze při tvorbě obrazových filtrů využít různými způsoby. Jednou možností je použít již existující obrazový filtr, u~nějž se pomocí genetického algoritmu optimalizuje nastavení jeho parametrů tak, aby se dosáhlo co nejlepších výsledků v~zamýšleném prostředí. Evolučními algoritmy lze také přímo navrhovat nové obrazové filtry. Zvláště výhodné je to u~nelineárních filtrů, pro jejichž analýzu a návrh schází vhodný matematický aparát a jejich tvorba je tak obtížnější než v~případě lineárních filtrů.
+
+Jako vhodné pro tuto úlohu se ukazuje kartézské genetické programování. Na vstup kartézského programu je přivedeno zvolené okolí pixelu, výstupem je filtrovaný pixel. Jako fitness funkce se nejčastěji používá špičková hodnota poměru signál/šum v~decibelech (Peak Signal to Noise Ratio, PSNR) nebo střední odchylka pixelů (Mean Difference Per Pixel, MDPP), která je vhodnější pro hardwarovou implementaci. Tyto funkce jsou definovány:
+
+\begin{equation}
+    \label{eqPSNR}
+    \mathit{PSNR} = 10 \log_{10} \frac{255^2}{\frac{1}{MN} \sum\limits_{i,j} \left( v\left( i, j \right) - w\left( i, j \right)  \right)^2 }
+\end{equation}
+
+\begin{equation}
+    \label{eqMDPP}
+    \mathit{MDPP} = \frac{1}{MN} \sum\limits_i^M \sum\limits_j^N \left| v\left( i, j \right) - w\left( i, j \right) \right|
+\end{equation}
+
+\noindent{}kde $M$ a $N$ označují rozměry obrázku, $v$ filtrovaný a $w$ původní obrázek.
+
+Pro výpočet fitness kandidátního filtru musíme zpracovat celý obrázek, přičemž každý pixel můžeme považovat za jeden případ fitness. Protože i pro poměrně malé obrázky jich je několik tisíc, je výpočet fitness časově velmi náročný \cite{Modra, ZelenaIF}.
+
+\section{Koevoluce v~kartézském genetickém programování}
+\label{secCoev}
+
+Jedním ze způsobů, jak řešit problém velkého množství případů fitness je použití koevolučního algoritmu \cite{HandbookCoev}. Oproti dosud zmíněným evolučním algoritmům zde existuje několik různých populací, které na sebe navzájem působí a ovlivňují svůj vývoj. Fitness jedince nezávisí pouze na jeho genetických předpokladech, ale určuje se podle toho, jak \uv{dobrý} je při interakci s~jedinci z~jiných populací.
+
+Populace mohou být stejného druhu. Takové jsou navzájem oddělené bariérou a vyvíjejí se nezávisle na sobě až na občasné migrace jedinců mezi podpopulacemi (například pokud některá z~nich uvízne v~lokálním extrému). V~některých případech je vhodné mít několik populací různého druhu. Některé složitější problémy lze dekomponovat na několik jednodušších, které mohou být reprezentovány různými chromozomy. Jedinci spolu spolupracují na řešení úlohy a jejich kvalita závisí na kvalitě ostatních jedinců. V~tomto případě jde o~\emph{kompoziční koevoluci}.
+
+Další variantou je typ koevoluce, který se používá pro úlohy založené na testu. Populace mezi sebou interagují prostřednictvím fitness funkce, jejíž výsledek závisí i na jedincích okolních populací. V~jedné populaci jsou vyvíjena kandidátní řešení problému, druhá populace obsahuje tzv. \emph{testy}, což jsou podmnožiny množiny případů fitness. Typicky jsou jedinci jedné populace ohodnocování pomocí nejlepšího nebo několika nejlepších jedinců z~jiné populace. Příkladem tohoto typu koevoluce je tzv. \emph{soutěživá koevoluce}, ve které mezi sebou soutěží jedinci ze dvou populací. Cílem populace kandidátních řešení je správně vyřešit všechny případy fitness zahrnuté v~nejlepším testu, naopak cílem populace testů je najít takové případy fitness, ve kterých nejlepší kandidátní řešení selhává. Soutěživou koevoluci poprvé představil Daniel Hillis na úloze návrhu řadicích sítí \cite{Hillis}. Řadicí síť je algoritmus, který řadí posloupnosti dané délky pomocí posloupnosti komparátorů, které mají dva vstupy a výstupy. Komparátor porovnává prvky na vstupy mezi sebou a pokud nejsou v~požadovaném pořadí, na výstupu je zamění. V~soutěživé koevoluci tvoří řadicí sítě populaci kandidátních řešení, druhou populaci testů tvoří neseřazené posloupnosti. Na kandidátní sítě lze nahlížet jako na \uv{hostitele} a na neseřazené posloupnosti jako na \uv{parazity}. Cílem evoluce řadicích sítí je správně seřadit posloupnost v~nejlepším testu, cílem evoluce testů je nalézt takovou neseřazenou posloupnost, která na výstupu sítě není ve správném pořadí.
+
+Koevoluční algoritmy využívají kromě populací i jiný typ množiny jedinců -- tzv. \emph{archivy}, do kterých jsou umisťování nejlepší nalezení jedinci.
+
+Z~implementačního hlediska je možné vyhradit pro každou z~populací samostatné vlákno nebo proces, které mezi sebou komunikují zasíláním zpráv nebo přes sdílenou paměť. Není to ale nutné, koevoluci lze modelovat také tak, že v~každé iteraci algoritmu proběhne několik generací v~první populaci, poté několik generací ve druhé populaci.
+
+Použitím koevoluce lze řešit problém velkého množství případů fitness (zmíněný v~sekci \ref{secFitnessCalc}) v~úloze návrhu obrazových filtrů vytvořením druhé populace, která vybírá vhodnou podmnožinu pixelů, která slouží k~přibližnému určení fitness kandidátních filtrů \cite{SikuPPSN}.
+
+
+\subsection{Koevoluční řešení symbolické regrese}
+
+Koevoluční výpočet za účelem snížení výpočetní náročnosti byl poprvé úspěšně ukázán na úloze symbolické regrese \cite{SikuEuroGP}. Zde jsou použity dvě populace: populace kartézských programů (kandidátních řešení symbolické regrese) a populace \emph{prediktorů fitness}. Prediktory jsou podmnožinou množiny případů fitness. Určují, které případy fitness mají být použity k~ohodnocení kandidátních programů. Kromě těchto populací je součástí řešení archiv sdílený oběma populacemi, který obsahuje několik kartézských programů, které slouží pro ohodnocení prediktorů. Celé schéma populací a interakcí mezi nimi znázorňuje obrázek \ref{obrKoevoluce}.
+
+\begin{figure}[htb]
+    \vskip 0.25\baselineskip
+    \centering\includegraphics[width=\textwidth]{fig/coevolution.pdf}
+    \caption{Schéma koevoluce CGP a prediktorů fitness \cite{SikuEuroGP}.}
+    \label{obrKoevoluce}
+\end{figure}
+
+Evoluce kandidátních programů probíhá pomocí kartézského genetického programování. Ve skutečnosti existují dvě různé fitness funkce: $f_{\mathit{exact}}$, ve které se používá celá trénovací množina, a $f_{\mathit{predicted}}$, omezená pouze na některé případy fitness.
+
+% Označíme-li kandidátní program jako $s$, velikost trénovací množiny jako $k$ a délku prediktoru fitness (velikost podmnožiny trénovacích dat) jako $m$, můžeme je zapsat následovně:
+
+% \begin{equation}
+%     \label{eqFexact}
+%     f_{\mathit{exact}} \left( s \right) = \frac{1}{k} \sum\limits_{j=1}^{k} g \left( y \left( j \right) \right)
+% \end{equation}
+
+% \begin{equation}
+%     \label{eqFpredicted}
+%     f_{\mathit{predicted}} \left( s \right) = \frac{1}{m} \sum\limits_{j=1}^{m} g \left( y \left( j \right) \right)
+% \end{equation}
+
+Pokud je během evoluce nalezen jedinec s~lepší predikovanou fitness (vypočtenou funkcí $f_{\mathit{predicted}}$) než nejlepší jedinec v~předchozí generaci, je umístěn do archivu sdíleného s~populací prediktorů. Ten je rozdělen na dvě části -- první z~nich obsahuje nejlepší nalezená řešení, do druhé části jsou pravidelně umisťovány náhodně vygenerované programy, čímž je zajištěna větší diverzita jedinců v~archivu. Každý jedinec umístěný do archivu je ohodnocen pomocí celé trénovací množiny (funkcí $f_{\mathit{exact}}$).
+
+Evoluce prediktorů fitness je řízena genetickým algoritmem. Jejich chromozomy jsou vektory ukazatelů do trénovací množiny o~konstantní délce. Potomci jsou tvořeni pomocí jednobodového křížení a mutace, navíc je nejhorší jedinec v~populaci nahrazen náhodně vygenerovaným chromozomem. Fitness prediktoru je určena jako střední absolutní odchylka skutečné a predikované fitness všech programů v~archivu:
+
+\begin{equation}
+    \label{eqFpredictorSR}
+    f \left( p \right) = \frac{1}{u} \sum\limits_{i=1}^{u} \left| f_{\mathit{exact}} \left( s \left( i \right) \right) - f_{\mathit{predicted}} \left( s \left( i \right) \right) \right|
+\end{equation}
+
+\noindent{}kde $p$ označuje prediktor a $u$ počet jedinců v~archivu. Prediktor s~nejnižší odchylkou je pak použit pro ohodnocování řešení z~populace kartézských programů.
+
+V~článku \cite{SikuEuroGP} byl tento koevoluční algoritmus porovnán s~běžným CGP na pěti různých funkcích, přičemž trénovací množina pro každou z~nich obsahovala 200 funkčních bodů. Ukázalo se, že koevolucí lze nalézt přijatelné řešení s~použití mnohem menšího počtu evaluací kandidátních programů než u~standardního CGP. Také se ukázalo, že zatímco standardní CGP nenalezlo přijatelné řešení v~23,6\,\% běhů, koevoluční algoritmus byl úspěšný ve všech případech. Co se výpočetní náročnosti týče, byl koevoluční přístup přibližně dvakrát až pětkrát rychlejší, podle hledané funkce.
+
+
+\subsection{Koevoluční návrh obrazových filtrů}
+\label{secCoevIF}
+\enlargethispage{0.5\baselineskip}
+
+Podobně jako symbolickou regresi lze pomocí koevoluce akcelerovat i evoluční návrh obrazových filtrů. Opět existují dvě populace, kandidátních filtrů v~CGP a podmnožin případů fitness, také je použit sdílený archiv obrazových filtrů. Jednotlivé případy fitness jsou složeny z~devítiokolí poškozeného pixelu a hodnoty téhož pixelu v~původním obrázku (což je očekávaný výstup filtru).
+
+V~článku \cite{SikuPPSN} jsou zmíněny dva různé koevoluční přístupy. V~prvním případě šlo o~koevoluci s~prediktory fitness (CFP, coevolution of fitness predictors), podobně jako u~řešení symbolické regrese popsané výše. Fitness filtrů byla určena pomocí funkce MDPP (viz rovnice \ref{eqMDPP}), fitness prediktorů pak jako:
+
+\begin{equation}
+    \label{eqFpredictorIF}
+    f_{\mathit{CFP}} \left( p \right) = \frac{1}{T} \sum\limits_{i=1}^{T} \left| \mathit{MDPP_{exact}} \left( s \left( i \right) \right) - \mathit{MDPP_{partial}} \left( s \left( i \right) \right) \right|
+\end{equation}
+
+\noindent{}kde $T$ označuje počet položek v~archivu filtrů a $\mathit{MDPP_{partial}}$ je střední odchylka podmnožiny pixelů určených prediktorem, která je dána jako:
+
+\begin{equation}
+    \label{eqMDPPPartial}
+    \mathit{MDPP_{partial}} = \frac{1}{K} \sum\limits_l^K \left| v\left( l \right) - w\left( l \right) \right|
+\end{equation}
+
+\noindent{}kde $K$ označuje počet případů fitness, $v$ filtrovaný a $w$ původní obrázek. Cílem evoluce prediktorů je minimalizace hodnoty fitness.
+
+Ve druhém případě je použita soutěživá koevoluce (CC, competitive coevolution). Podmnožiny případů fitness zde slouží jako jako testy, které reprezentují případy fitness, které kandidátní řešení v~aktuálním stavu koevoluce neumí správně řešit. Cílem filtrů je správně vyřešit všechny případy fitness obsažené v~testu, cílem populace testů je pak najít takové devítiokolí pixelů, které nalezené filtry nejsou schopny vyřešit správně -- tedy nalézt podmnožinu pixelů s~maximalní střední odchylkou filtrované a původní hodnoty. Fitness funkci testů lze odvodit z~rovnice \ref{eqMDPPPartial} následovně:
+
+\begin{equation}
+    \label{eqFtestsIF}
+    f_{\mathit{CC}} = \frac{1}{T} \sum\limits_{i=1}^{T} \frac{1}{K} \sum\limits_l^K \left| v\left( l \right) - w\left( l \right) \right|
+\end{equation}
+
+Podobně jako u~prediktorů je nejlepší nalezený test použit pro ohodnocení populace filtrů. V~obou variantách jsou nejlepší nalezené filtry umisťovány do archivu, který pak slouží k~ohodnocování prediktorů či testů.
+
+V~porovnání se standardním CGP bylo dosaženo srovnatelné kvality filtrů při použití podmnožiny případů fitness o~velikosti pouze 15\,\% z~celkového počtu pixelů v~obrázku. V~tomto případě byl koevoluční výpočet přibližně třikrát rychlejší než standardní CGP. Oba zmíněné koevoluční přístupy (prediktory fitness i soutěživá koevoluce) vedou na srovnatelně kvalitní filtry \cite{SikuPPSN}.
+
+\subsection{Akcelerace koevolučního návrhu v~hardware}
+
+Koevoluční CGP bylo také úspěšně implementováno v~hardware na rekonfigurovatelném obvodu FPGA. Na úloze návrhu obrazových filtrů, kdy byl měřen čas potřebný na dosažení 10~000 generací CGP, bylo největšího zrychlení dosaženo při použití chromozomů o~délce 25\,\% všech případů fitness, kdy byla hardwarová implementace 58krát rychlejší než optimalizovaná\footnote{Pomocí OpenMP a vektorových (SIMD) instrukcí z~instrukční sady SSE 4.1.} softwarová implementace \cite{Hrbacek}.
+
+\subsection{Návrh obrazových filtrů pomocí kompoziční koevoluce}
+
+Jiným přístupem ke koevolučnímu návrhu je použití kompoziční koevoluce. K~samotnému filtru je možné přidat detektoru šumu, který rozhoduje, zda je právě zpracovávaný pixel poškozený a má být opraven. Cílem je pak nalézt nejlepší kombinaci filtru a detektoru šumu. Experimentálně bylo ověřeno, že koevoluční algoritmus vede na kvalitnější filtry oproti oddělené evoluci filtrů a detektorů šumu bez vzájemné interakce \cite{SikuKomjathy}.
+
+\subsection{Otevřené problémy koevoluce}
+\label{secProblems}
+
+Jak bylo ukázáno, použitím koevoluce lze zkrátit dobu potřebnou pro nalezení přijatelného řešení, v~některých případech až pětinásobně. Koevoluční algoritmy dokonce poměrně spolehlivě nachází řešení v~případech, kdy standardní CGP selhává. Na druhou stranu je zapotřebí poměrně velké množství běhů k~nalezení ideálního nastavení. Kromě velikosti populací nebo počtu kandidátních řešení v~archivu jde zejména o~délku chromozomu prediktorů fitness. Ukazuje se, že pro různé úlohy je vhodná jiná hodnota. Při suboptimální konfiguraci pak nemusí být dosaženo takového urychlení výpočtu, jako by bylo možné, anebo kvalita nalezených řešení nemusí být přijatelná. Například v~případě úlohy symbolické regrese bylo potřeba provést více než sto tisíc nezávislých běhů, než bylo nalezeno nejvhodnější nastavení \cite{SikuEuroGP}.
+
+Pokud jsou v~genetickém algoritmu použity dlouhé chromozomy čítající tisíce genů, vyvstává problém škálovatelnosti. U~evolučních algoritmů se pod tímto pojmem rozumí situace, kdy evoluce nenachází přijatelná řešení pro rozsáhlejší úlohy, ačkoliv v~menším měřítku funguje dobře \cite{SikuKomjathy}. Také použití genetických operátorů na příliš dlouhé chromozomy může být neefektivní.
+
+%Tento problém se výrazně projeví například u~permutačně kódovaného chromozomu, kdy se používají speciální genetické operátory modifikující pouze pořadí jednotlivých genů a ne jejich hodnoty .
+
+\subsection{Nepřímo kódované prediktory fitness}
+\label{secIndirectPredictors}
+
+Jedním ze způsobů, jak obejít nutnost najít nejvhodnější délku prediktoru pro konkrétní úlohu, je jejich nepřímé kódování, které evoluci umožní tvořit prediktory různé délky a adaptovat je na konkrétní trénovací data. Prediktory nejsou reprezentovány jako vektor ukazatelů do trénovací množiny, ale jako funkce generující posloupnost ukazatelů, které se mají použít při výpočtu fitness.
+
+Pro hledání vhodné funkce je možné použít kartézské genetické programování \cite{Siku2015}. Funkce je reprezentována jako program s~jedním vstupem a dvěma výstupy. Součástí chromozomu je oproti standardnímu CGP ještě hodnota $x_0$ udávající první vstup programu, pomocí které je získán první prvek posloupnosti. Jeden z~výstupů slouží jako další prvek posloupnosti (a zároveň jako nový vstup programu), druhý pak udává, zda má být posloupnost ukončena. Fitness generátoru závisí kromě odchylky predikované a skutečné fitness také na délce generované posloupnosti -- delší posloupnost vede na větší výpočetní náročnost.
+
+Během experimentů na úloze symbolické regrese se ukázalo, že počet použitých případů fitness odpovídá počtu zjištěnému experimentálně s~přímo kódovanými prediktory. Je tedy možné použít koevoluci s~prediktory fitness na nové úlohy bez časově náročného hledání optimálního nastavení.
+
+
+\section{Vztah učení a evoluce}
+\label{secColearning}
+
+Vztahem mezi učením a evolucí se zabýval už James Mark Baldwin na konci 19. století. Ve svém článku \cite{Baldwin} se zabýval vývojem komplexního instinktivního chování. \emph{Baldwinův efekt} popisuje, jakým způsobem lze postupným vývojem po menších krůčcích dosáhnout komplexních instinktů zakódovaných v~genotypu. Jedinec, jehož instinkt daný genotypem není dokonalý, jej může učením během života zdokonalit a zvýšit tak svou fitness a pravděpodobnost, že i nedokonalý instinkt se přenese na další generaci. Učení má ovšem i své nevýhody, například v~přírodě hrozí, že se během experimentování jedinec zraní nebo zemře, proto jsou upřednostňováni jedinci, kteří mají v~genotypu zakódované dokonalejší instinkty, čímž se postupně vytváří komplexní instinkt \cite{HowToShiftBias}.
+
+\subsection{Plasticita fitness}
+\label{secPlasticity}
+
+Schopnost jedince přizpůsobit se prostředí se označuje jako \emph{plasticita fitness} nebo \emph{plasticita fenotypu}. Fenotyp plastického jedince nezáleží jen na genotypu, ale také na okolním prostředí. Jinými slovy, stejný genotyp může tvořit různé fenotypy. V~různých fázích evoluce jsou preferováni jedinci s~různou plasticitou. Po radikální změně prostředí jsou ve výhodě plastičtější jedinci, kteří se změně dokáží lépe přizpůsobit, protože mají větší schopnosti učení. Později, když se prostředí opět ustálí, jsou upřednostňování jedinci, kteří mají nově potřebné vlastnosti přímo zakódované do genotypu. Tento průběh znázorňuje obrázek \ref{obrBaldwin}.
+
+Různou míru plasticity lze pozorovat nejen mezi jedinci v~populaci, ale také se mění během života jedince. V~průběhu života existují \emph{senzitivní období}, během kterých mají vnější stimuly zvlášť velký význam pro rozvoj jedince -- v~tomto období má vyšší plasticitu. Například pokud bylo kotěti sešito jedno oko, bylo v~dospělosti na něj slepé i po jeho otevření, protože absence vizuálních podnětů v~senzitivním období znemožnila jeho zdravý vývoj. Z~tohoto plyne, že učící aparát je udržován pouze po určitou dobu, nezbytnou pro osvojení příslušné schopnosti.
+
+Přítomnost nebo nepřítomnost schopnosti učení závisí i na dynamice okolního prostředí. Podle četnosti změn v~prostředí lze odlišit několik různých situací. V~případě velmi stabilního prostředí schopnost učení není tolik potřebná a vlastnosti jedince mohou být přímo součástí genotypu. V~opačném případě, kdy ke změnám dochází velmi často je také učení zbytečné, protože neexistují dlouhodobě platná pravidla, které by se jedinec mohl naučit. Mezi těmito extrémy lze pozorovat různou míru plasticity jedinců. Pokud je četnost změn nižší, spíše se projevuje Baldwinův efekt a naučené chování se v~dalších generacích stává součástí genotypu. Se zvyšující se četností změn se objevují senzitivní období na začátku života jedince, od určitého okamžiku pak je schopnost učit se přítomna neustále \cite{EllefsenBalancing}.
+
+\begin{figure}[htb]
+    \centering\includegraphics[width=0.5\textwidth]{fig/baldwinPlasticity.pdf}
+    \caption{Baldwinův efekt -- nejprve jsou upřednostňování plastičtější jedinci, později převáží cena učení a plasticita klesá \cite{EllefsenBalancing}.}
+    \label{obrBaldwin}
+\end{figure}
+
+\subsection{Baldwinův efekt v~evolučních algoritmech}
+
+První výpočetní model Baldwinova efektu představili Geoffrey Hinton a Steven Nowlan \cite{HintonNowlan}. Pracovali s~populací jedinců o~20 genech, které mohly nabývat hodnoty \textbf{0}, \textbf{1} nebo \textbf{?}. Genotyp je interpretován jako nastavení 20 spínačů. Alely \textbf{1} a \textbf{0} znamenají, že je příslušný spínač zapnut nebo vypnut, pokud gen obsahuje hodnotu \textbf{?}, může jedinec se spínačem experimentovat. Cílem bylo sepnout všechny spínače. V~případě, že některý gen byl nastaven na \textbf{0}, měl jedinec minimální fitness ($f = 1$), pokud byly všechny geny nastaveny na \textbf{1}, získal jedinec maximální fitness ($f = 20$). Jedinci s~\uv{otazníkovými} alelami měli 1~000 pokusů na nalezení správného řešení a jejich fitness byla úměrná počtu pokusů, které vyčerpali ($f = 1 + 19 \frac{1000 - i}{1000}$, $i$ je počet využitých pokusů). Po 50 generacích se ukázalo, že jedinci mají v~průměru 11 genů nastavených na \textbf{1} a 9 genů na \textbf{?} a průměrnou fitness $f = 11,6$. \uv{Nulové} geny byly poměrně rychle eliminovány. Bez užití učení (a \uv{otazníkových} alel) je očekávaná fitness $f = 1$, protože pravděpodobnost vzniku jedince se všemi geny nastavenými na \textbf{1} je velmi malá a fitness funkce nedokáže odlišit, který jedinec je lepší a který horší (každý má buď maximální nebo minimální fitness), jak znázorňuje obrázek \ref{obrHintonNowlan}. Přidáním učení se fitness funkce \uv{vyhladí}.
+
+\begin{figure}[htb]
+    \centering\includegraphics[width=0.75\textwidth]{fig/baldwin1.pdf}
+    \caption{Fitness funkce z~experimentu Hintona a Nowlana \cite{HintonNowlan}.}
+    \label{obrHintonNowlan}
+\end{figure}
+
+Byly představeny také modifikace kartézského genetického programování využívající plastických jedinců.
+V~jedné z~nich chromozom obsahoval oproti standardnímu CGP jeden primární výstup navíc, který nebyl přímou součástí kandidátního řešení. U~nově vzniklých potomků je nejprve vytvořen fenotyp, který je posléze modifikován, dokud tento výstup není roven předem stanovené hodnotě. Fitness jedince je pak určena až pomocí modifikovaného fenotypu. V~experimentech na klasifikačních úlohách se ukázalo, že oproti standardnímu CGP lze dosáhnout menší chybovosti \cite{UllahPlasticCGP}.
+
+V~jiné variantě plastického kartézského genetického programování byly z~chromozomu odstraněny geny kódující  propojení primárních výstupů na funkční bloky. Nově vzniklý jedinec pak pro každý primární výstup hledá nejvhodnější funkční blok, tak aby dosáhl co nejvyšší fitness. Na úloze návrhu úplné sčítačky se ukázalo, že algoritmus končí úspěšně bez ohledu na velikost kartézské mřížky, zatímco u~standardního CGP úspěšnost s~větší mřížkou klesala \cite{KhatirPlasticCGP}.
+
+\chapter{Návrh obrazových filtrů pomocí souběžného učení}
+\label{chDesign}
+
+Cílem této práce je navrhnout systém pro tvorbu obrazových filtrů založený na principech evolučních algoritmů, koevoluce a souběžného učení. Tento systém bude implementován a experimentálně vyhodnocen v~rámci diplomové práce.
+
+Jedním z~nedostatků koevoluce s~prediktory fitness, popsané v~podkapitole \ref{secCoevIF}, je nutnost zvolit vhodnou velikost podmnožiny případů fitness, kterou vybírají prediktory. Tato velikost by měla být co nejmenší, aby byl počet nutných vyhodnocení co nejnižší (a výpočet co nejrychlejší), ale zároveň taková, aby odchylka mezi predikovanou a skutečnou fitness kandidátních řešení byla stále přijatelně nízká. Velikost vhodná pro jednu úlohu nemusí být vhodná pro jinou. Například v~případě symbolické regrese mohou u~jednoduchých rovnic stačit pouze jednotky trénovacích vektorů, u~obrazových filtrů to mohou být i tisíce. Někdy je pro stanovení optimální délky nutné provést velké množství experimentů s~různým nastavením; mohou to být i tisíce nezávislých běhů.
+
+Další slabinou koevolučního návrhu je i problém škálovatelnosti -- u~složitějších úloh, jako je návrh obrazových filtrů, může prediktor čítat tisíce genů. Práce s~takto velkými genotypy je pak poměrně neefektivní.
+
+Tyto nedostatky lze obejít použitím jiného kódování prediktorů, kdy nekóduje přímo ukazatele do množiny všech případů fitness, ale pouze návod, podle kterého se mají případy fitness vybírat. V~části \ref{secIndirectPredictors} je popsáno kódování prediktorů jako programy tvořené dle principů kartézského genetického programování, které generují posloupnost ukazatelů do množiny případů fitness, která může nabývat různé délky.
+
+Tato práce se zabývá jiným novým kódováním prediktorů, jehož cílem je zmírnit současné nedostatky koevoluce. Pokud umožníme tvorbu různě velkých prediktorů z~jednoho genotypu, mohou jedinci získanou plasticitu využít pro adaptaci na složitost právě řešené úlohy i na aktuální průběh evoluce.
+
+Tato kapitola se nejprve v~části \ref{secDesignIF} zabývá genotypem a fenotypem obrazových filtrů, následující část \ref{secDesignEvoSimple} pak samotným průběhem evoluce bez použití koevoluce. Kapitola \ref{secDesignPred} uvádí nový druh genotypu prediktorů fitness a způsob odvozování fenotypu. Poslední část \ref{secDesignCoev} popisuje průběh koevoluce prediktorů fitness a obrazových filtrů.
+
+\section{Kandidátní obrazové filtry}
+\label{secDesignIF}
+
+Obrazové filtry jsou vyvíjeny pomocí kartézského genetického programování, popsaného v~kapitole \ref{secCGP}. Chromozom tvoří vektor celých čísel kódující acyklický orientovaný graf. Jednotlivé funkční bloky jsou tvořeny trojicí genů -- první z~nich označuje prováděnou funkci, druhý a třetí gen pak určují, kam jsou připojeny jeho vstupy. Seznam funkcí, které mohou výpočetní uzly realizovat je v~tabulce \ref{tabCGPFunctions}. Programy mají devět primárních vstupů a jeden primární výstup. Na vstupy jsou přiváděny hodnoty pixelů z~devítiokolí právě zpracovávaného pixelu, výstup udává novou hodnotu pixelu, jak je popsáno v~kapitole \ref{secIF}.
+
+\begin{table}[htb]
+    \begin{minipage}[t]{.5\textwidth}
+        \small\centering\begin{tabular}{|c|l|l|}
+            \hline
+            \# & funkce & popis \\
+            \hline
+            0 & $255$ & konstanta \\
+            1 & $i_1$ & identita \\
+            2 & $255 - i_1$ & inverze \\
+            3 & $i_1 \vee i_2$ & OR \\
+            4 & $\neg i_1 \vee i_2$ & OR s~negovaným vstupem \\
+            5 & $i_1 \wedge i_2$ & AND \\
+            6 & $\neg (i_1 \wedge i_2)$ & NAND \\
+            7 & $i_1 \oplus i_2$ & XOR \\
+            \hline
+        \end{tabular}
+
+    \end{minipage}
+    \begin{minipage}[t]{.5\textwidth}
+        \small\centering\begin{tabular}{|c|l|l|}
+            \hline
+            \# & funkce & popis \\
+            \hline
+            8 & $i_1 \gg 1$ & posun vpravo o~1 bit \\
+            9 & $i_1 \gg 2$ & posun vpravo o~2 bity \\
+            10 & $\mathrm{swap}(i_1, i_2)$ & prohození 4 bitů \\
+            11 & $i_1 + i_2$ & sčítání \\
+            12 & $i_1 +^S i_2$ & saturované sčítání \\
+            13 & $(i_1 + i_2) \gg 1$ & průměr \\
+            14 & $\max(i_1, i_2)$ & maximum \\
+            15 & $\min(i_1, i_2)$ & minimum \\
+            \hline
+        \end{tabular}
+
+    \end{minipage}
+    \caption{Seznam funkcí výpočetních uzlů. Převzato z~článku \cite{SikuPPSN}.}
+    \label{tabCGPFunctions}
+\end{table}
+
+Protože součástí fenotypu nejsou všechny výpočetní uzly, je u~každého funkčního bloku v~chromozomu uložena i informace, zda je aktivní. Pomocí těchto údajů lze urychlit výpočet fitness, protože není nutné počítat výstup neaktivních bloků. V~případě, že jedinec vznikl pouze mutací neaktivních uzlů, není třeba fitness počítat vůbec. Jako fitness funkce je použita špičková hodnota poměru signál/šum (Peak Signal to Noise Ratio):
+
+\begin{equation}
+    \label{eqDesignPSNR}
+    \mathit{PSNR} = 10 \log_{10} \frac{255^2}{\frac{1}{N} \sum\limits_i^N \left( v\left( i \right) - w\left( i \right)  \right)^2 }
+\end{equation}
+
+\noindent{}kde $N$ označuje počet použitých případů fitness, $v(i)$ a $w(i)$ pixel filtrovaného (resp. původního) obrázku označený v~množině případů fitness indexem $i$.
+
+\section{Evoluce obrazových filtrů bez koevoluce}
+\label{secDesignEvoSimple}
+
+Vstupem algoritmu je zvolený obrázek poškozený šumem a týž obrázek v~původní podobě. Každé devítiokolí pixelů poškozeného obrázku a odpovídající nepoškozený pixel z~originálního obrázku tvoří jeden případ fitness.
+
+Na začátku je náhodně vytvořena počáteční populace a vypočtena fitness všech jedinců. Jedinec s~nejlepší fitness se stává rodičem následující generace. Ostatní jedinci jsou nahrazeni jeho kopiemi a několik jejich genů je pozměněno mutací -- používá se tedy evoluční strategie $(1 + \lambda)$. Mutace dodržuje pravidla zmíněná v~části \ref{secCGPEvo} s~tím rozdílem, že není povoleno na primární výstup připojit primární vstup. Takto vytvořená populace je opět ohodnocena fitness funkcí a algoritmus pokračuje výběrem rodiče a tvorbou další generace.
+
+Evoluce je ukončena po dosažení předem specifikovaného počtu generací. Volitelně je možné i určit cílovou hodnotu PSNR, po jejímž dosažení bude výpočet ukončen.
+
+\section{Prediktory fitness}
+\label{secDesignPred}
+
+Tato část se zabývá prediktory fitness s~novým plastickým fenotypem, u~kterých lze z~jednoho genotypu  odvodit různé fenotypy.
+
+Chromozom je reprezentován jako vektor číselných ukazatelů do množiny případů fitness o~předem stanovené délce. Ačkoliv není žádoucí, aby prediktor obsahoval některé případy fitness vícekrát, jsou v~genotypu povoleny duplicitní hodnoty. Zamezit by jim šlo použitím například permutačního kódování, ale to je pro chromozomy o~tisících genech, jenž se dají u~návrhu obrazových filtrů očekávat, už poměrně neefektivní. Evoluce probíhá pomocí genetického algoritmu popsaného v~částí \ref{secGA} s~použitím jednobodového křížení a mutačního operátoru, který nahrazuje malé množství genů náhodnými hodnotami. Fitness funkce pro prediktor vypadá následovně:
+
+\begin{equation}
+    \label{eqDesignPredFitness}
+    f \left( p \right) = \frac{1}{u} \sum\limits_{i=1}^{u} \left| f_{\mathit{exact}} \left( s \left( i \right) \right) - f_{\mathit{predicted}} \left( s \left( i \right) \right) \right|
+\end{equation}
+
+\noindent{}kde $f \left( p \right)$ je fitness prediktoru, $u$ počet filtrů použitých k~ohodnocení prediktoru, $f_{\mathit{exact}}$ označuje skutečnou fitness filtru $s_i$ a $f_{\mathit{predicted}}$ predikovanou fitness filtru $s_i$.
+
+Plasticita je dosažena tím, že fenotyp netvoří všechny ukazatele obsažené v~genotypu, ale pouze jejich část. Fenotyp je z~genotypu tvořen postupným čtením genů od zvolené pozice (\emph{offsetu}). Pokud hodnota právě čteného genu není obsažena ve fenotypu, je do něj vložena, v~opačném případě se gen ignoruje. Poté je přečten další gen a proces se opakuje. Během tvorby fenotypu nejsou čteny úplně všechny geny -- jejich počet je určen hodnotou \emph{maxUsedGenes}, která je součástí prostředí. Pokud je při čtení dosaženo konce genotypu, ale nebyl ještě přečten potřebný počet genů, pokračuje se od jeho začátku. Příklad tvorby fenotypu při použití šesti genů z~deseti ukazuje obrázek \ref{obrFenotyp}.
+
+\begin{figure}[htb]
+    \centering\includegraphics[width=0.9\textwidth]{fig/phenotype2.pdf}
+    \caption{Postup konstrukce fenotypu prediktoru. Šipka označuje právě přečtený gen.}
+    \label{obrFenotyp}
+\end{figure}
+
+S~takto tvořenými jedinci lze pracovat různými způsoby. Podobně, jako lze pozorovat senzitivní období v~životě jedince (viz kapitola \ref{secPlasticity}), lze očekávat, že i populace prochází obdobími, kdy je celková schopnost adaptace vyšší (a fitness populace stoupá) a obdobími, kdy se adaptovat příliš nedokáže (a fitness se nemění). Na základě posledních změn fitness nejlepšího filtru v~populaci se pak upravuje hodnota \emph{maxUsedGenes}. Předpoklady jsou:
+
+\begin{itemize}
+    \item Pokud fitness stoupá, je vhodné prodloužit prediktory a tím zpřesňovat predikci.
+    \item Pokud se fitness nemění, evoluce pravděpodobně uvázla v~lokálním optimu a kratší prediktory mohou pomoci se z~tohoto optima posunout dále.
+    \item Pokud fitness klesá, evoluce pravděpodobně opouští lokální optimum a mírné zkrácení prediktoru může pomoci postup urychlit.
+\end{itemize}
+
+Protože může délka prediktoru klesnout pod únosnou mez (v~extrémním případě to může být pouze jeden případ fitness), je součástí algoritmu také dolní mez nepřesnosti prediktoru, která je určena jako poměr mezi predikovanou a skutečnou hodnotou fitness kandidátního filtru. V~případě překročení této meze se délka prediktoru vždy zvýší bez ohledu na aktuální průběh evoluce.
+
+S~plasticitou jedinců lze pracovat i dalšími způsoby. Například nově vytvořený prediktor může experimentovat s~offsetem a snažit se tak maximalizovat svou fitness -- tímto je simulováno jeho učení a přizpůsobování se prostředí. Další možností je v~situaci, kdy evoluce filtrů stagnuje, skokově změnit offset všech prediktorů v~populaci, což může pomoci v~posunu z~lokálního optima. Všechny zmíněné možnosti lze kombinovat.
+
+\section{Koevoluce obrazových filtrů a prediktorů fitness}
+\label{secDesignCoev}
+
+Navrhovaný program pracuje na principech koevoluce popsané v~části \ref{secCoevIF}. Jeho součástí je populace obrazových filtrů, populace prediktorů fitness a archivy s~kandidátními filtry a prediktorem, který se používá k~ohodnocení filtrů. Navíc je zahrnut modul, který ukládá informace o~průběhu evoluce, na základě kterých rozhoduje o~změnách v~počtu genů, používaných pro tvorbu fenotypů prediktorů fitness (hodnota \emph{maxUsedGenes}).
+
+\subsection{Fitness kandidátních filtrů}
+
+U~populace obrazových filtrů jsou použity dvě různé fitness funkce. \emph{Skutečná fitness} je určena pomocí celé množiny případů fitness a slouží pro výpočet fitness prediktorů a také pro posuzování průběhu evoluce při modifikaci proměnné \emph{maxUsedGenes}. Oproti tomu \emph{predikovaná fitness} používá při výpočtu pouze případy fitness určené prediktorem. Používá se pro ohodnocení jak obrazových filtrů, tak prediktorů.
+
+\subsection{Paměť průběhu evoluce}
+
+Pro účely ovlivňování tvorby fenotypu prediktorů fitness je potřeba udržovat historii změn fitness kandidátních filtrů delší, než jen mezi aktuální a novou generací. Protože není potřeba udržovat celou historii, ale zajímá nás jen poslední vývoj, jsou nejstarší položky přepisovány novějšími -- z~implementačního pohledu jde o~kruhový buffer. Ukládá se zejména:
+
+\begin{itemize}
+    \item rozdíl skutečné fitness filtrů,
+    \item počet uběhlých generací,
+    \item \uv{rychlost} evoluce, dána jako průměrná změna fitness na jednu generaci.
+\end{itemize}
+
+Nové položky mohou být do paměti vkládány průběžně v~určitých časových intervalech (např. každých tisíc generací) nebo pouze pokud je (predikovaná) fitness nejlepšího filtru vyšší, než byla fitness rodiče. V~prvním případě je možné, že fitness bude delší dobu stejná a kruhový buffer již nebude obsahovat informaci o~směru poslední změny. Proto pamět obsahuje zvláštní pozici pro poslední záznam s~nenulovým rozdílem fitness. Tato pozice není součástí kruhového bufferu.
+
+\subsection{Archivy}
+
+Archiv kandidátních filtrů je reprezentován polem o~pevné délce. Pokud je zaplněn, jsou nejstarší položky přepisovány novými (kruhový buffer). Každý záznam obsahuje chromozom kandidátního filtru a jeho skutečnou fitness. Filtry obsažené v~archivu slouží k~výpočtu fitness prediktorů dle rovnice \ref{eqDesignPredFitness}.
+
+Archiv prediktorů je tvořen jedinou položkou -- nejlepším nalezeným prediktorem. Ten slouží k~výpočtu predikované fitness při evoluci obrazových filtrů.
+
+\subsection{Průběh evoluce}
+
+Na začátku běhu programu jsou náhodně vytvořeny počáteční populace filtrů a prediktorů fitness. Poté je vypočtena skutečná fitness filtrů a nejlepší jedinec je umístěn do archivu. Pomocí něj jsou ohodnoceny prediktory fitness a je určen nejlepší ten, který bude zpočátku sloužit pro výpočet predikované fitness. Po této inicializaci archivů pokračuje běh programu ve dvou oddělených vláknech, každé obsluhuje jednu populaci.
+
+Evoluce kandidátních filtrů probíhá stejně jako v~případě bez koevoluce (viz část \ref{secDesignEvoSimple}). Odlišné jsou akce prováděné po vytvoření a ohodnocení potomků: pokud je predikovaná fitness nejlepšího potomka vyšší, než fitness jeho rodiče, je umístěn do sdíleného archivu, do paměti průběhu evoluce je vložen nový záznam a zároveň je upravena hodnota \emph{maxUsedGenes}, která ovlivňuje velikost fenotypu prediktorů. V~nejjednodušším případě je úprava provedena na základě aktuální změny skutečné fitness pomocí jednoduchých pravidel. Lze ale použít i pokročilejší metody pracující s~delším časovým úsekem.
+
+Evoluce je, podobně jako v~případě bez koevoluce, ukončena po dosažení stanoveného počtu generací nebo požadované hodnoty PSNR.
+
+\chapter{Závěr}
+
+Tento semestrální projekt se zabývá problematikou evolučních algoritmů, evolučního návrhu obrazových filtrů a vztahem mezi učením a evolucí. Následně je navržen systém pro tvorbu obrazových filtrů využívající souběžné učení v~koevoluci s~prediktory fitness. Použití souběžného učení by mělo pomoci překonat některé nedostatky koevolučního algoritmu, zejména nutnost experimentálně nalézt nejvhodnější velikost prediktoru fitness.
+
+% Kapitola \ref{chEA} postupně představuje principy evolučních algoritmů, genetického algoritmu, kartézského genetického programování, použití koevoluce a v~závěru se zabývá souběžným učením a plasticitou fitness. Následující kapitola \ref{chDesign} je věnována návrhu systému pro tvorbu obrazových filtrů s~použitím souběžného učení.
+
+V~navazující diplomové práci bude navržený systém implementován a následně otestován. Experimenty budou zaměřeny především na kvalitu výsledných filtrů a čas běhu programu. Výsledky dosažené při použití souběžného učení budou porovnány s~implementací koevoluce používající prediktory fitness pevné délky a také se variantou, kdy je prediktor fitness generován programem vyvíjeným pomocí kartézského genetického programování.
+
