@@ -152,24 +152,6 @@ int cgp_main(algo_data_t *wd)
         }
 
 
-        /* change evolution params in baldwin mode ****************************/
-
-
-        // thread-safe copy
-        int new_predictor_length = 0;
-
-        if (apply_baldwin_now) {
-            // everything is done in predictors thread asynchronously
-            new_predictor_length = bw_get_new_predictor_length(&wd->config->bw_config, &wd->history);
-            if (new_predictor_length != 0) {
-                #pragma omp critical (BALDWIN)
-                {
-                    wd->baldwin_state.new_predictor_length = new_predictor_length;
-                }
-            }
-        }
-
-
         /* calculate and append current history entry *************************/
 
 
@@ -204,6 +186,25 @@ int cgp_main(algo_data_t *wd)
 
         if (need_history_entry_append) {
             history_append_entry(&wd->history, &current_history_entry);
+        }
+
+
+        /* change evolution params in baldwin mode ****************************/
+
+
+        // local temporary variable, the new length is copied to shared
+        // memory with lock
+        int new_predictor_length = 0;
+
+        if (apply_baldwin_now) {
+            // new length is applied in predictors thread asynchronously
+            new_predictor_length = bw_get_new_predictor_length(&wd->config->bw_config, &wd->history);
+            if (new_predictor_length != 0) {
+                #pragma omp critical (BALDWIN)
+                {
+                    wd->baldwin_state.new_predictor_length = new_predictor_length;
+                }
+            }
         }
 
 
