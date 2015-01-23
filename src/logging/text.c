@@ -2,7 +2,7 @@
  * Colearning in Coevolutionary Algorithms
  * Bc. Michal Wiglasz <xwigla00@stud.fit.vutbr.cz>
  *
- * Master Thesis
+ * Master's Thesis
  * 2014/2015
  *
  * Supervisor: Ing. Michaela Šikulová <isikulova@fit.vutbr.cz>

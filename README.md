@@ -3,7 +3,7 @@ CoCo - Colearning in Coevolutionary Algorithms
 
 Bc. Michal Wiglasz &lt;xwigla00@stud.fit.vutbr.cz>
 
-Master Thesis<br>
+Master's Thesis<br>
 2014/2015
 
 Supervisor: Ing. Michaela Šikulová &lt;isikulova@fit.vutbr.cz>
