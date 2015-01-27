@@ -27,7 +27,7 @@
 
 
 typedef double cgp_value_t;
-
+#define CGP_VALUE_FORMAT "%.10g"
 
 /* node functions list */
 
@@ -62,7 +62,7 @@ static const char * const CGP_FUNC_NAMES[] = {
 
 
 
-static const int const CGP_FUNC_ARITY[] = {
+static const int CGP_FUNC_ARITY[] = {
     2,     // a + b
     2,     // a - b
     2,     // a * b
@@ -88,4 +88,7 @@ static const char * const CGP_FUNC_CODE[] = {
 };
 
 
-static const char * const CGP_CODE_PROLOG = "typedef double cgp_value_t;\n\n";
+static const char * const CGP_CODE_PROLOG =
+    "#include <math.h>\n\n"
+    "typedef double cgp_value_t;\n\n"
+;

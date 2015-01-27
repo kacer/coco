@@ -27,6 +27,7 @@
 
 
 typedef unsigned char cgp_value_t;
+#define CGP_VALUE_FORMAT "%u"
 
 
 /* remember, number of inputs is declared in cgp_config.h */
@@ -52,7 +53,7 @@ typedef enum
 } cgp_func_t;
 
 
-static const char *CGP_FUNC_NAMES[] = {
+static const char * const CGP_FUNC_NAMES[] = {
     " FF ",     // 255
     "  a ",     // a
     "FF-a",     // 255 - a
@@ -92,7 +93,7 @@ static const int CGP_FUNC_ARITY[] = {
 };
 
 
-static const char *CGP_FUNC_CODE[] = {
+static const char * const CGP_FUNC_CODE[] = {
     "255",              // 255
     "%s",               // a
     "255 - %s",         // 255 - a
@@ -112,7 +113,7 @@ static const char *CGP_FUNC_CODE[] = {
 };
 
 
-static const char *CGP_CODE_PROLOG =
+static const char * const CGP_CODE_PROLOG =
     "typedef unsigned char cgp_value_t;\n\n"
     "#define SWAP(A, B) (((A & 0x0F) << 4) | ((B & 0x0F)))\n"
     "#define ADD_SAT(A, B) ((A > 0xFF - B) ? 0xFF : A + B)\n"

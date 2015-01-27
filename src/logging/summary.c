@@ -177,7 +177,9 @@ static void handle_finished(logger_t logger, finish_reason_t reason, history_ent
             fprintf(fp, "Final summary:\n\n");
             fprintf(fp, "Generation: %d\n", state->generation);
             fprintf(fp, "Best fitness: " FITNESS_FMT "\n", circuit->fitness);
-            fprintf(fp, "PSNR: %.2f\n", fitness_to_psnr(circuit->fitness));
+            #ifndef SYMREG
+                fprintf(fp, "PSNR: %.2f\n", fitness_to_psnr(circuit->fitness));
+            #endif
             fprintf(fp, "CGP evaluations: %ld\n\n", state->cgp_evals);
             fprintf(fp, "Time in user mode: %s\n", _usertime_str);
             fprintf(fp, "Wall clock: %s\n", _wallclock_str);
@@ -205,7 +207,9 @@ static void handle_finished(logger_t logger, finish_reason_t reason, history_ent
         printf("Final summary:\n\n");
         printf("Generation: %d\n", state->generation);
         printf("Best fitness: " FITNESS_FMT "\n", circuit->fitness);
-        printf("PSNR: %.2f\n", fitness_to_psnr(circuit->fitness));
+        #ifndef SYMREG
+            printf("PSNR: %.2f\n", fitness_to_psnr(circuit->fitness));
+        #endif
         printf("CGP evaluations: %ld\n\n", state->cgp_evals);
         printf("Time in user mode: %s\n", _usertime_str);
         printf("Wall clock: %s\n", _wallclock_str);

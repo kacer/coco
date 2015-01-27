@@ -116,6 +116,7 @@ ga_fitness_t _fitness_predict_cgp_by_genome(ga_chr_t cgp_chr, pred_genome_t pred
         bool should_restart = cgp_get_output(cgp_chr, inputs, &cgp_output);
         if (should_restart) {
             i = 0;
+            hits = 0;
             continue;
         }
 
@@ -125,6 +126,8 @@ ga_fitness_t _fitness_predict_cgp_by_genome(ga_chr_t cgp_chr, pred_genome_t pred
     }
     #pragma omp atomic
         fitness_cgp_evals += predictor->used_pixels;
+
+    //printf(">>> c %d, hits:%3d, fitness: %.10g\n", predictor->used_pixels, hits, (100.0 * hits) / predictor->used_pixels);
 
     return (100.0 * hits) / predictor->used_pixels;
 }

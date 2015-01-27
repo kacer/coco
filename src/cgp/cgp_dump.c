@@ -167,7 +167,7 @@ void cgp_dump_chr_code(ga_chr_t chr, FILE *fp)
             char input1[20], input2[20];
 
             if (n->is_constant) {
-                fprintf(fp, "\tcgp_value_t n%02d = %g", i, n->constant_value);
+                fprintf(fp, "\tcgp_value_t n%02d = " CGP_VALUE_FORMAT ";\n", i, n->constant_value);
                 continue;
             }
 

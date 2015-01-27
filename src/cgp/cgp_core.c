@@ -365,7 +365,8 @@ void cgp_find_active_blocks(ga_chr_t chromosome)
         if (!genome->nodes[i].is_active) continue;
         cgp_node_t *n = &(genome->nodes[i]);
 
-        for (int k = 0; k < CGP_FUNC_INPUTS; k++) {
+        int arity = CGP_FUNC_ARITY[n->function];
+        for (int k = 0; k < arity; k++) {
             int index = n->inputs[k] - CGP_INPUTS;
             // index may be negative (primary input), so do the check...
             if (index >= 0) {
