@@ -84,7 +84,7 @@ static const char * const CGP_FUNC_CODE[] = {
     "cos(%s)",     // cos(a)
     "exp(%s)",     // exp(a)
     "log(%s)",     // log(a)
-    "abs(%s)",     // fabs(a)
+    "fabs(%s)",    // fabs(a)
 };
 
 
