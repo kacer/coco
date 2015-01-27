@@ -247,7 +247,7 @@ void cgp_mutate_chr(ga_chr_t chromosome)
     assert(_mutation_rate <= CGP_CHR_LENGTH);
     cgp_genome_t genome = (cgp_genome_t) chromosome->genome;
 
-    int genes_to_change = rand_range(0, _mutation_rate);
+    int genes_to_change = rand_range(1, _mutation_rate);
     for (int i = 0; i < genes_to_change; i++) {
         int gene = rand_range(0, CGP_CHR_LENGTH - 1);
         cgp_randomize_gene(genome, gene);
