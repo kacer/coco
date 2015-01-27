@@ -155,7 +155,7 @@ static inline void print_help() {
         "          If --target-fitness is specified, only one option is used.\n"
         "\n"
     #endif
-        "    --target-fitness NUM, -g NUM\n"
+        "    --target-fitness NUM, -f NUM\n"
         "          Stop after reaching given fitness (0 to disable), default is 0.\n"
     #ifndef SYMREG
         "          Fitness can be obtained from PSNR as F = 10 ^ (PSNR / 10).\n"
