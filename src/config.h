@@ -94,6 +94,15 @@ typedef struct
 } config_t;
 
 
+#ifdef SYMREG
+    #define EXECUTABLE "coco_symreg"
+    #define CMDLINE "--input-data function.dta"
+#else
+    #define EXECUTABLE "coco"
+#define CMDLINE "--original original.png --noisy noisy.png"
+#endif
+
+
 static inline void print_help() {
     fputs(
         "Colearning in Coevolutionary Algorithms\n"
@@ -112,11 +121,10 @@ static inline void print_help() {
         "  \\___)     (___/\n"
         "\n"
         "To see system configuration just call:\n"
-        "    ./coco\n"
-        "\n"
+        "    ./" EXECUTABLE "\n"
         "\n"
         "To run evolution:\n"
-        "    ./coco --original original.png --noisy noisy.png [options]\n"
+        "    ./" EXECUTABLE " " CMDLINE " [options]\n"
         "\n"
         "Command line options:\n"
         "    --help, -h\n"
@@ -126,16 +134,19 @@ static inline void print_help() {
     #ifdef SYMREG
         "    --input-data FILE, -i FILE\n"
         "          Input data file.\n"
-        "    --epsilon NUM, -e NUM\n"
-        "          Acceptable error of data point\n"
     #else
         "    --original FILE, -i FILE\n"
         "          Original image filename.\n"
         "    --noisy FILE, -n FILE\n"
         "          Noisy image filename.\n"
+    #endif
+        "\n"
+        "Optional:\n"
+    #ifdef SYMREG
+        "    --epsilon NUM, -e NUM\n"
+        "          Acceptable error of data point.\n"
         "\n"
     #endif
-        "Optional:\n"
         "    --algorithm ALG, -a ALG\n"
         "          Evolution algorithm selection, one of {cgp|coev|baldwin},\n"
         "          default is \"predictors\".\n"
@@ -163,7 +174,7 @@ static inline void print_help() {
         "\n"
     #endif
         "    --log-dir DIR, -l DIR\n"
-        "          Log (results) directory, default is \"cocolog\".\n"
+        "          Log (results) directory, default is \"" EXECUTABLE "log\".\n"
         "\n"
         "    --log-interval NUM, -k NUM\n"
         "          Logging interval (in generations), default is 0.\n"

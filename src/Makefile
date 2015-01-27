@@ -51,7 +51,7 @@ SYMREG_EXECUTABLE=coco_symreg
 SYMREG_BUILDDIR=$(BUILDDIR)/symreg
 SYMREG_OBJS = $(SYMREG_SRCS:%.c=$(SYMREG_BUILDDIR)/%.o)
 SYMREG_DEPS = $(SYMREG_SRCS:%.c=$(SYMREG_BUILDDIR)/%.d)
-SYMREG_CMDLINE=-i ../functions/f001.dta -e 1.5 -g 10000 -a coev -k 10000 -l cocolog -f 100 -p 12 -m 8 -P 32 -M 0.2 -S 1.00 --pred-type repeated
+SYMREG_CMDLINE=-i ../functions/f001.dta -e 0.5 -g 10000 -a coev -k 10000 -l cocolog -f 100 -p 12 -m 8 -P 32 -M 0.2 -S 0.06
 
 APPLY_CFLAGS=$(CFLAGS)
 APPLY_EXECUTABLE=coco_apply

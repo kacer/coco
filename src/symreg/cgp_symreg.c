@@ -18,7 +18,14 @@
  */
 
 
+#ifndef SYMREG
+    /* fixes linter */
+    #define SYMREG
+#endif
+
+
 #include <stdlib.h>
+#include <math.h>
 
 #include "../cgp/cgp_core.h"
 
@@ -59,13 +66,11 @@ bool cgp_get_node_output(cgp_node_t *n, cgp_value_t A,
        must be restarted.
     */
     if (isinf(*Y)) {
-        *Y = 1.5;
         n->is_constant = true;
         n->constant_value = 1.5;
         return true;
 
     } else if (isnan(*Y)) {
-        *Y = PI;
         n->is_constant = true;
         n->constant_value = PI;
         return true;
