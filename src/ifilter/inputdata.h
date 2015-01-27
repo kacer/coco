@@ -20,16 +20,15 @@
 
 #pragma once
 
-#include <stdbool.h>
-#include <stdio.h>
 
-#include "cgp.h"
+#include "image.h"
 
 
-/**
- * Loads chromosome from given file stored in CGP-viewer compatible format
- * @param chr
- * @param fp
- * @return 0 on success, -1 on file format error, -2 on incompatible CGP config
- */
-int cgp_load_chr_compat(ga_chr_t chr, FILE *fp);
+struct _input_data {
+    unsigned int fitness_cases;
+    img_image_t img_original;
+    img_image_t img_noisy;
+
+    img_window_array_t img_noisy_windows;
+    img_pixel_t *img_noisy_simd[WINDOW_SIZE];
+};

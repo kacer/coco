@@ -21,9 +21,10 @@
 #pragma once
 
 
-#include "ifilter/image.h"
+#include "config.h"
 #include "cgp/cgp.h"
 #include "archive.h"
+#include "inputdata.h"
 #include "predictors.h"
 
 
@@ -33,22 +34,34 @@ static const int FITNESS_AVX2_STEP = 32;
 static const int PRED_CIRCULAR_TRIES = 3;
 
 
+extern input_data_t *fitness_input_data;
+extern archive_t fitness_cgp_archive;
+extern archive_t fitness_pred_archive;
+extern long fitness_cgp_evals;
+
+
 /**
- * For testing purposes only
+ * Private functions, defined in ifilter/fitness.c or symreg/fitness.c
  */
-void fitness_test_init(img_image_t original_image,
-    img_window_array_t noisy_image_windows,
-    img_pixel_t *noisy_image_simd[WINDOW_SIZE]);
+void _fitness_init(config_t *config, input_data_t *input, archive_t cgp_archive, archive_t pred_archive);
+ga_fitness_t _fitness_predict_cgp_by_genome(ga_chr_t cgp_chr, pred_genome_t predictor);
+
+
+#ifdef SYMREG
+    #include "symreg/fitness.h"
+#else
+    #include "ifilter/fitness.h"
+#endif
 
 
 /**
- * Initializes fitness module - prepares test image
- * @param original
- * @param noisy
+ * Initializes fitness module
+ * @param config
+ * @param input
  * @param cgp_archive
  * @param pred_archive
  */
-void fitness_init(img_image_t original, img_image_t noisy,
+void fitness_init(config_t *config, input_data_t *input,
     archive_t cgp_archive, archive_t pred_archive);
 
 
@@ -61,20 +74,10 @@ void fitness_deinit();
 /**
  * Returns number of performed CGP evaluations
  */
-long fitness_get_cgp_evals();
-
-
-/**
- * Filters image using given filter. Caller is responsible for freeing
- * the filtered image
- *
- * Works in single thread
- *
- * @param  chr
- * @return fitness value
- */
-img_image_t fitness_filter_image(ga_chr_t chr);
-
+static inline long fitness_get_cgp_evals()
+{
+    return fitness_cgp_evals;
+}
 
 /**
  * Evaluates CGP circuit fitness
@@ -125,80 +128,11 @@ ga_fitness_t fitness_eval_circular_predictor(ga_chr_t pred_chr);
 
 
 /**
- * Evaluates predictor fitness
- *
- * @param  chr
- * @return fitness value
- */
-ga_fitness_t fitness_eval_predictor_genome(pred_genome_t predictor);
-
-
-/**
- * Calculates fitness using the PSNR (peak signal-to-noise ratio) function.
- * The higher the value, the better the filter.
- *
- * @param  original image
- * @param  filtered image
- * @return fitness value (PSNR)
- */
-ga_fitness_t fitness_psnr(img_image_t original, img_image_t filtered);
-
-
-/**
  * Computes real PSNR value from fitness value
  */
 static inline double fitness_to_psnr(ga_fitness_t f) {
     return 10 * log10(f);
 }
-
-
-/**
- * SIMD fitness evaluator prototype
- */
-typedef double (*fitness_simd_func_t)(
-    img_pixel_t *original,
-    img_pixel_t *noisy[WINDOW_SIZE],
-    ga_chr_t chr,
-    int offset,
-    int block_size);
-
-
-/**
- * Calculates difference between original and filtered pixel using SSE2
- * instructions.
- *
- * One call equals 16 CGP evaluations.
- *
- * @param  original_image
- * @param  noisy_image_simd
- * @param  chr
- * @param  offset Where to start in arrays
- * @param  block_size How many pixels to process
- * @return
- */
-double _fitness_get_sqdiffsum_sse(
-    img_pixel_t *original,
-    img_pixel_t *noisy[WINDOW_SIZE],
-    ga_chr_t chr,
-    int offset,
-    int block_size);
-
-
-/**
- * Calculates difference between original and filtered pixel using AVX2
- * instructions.
- *
- * One call equals 32 CGP evaluations.
- *
- * @param  chr
- * @param  w
- * @return
- */
-double _fitness_get_sqdiffsum_avx(
-    img_image_t _original_image,
-    img_pixel_t *_noisy_image_simd[WINDOW_SIZE],
-    ga_chr_t chr,
-    int offset);
 
 
 /**

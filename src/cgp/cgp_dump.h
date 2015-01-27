@@ -24,7 +24,6 @@
 #include <stdio.h>
 
 #include "cgp_core.h"
-#include "cgp_config.h"
 
 
 /**
@@ -35,6 +34,7 @@ typedef enum {
     asciiart_active,
     compat,
     readable,
+    code,
 } cgp_dump_format;
 
 
@@ -60,6 +60,14 @@ void cgp_dump_chr_compat(ga_chr_t chr, FILE *fp);
  * @param fp
  */
 void cgp_dump_chr_readable(ga_chr_t chr, FILE *fp);
+
+
+/**
+ * Dumps chromosome to given file as C code
+ * @param chr
+ * @param fp
+ */
+void cgp_dump_chr_code(ga_chr_t chr, FILE *fp);
 
 
 /**

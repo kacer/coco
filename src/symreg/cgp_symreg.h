@@ -23,6 +23,7 @@
 
 #define CGP_INPUTS 1
 #define CGP_OUTPUTS 1
+#define CGP_FUNC_INPUTS 2
 
 
 typedef double cgp_value_t;
@@ -47,18 +48,44 @@ typedef enum
 } cgp_func_t;
 
 
-static inline const char* cgp_func_name(cgp_func_t f) {
-    const char *func_names[] = {
-        " +  ",     // a + b
-        " -  ",     // a - b
-        " *  ",     // a * b
-        " /  ",     // a / b
-        " sin",     // sin(a)
-        " cos",     // cos(a)
-        " exp",     // exp(a)
-        " log",     // log(a)
-        " abs",     // fabs(a)
-    };
-    return func_names[f];
-}
+static const char * const CGP_FUNC_NAMES[] = {
+    " +  ",     // a + b
+    " -  ",     // a - b
+    " *  ",     // a * b
+    " /  ",     // a / b
+    " sin",     // sin(a)
+    " cos",     // cos(a)
+    " exp",     // exp(a)
+    " log",     // log(a)
+    " abs",     // fabs(a)
+};
 
+
+
+static const int const CGP_FUNC_ARITY[] = {
+    2,     // a + b
+    2,     // a - b
+    2,     // a * b
+    2,     // a / b
+    1,     // sin(a)
+    1,     // cos(a)
+    1,     // exp(a)
+    1,     // log(a)
+    1,     // fabs(a)
+};
+
+
+static const char * const CGP_FUNC_CODE[] = {
+    "%s + %s",     // a + b
+    "%s - %s",     // a - b
+    "%s * %s",     // a * b
+    "%s / %s",     // a / b
+    "sin(%s)",     // sin(a)
+    "cos(%s)",     // cos(a)
+    "exp(%s)",     // exp(a)
+    "log(%s)",     // log(a)
+    "abs(%s)",     // fabs(a)
+};
+
+
+static const char * const CGP_CODE_PROLOG = "typedef double cgp_value_t;\n\n";

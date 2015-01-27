@@ -18,6 +18,8 @@
  */
 
 
+#include <stdlib.h>
+
 #include "../cgp/cgp_core.h"
 
 
@@ -53,7 +55,7 @@ bool cgp_get_node_output(cgp_node_t *n, cgp_value_t A,
 
 
     /* If we did something strange, like dividing be zero or logarithm of
-       negative number, the node is set to generate constant end the evaluation
+       negative number, the node is set to generate constant and the evaluation
        must be restarted.
     */
     if (isinf(*Y)) {

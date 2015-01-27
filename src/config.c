@@ -43,8 +43,13 @@
 #define OPT_ALGORITHM 'a'
 #define OPT_RANDOM_SEED 'r'
 
-#define OPT_ORIGINAL 'i'
-#define OPT_NOISY 'n'
+#ifdef SYMREG
+    #define OPT_INPUT_DATA 'i'
+    #define OPT_EPSILON 'e'
+#else
+    #define OPT_ORIGINAL 'i'
+    #define OPT_NOISY 'n'
+#endif
 
 #define OPT_LOG_DIR 'l'
 #define OPT_LOG_INTERVAL 'k'
@@ -88,8 +93,18 @@ static struct option long_options[] =
 {
     {"help", no_argument, 0, OPT_HELP},
 
+    #ifdef SYMREG
+        /* Input data + fitness config */
+        {"input", required_argument, 0, OPT_INPUT_DATA},
+        {"epsilon", required_argument, 0, OPT_EPSILON},
+    #else
+        /* Input images */
+        {"original", required_argument, 0, OPT_ORIGINAL},
+        {"noisy", required_argument, 0, OPT_NOISY},
+        {"target-psnr", required_argument, 0, OPT_TARGET_PSNR},
+    #endif
+
     {"max-generations", required_argument, 0, OPT_MAX_GENERATIONS},
-    {"target-psnr", required_argument, 0, OPT_TARGET_PSNR},
     {"target-fitness", required_argument, 0, OPT_TARGET_FITNESS},
 
     /* Algorithm mode */
@@ -97,10 +112,6 @@ static struct option long_options[] =
 
     /* PRNG seed */
     {"random-seed", required_argument, 0, OPT_RANDOM_SEED},
-
-    /* Input images */
-    {"original", required_argument, 0, OPT_ORIGINAL},
-    {"noisy", required_argument, 0, OPT_NOISY},
 
     /* Logging */
     {"log-dir", required_argument, 0, OPT_LOG_DIR},
@@ -143,7 +154,11 @@ static struct option long_options[] =
     {0, 0, 0, 0}
 };
 
-static const char *short_options = "hg:t:f:a:r:i:n:vw:l:k:m:p:s:S:M:P:T:b:I:N:";
+#ifdef SYMREG
+    static const char *short_options = "hg:t:f:a:r:i:e:vw:l:k:m:p:s:S:M:P:T:b:I:N:";
+#else
+    static const char *short_options = "hg:t:f:a:r:i:n:vw:l:k:m:p:s:S:M:P:T:b:I:N:";
+#endif
 
 
 #define CHECK_FILENAME_LENGTH do { \
@@ -216,20 +231,44 @@ config_retval_t config_load_args(int argc, char **argv, config_t *cfg)
         int c = getopt_long(argc, argv, short_options, long_options, &option_index);
         if (c == - 1) break;
 
-        double target_psnr;
+        #ifndef SYMREG
+            double target_psnr;
+        #endif
 
         switch (c) {
             case OPT_HELP:
                 print_help();
                 return cfg_help;
 
+            #ifdef SYMREG
+                case OPT_INPUT_DATA:
+                    CHECK_FILENAME_LENGTH;
+                    strncpy(cfg->input_data, optarg, MAX_FILENAME_LENGTH);
+                    break;
+
+                case OPT_EPSILON:
+                    PARSE_DOUBLE(cfg->epsilon);
+                    break;
+
+            #else
+                case OPT_ORIGINAL:
+                    CHECK_FILENAME_LENGTH;
+                    strncpy(cfg->input_image, optarg, MAX_FILENAME_LENGTH);
+                    break;
+
+                case OPT_NOISY:
+                    CHECK_FILENAME_LENGTH;
+                    strncpy(cfg->noisy_image, optarg, MAX_FILENAME_LENGTH);
+                    break;
+
+                case OPT_TARGET_PSNR:
+                    PARSE_DOUBLE(target_psnr);
+                    cfg->target_fitness = pow(10, (target_psnr / 10));
+                    break;
+            #endif
+
             case OPT_MAX_GENERATIONS:
                 PARSE_INT(cfg->max_generations);
-                break;
-
-            case OPT_TARGET_PSNR:
-                PARSE_DOUBLE(target_psnr);
-                cfg->target_fitness = pow(10, (target_psnr / 10));
                 break;
 
             case OPT_TARGET_FITNESS:
@@ -241,7 +280,7 @@ config_retval_t config_load_args(int argc, char **argv, config_t *cfg)
                     cfg->algorithm = simple_cgp;
                 } else if ((strcmp(optarg, "predictors") == 0) || (strcmp(optarg, "coev") == 0)) {
                     cfg->algorithm = predictors;
-                } else if (strcmp(optarg, "baldwin") == 0) {
+                } else if ((strcmp(optarg, "baldwin") == 0) || (strcmp(optarg, "colearn") == 0)) {
                     cfg->algorithm = baldwin;
                     if (pred_type_specified && cfg->pred_genome_type != repeated) {
                         fprintf(stderr, "Cannot combine baldwin and permuted genotype.\n");
@@ -259,16 +298,6 @@ config_retval_t config_load_args(int argc, char **argv, config_t *cfg)
 
             case OPT_RANDOM_SEED:
                 PARSE_UNSIGNED_INT(cfg->random_seed);
-                break;
-
-            case OPT_ORIGINAL:
-                CHECK_FILENAME_LENGTH;
-                strncpy(cfg->input_image, optarg, MAX_FILENAME_LENGTH);
-                break;
-
-            case OPT_NOISY:
-                CHECK_FILENAME_LENGTH;
-                strncpy(cfg->noisy_image, optarg, MAX_FILENAME_LENGTH);
                 break;
 
             case OPT_LOG_INTERVAL:
@@ -452,8 +481,14 @@ void config_save_file(FILE *file, config_t *cfg)
 
     fprintf(file, "# Configuration dump (%s)\n", timestr);
     fprintf(file, "\n");
-    fprintf(file, "original: %s\n", cfg->input_image);
-    fprintf(file, "noisy: %s\n", cfg->noisy_image);
+    #ifdef SYMREG
+        fprintf(file, "task: symbolic regression\n");
+        fprintf(file, "input-data: %s\n", cfg->input_data);
+    #else
+        fprintf(file, "task: image filter\n");
+        fprintf(file, "original: %s\n", cfg->input_image);
+        fprintf(file, "noisy: %s\n", cfg->noisy_image);
+    #endif
     fprintf(file, "algorithm: %s\n", config_algorithm_names[cfg->algorithm]);
     fprintf(file, "random-seed: %u\n", cfg->random_seed);
     fprintf(file, "max-generations: %d\n", cfg->max_generations);
@@ -524,4 +559,5 @@ void config_save_file(FILE *file, config_t *cfg)
         fprintf(file, "# SSE2 compiled: no\n");
     #endif
     fprintf(file, "# SSE2 supported by CPU/OS: %s\n", can_use_sse2()? "yes" : "no");
+    fprintf(file, "# Using SIMD instructions: %s\n", can_use_simd()? "yes" : "no");
 }

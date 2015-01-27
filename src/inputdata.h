@@ -20,16 +20,19 @@
 
 #pragma once
 
-#include <stdbool.h>
-#include <stdio.h>
 
-#include "cgp.h"
+#include "config.h"
 
 
-/**
- * Loads chromosome from given file stored in CGP-viewer compatible format
- * @param chr
- * @param fp
- * @return 0 on success, -1 on file format error, -2 on incompatible CGP config
- */
-int cgp_load_chr_compat(ga_chr_t chr, FILE *fp);
+struct _input_data;
+typedef struct _input_data input_data_t;
+
+bool input_data_load(input_data_t *data, config_t *config);
+void input_data_destroy(input_data_t *data);
+
+
+#ifdef SYMREG
+    #include "symreg/inputdata.h"
+#else
+    #include "ifilter/inputdata.h"
+#endif

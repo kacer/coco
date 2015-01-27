@@ -20,8 +20,20 @@
 
 #pragma once
 
-// hard configuration - affects compilation (array sizes etc.)
-#define CGP_COLS 8
-#define CGP_ROWS 4
-#define CGP_LBACK 1
-#define CGP_FUNC_INPUTS 2
+
+#include <stdio.h>
+
+#include "cgp_symreg.h"
+
+
+#define INPUT_IDX(case_idx, in_idx) (case_idx * CGP_INPUTS + in_idx)
+
+
+struct _input_data {
+    unsigned int fitness_cases;
+    cgp_value_t *inputs;  // two-dimensional [fitnesscase][input]
+    cgp_value_t *outputs;
+};
+
+
+void input_data_save(struct _input_data *data, FILE *file);

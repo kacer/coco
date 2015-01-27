@@ -22,10 +22,10 @@
 
 
 #include "cgp/cgp.h"
-#include "ifilter/image.h"
 #include "config.h"
 #include "archive.h"
 #include "baldwin.h"
+#include "inputdata.h"
 #include "predictors.h"
 #include "logging/logging.h"
 
@@ -57,9 +57,8 @@ typedef struct algo_data {
     // loggers
     logger_list_t loggers;
 
-    // source images - in fact used only to provide them to loggers
-    img_image_t img_original;
-    img_image_t img_noisy;
+    // source data - in fact used only to provide them to loggers
+    input_data_t input_data;
 
     // indicates that the algorithm should terminate ASAP
     bool finished;

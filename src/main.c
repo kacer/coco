@@ -32,7 +32,6 @@
 #include "cpu.h"
 #include "algo.h"
 #include "utils.h"
-#include "ifilter/image.h"
 #include "random.h"
 #include "config.h"
 #include "cgp/cgp.h"
@@ -45,6 +44,10 @@
 
 // configuration
 static config_t config = {
+    #ifdef SYMREG
+        .epsilon = 0.5,
+    #endif
+
     .max_generations = 50000,
     .target_fitness = 0,
     .algorithm = predictors,
@@ -146,30 +149,24 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if ((work_data.img_original = img_load(config.input_image)) == NULL) {
-        fprintf(stderr, "Failed to load original image or no filename given.\n");
-        config_ok = false;
-    }
-
-    if ((work_data.img_noisy = img_load(config.noisy_image)) == NULL) {
-        fprintf(stderr, "Failed to load noisy image or no filename given.\n");
+    if (!input_data_load(&work_data.input_data, &config)) {
         config_ok = false;
     }
 
     if (strlen(config.log_dir)) {
         int create_dir_retval = create_dir(config.log_dir);
         if (create_dir_retval != 0) {
-            fprintf(stderr, "Error initializing results directory: %s\n", strerror(create_dir_retval));
+            fprintf(stderr, "Error initializing log directory: %s\n", strerror(create_dir_retval));
             config_ok = false;
         }
 
         if ((log_progress_file = open_file(config.log_dir, "progress.log")) == NULL) {
-            fprintf(stderr, "Failed to open 'progress.log' in results dir for writing.\n");
+            fprintf(stderr, "Failed to open 'progress.log' in log dir for writing.\n");
             config_ok = false;
         }
 
         if ((log_csv_file = open_file(config.log_dir, "cgp_history.csv")) == NULL) {
-            fprintf(stderr, "Failed to open 'cgp_history.csv' in results dir for writing.\n");
+            fprintf(stderr, "Failed to open 'cgp_history.csv' in log dir for writing.\n");
             config_ok = false;
         }
 
@@ -210,7 +207,7 @@ int main(int argc, char *argv[])
     if (config.algorithm != simple_cgp) {
 
         // calculate absolute predictors sizes
-        int img_size = work_data.img_original->width * work_data.img_original->height;
+        int img_size = work_data.input_data.fitness_cases;
         int pred_min_size = config.pred_min_size * img_size;
         int pred_max_size = config.pred_size * img_size;
         int pred_initial_size;
@@ -291,7 +288,7 @@ int main(int argc, char *argv[])
     }
 
     // fitness function
-    fitness_init(work_data.img_original, work_data.img_noisy,
+    fitness_init(&config, &work_data.input_data,
         work_data.cgp_archive, work_data.pred_archive);
 
     /*
@@ -395,9 +392,7 @@ int main(int argc, char *argv[])
     cgp_deinit();
     fitness_deinit();
 
-    img_destroy(work_data.img_original);
-    img_destroy(work_data.img_noisy);
-
+    input_data_destroy(&work_data.input_data);
     logger_destroy_list(&work_data.loggers);
 
     if (log_progress_file) fclose(log_progress_file);

@@ -164,6 +164,13 @@ static void handle_finished(logger_t logger, finish_reason_t reason, history_ent
             fclose(fp);
         }
 
+        SPRINTF_FILENAME("best_circuit.c");
+        fp = fopen(_buffer, "wt");
+        if (fp) {
+            cgp_dump_chr(circuit, fp, code);
+            fclose(fp);
+        }
+
         SPRINTF_FILENAME("summary.log");
         fp = fopen(_buffer, "wt");
         if (fp) {
@@ -177,16 +184,21 @@ static void handle_finished(logger_t logger, finish_reason_t reason, history_ent
             fclose(fp);
         }
 
-        SPRINTF_FILENAME("img_orignal.png");
-        img_save_png(work_data->img_original, _buffer);
+        #ifdef SYMREG
 
-        SPRINTF_FILENAME("img_noisy.png");
-        img_save_png(work_data->img_noisy, _buffer);
+        #else
+            SPRINTF_FILENAME("img_original.png");
+            img_save_png(work_data->input_data.img_original, _buffer);
 
-        SPRINTF_FILENAME("img_best.png");
-        img_image_t img_best = fitness_filter_image(circuit);
-        img_save_png(img_best, _buffer);
-        img_destroy(img_best);
+            SPRINTF_FILENAME("img_noisy.png");
+            img_save_png(work_data->input_data.img_noisy, _buffer);
+
+            SPRINTF_FILENAME("img_best.png");
+            img_image_t img_best = fitness_filter_image(circuit);
+            img_save_png(img_best, _buffer);
+            img_destroy(img_best);
+        #endif
+
     }
 
     if (slogger->summary_to_stdout) {

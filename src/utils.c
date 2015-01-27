@@ -189,4 +189,10 @@ void print_sysinfo()
     #else
         printf("SSE2 is not compiled. Recompile with -DSSE2 defined to enable.\n");
     #endif
+
+    if (can_use_simd()) {
+        printf("Using SIMD.\n");
+    } else {
+        printf("NOT using SIMD.\n");
+    }
 }

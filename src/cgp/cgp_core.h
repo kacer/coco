@@ -21,7 +21,6 @@
 #pragma once
 
 #include "../ga.h"
-#include "cgp_config.h"
 
 
 #ifdef SYMREG

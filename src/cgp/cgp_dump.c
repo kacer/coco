@@ -42,6 +42,9 @@ void cgp_dump_chr(ga_chr_t chr, FILE *fp, cgp_dump_format fmt)
     } else if (fmt == asciiart_active) {
         cgp_dump_chr_asciiart(chr, fp, true);
 
+    } else if (fmt == code) {
+        cgp_dump_chr_code(chr, fp);
+
     } else {
         cgp_dump_chr_compat(chr, fp);
     }
@@ -142,6 +145,61 @@ void cgp_dump_chr_readable(ga_chr_t chr, FILE *fp)
         fprintf(fp, "Primary outputs: ");
         cgp_dump_chr_outputs(chr, fp);
     }
+}
+
+
+/**
+ * Dumps chromosome to given file as C code
+ * @param chr
+ * @param fp
+ */
+void cgp_dump_chr_code(ga_chr_t chr, FILE *fp)
+{
+    cgp_genome_t genome = (cgp_genome_t) chr->genome;
+
+    fprintf(fp, "%s", CGP_CODE_PROLOG);
+    fprintf(fp, "cgp_value_t cgp(cgp_value_t inputs[%d])\n{\n", CGP_INPUTS);
+
+    for (int i = 0; i < CGP_NODES; i++) {
+        cgp_node_t *n = &(genome->nodes[i]);
+        if (n->is_active) {
+            int arity = CGP_FUNC_ARITY[n->function];
+            char input1[20], input2[20];
+
+            if (n->is_constant) {
+                fprintf(fp, "\tcgp_value_t n%02d = %g", i, n->constant_value);
+                continue;
+            }
+
+            if (n->inputs[0] < CGP_INPUTS) {
+                snprintf(input1, 20, "inputs[%d]", n->inputs[0]);
+            } else {
+                snprintf(input1, 20, "n%02d", n->inputs[0] - CGP_INPUTS);
+            }
+
+             if (n->inputs[1] < CGP_INPUTS) {
+                snprintf(input2, 20, "inputs[%d]", n->inputs[1]);
+            } else {
+                snprintf(input2, 20, "n%02d", n->inputs[1] - CGP_INPUTS);
+            }
+
+            fprintf(fp, "\tcgp_value_t n%02d = ", i);
+            if (arity == 0) {
+                fprintf(fp, "%s", CGP_FUNC_CODE[n->function]);
+
+            } else if (arity == 1) {
+                fprintf(fp, CGP_FUNC_CODE[n->function], input1);
+
+            } else if (arity == 2) {
+                fprintf(fp, CGP_FUNC_CODE[n->function], input1, input2);
+            }
+
+            fprintf(fp, ";\n");
+        }
+    }
+
+    fprintf(fp, "\treturn n%02d;\n", genome->outputs[0] - CGP_INPUTS);
+    fprintf(fp, "}");
 }
 
 
@@ -255,7 +313,7 @@ void cgp_dump_chr_asciiart(ga_chr_t chr, FILE *fp, bool only_active_blocks)
             if (only_active_blocks && !n->is_active) {
                 fprintf(fp, "                ");
             } else {
-                fprintf(fp, "[%2u]>|%s|     ", n->inputs[1], cgp_func_name(n->function));
+                fprintf(fp, "[%2u]>|%s|     ", n->inputs[1], CGP_FUNC_NAMES[n->function]);
             }
 
             if (x == CGP_COLS - 1) fprintf(fp, " |");

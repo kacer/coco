@@ -55,13 +55,18 @@ static const char * const config_algorithm_names[] = {
 
 typedef struct
 {
+    #ifdef SYMREG
+        char input_data[MAX_FILENAME_LENGTH + 1];
+        double epsilon;
+    #else
+        char input_image[MAX_FILENAME_LENGTH + 1];
+        char noisy_image[MAX_FILENAME_LENGTH + 1];
+    #endif
+
     int max_generations;
     double target_fitness;
     algorithm_t algorithm;
     unsigned int random_seed;
-
-    char input_image[MAX_FILENAME_LENGTH + 1];
-    char noisy_image[MAX_FILENAME_LENGTH + 1];
 
     int cgp_mutate_genes;
     int cgp_population_size;
@@ -118,18 +123,25 @@ static inline void print_help() {
         "          Show this help and exit.\n"
         "\n"
         "Required:\n"
+    #ifdef SYMREG
+        "    --input-data FILE, -i FILE\n"
+        "          Input data file.\n"
+        "    --epsilon NUM, -e NUM\n"
+        "          Acceptable error of data point\n"
+    #else
         "    --original FILE, -i FILE\n"
         "          Original image filename.\n"
         "    --noisy FILE, -n FILE\n"
         "          Noisy image filename.\n"
         "\n"
+    #endif
         "Optional:\n"
         "    --algorithm ALG, -a ALG\n"
         "          Evolution algorithm selection, one of {cgp|coev|baldwin},\n"
         "          default is \"predictors\".\n"
         "          - cgp: Simple CGP without any coevolution.\n"
         "          - coev: CGP coevoluting with fitness predictors of fixed size.\n"
-        "          - baldwin: CGP coevoluting with fitness predictors of flexible size.\n"
+        "          - colearn: CGP coevoluting with fitness predictors of adaptive size.\n"
         "\n"
         "    --random-seed NUM, -r ALG\n"
         "          PRNG seed value, default is obtained using gettimeofday() call.\n"
@@ -137,15 +149,19 @@ static inline void print_help() {
         "    --max-generations NUM, -g NUM\n"
         "          Stop after given number of CGP generations, default is 50000.\n"
         "\n"
+    #ifndef SYMREG
         "    --target-psnr NUM, -g NUM\n"
         "          Stop after reaching given PSNR (0 to disable), default is 0.\n"
         "          If --target-fitness is specified, only one option is used.\n"
         "\n"
+    #endif
         "    --target-fitness NUM, -g NUM\n"
         "          Stop after reaching given fitness (0 to disable), default is 0.\n"
+    #ifndef SYMREG
         "          Fitness can be obtained from PSNR as F = 10 ^ (PSNR / 10).\n"
         "          If --target-psnr is specified, only one option is used.\n"
         "\n"
+    #endif
         "    --log-dir DIR, -l DIR\n"
         "          Log (results) directory, default is \"cocolog\".\n"
         "\n"

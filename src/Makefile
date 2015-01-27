@@ -29,28 +29,29 @@ BUILDDIR=build
 # for .depend only
 SRCS=\
 	main.c cpu.c ga.c cgp/cgp_core.c cgp/cgp_dump.c cgp/cgp_load.c \
-	predictors.c fitness.c \
-	archive.c config.c algo.c baldwin.c utils.c \
+	fitness.c predictors.c archive.c config.c algo.c baldwin.c utils.c \
 	logging/history.c logging/base.c logging/text.c logging/csv.c logging/summary.c \
 
-IFILTER_SRCS=$(SRCS) ifilter/cgp_ifilter.c \
+IFILTER_SRCS=$(SRCS) ifilter/cgp_ifilter.c ifilter/inputdata.c ifilter/fitness.c \
 	ifilter/cgp_sse.c ifilter/fitness_sse.c \
 	ifilter/cgp_avx.c ifilter/fitness_avx.c \
 	ifilter/image.c
 
-SYMREG_SRCS=$(SRCS) symreg/cgp_symreg.c
+SYMREG_SRCS=$(SRCS) symreg/cgp_symreg.c symreg/inputdata.c symreg/fitness.c
 
-IFILTER_CFLAGS=$(CFLAGS)
+IFILTER_CFLAGS=$(CFLAGS) -DCGP_COLS=8 -DCGP_ROWS=4 -DCGP_LBACK=1
 IFILTER_EXECUTABLE=coco
 IFILTER_BUILDDIR=$(BUILDDIR)/ifilter
 IFILTER_OBJS = $(IFILTER_SRCS:%.c=$(IFILTER_BUILDDIR)/%.o)
 IFILTER_DEPS = $(IFILTER_SRCS:%.c=$(IFILTER_BUILDDIR)/%.d)
+IFILTER_CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_15.png -g 10000 -a baldwin -S 100 -I 25 -k 10000 -l cocolog
 
-SYMREG_CFLAGS=$(CFLAGS) -DSYMREG
+SYMREG_CFLAGS=$(CFLAGS) -DSYMREG  -DCGP_COLS=32 -DCGP_ROWS=1 -DCGP_LBACK=32
 SYMREG_EXECUTABLE=coco_symreg
 SYMREG_BUILDDIR=$(BUILDDIR)/symreg
 SYMREG_OBJS = $(SYMREG_SRCS:%.c=$(SYMREG_BUILDDIR)/%.o)
 SYMREG_DEPS = $(SYMREG_SRCS:%.c=$(SYMREG_BUILDDIR)/%.d)
+SYMREG_CMDLINE=-i ../functions/funkce01.dta -e 0.5 -g 10000 -a cgp -k 10000 -l cocolog -p 12 -m 8 -P 32 -M 0.2 -S 0.06
 
 APPLY_CFLAGS=$(CFLAGS)
 APPLY_EXECUTABLE=coco_apply
@@ -63,7 +64,6 @@ APPLY_DEPS = $(APPLY_OBJS:%.o=%.d)
 EXECUTABLES=$(IFILTER_EXECUTABLE) $(APPLY_EXECUTABLE)
 # $(SYMREG_EXECUTABLE)
 
-CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_15.png -g 10000 -a coev -S 100 -I 25 -k 10000 -l cocolog
 ANSELM_HOST=anselm
 ANSELM_PATH=~/xwigla00
 MERLIN_HOST=merlin
@@ -80,7 +80,7 @@ clean:
 	rm -f $(APPLY_EXECUTABLE) $(APPLY_EXECUTABLE).exe $(APPLY_EXECUTABLE).exe.stackdump
 	rm -f $(SYMREG_EXECUTABLE) $(SYMREG_EXECUTABLE).exe $(SYMREG_EXECUTABLE).exe.stackdump
 	rm -f xwigla00.zip xwigla00.tar.gz
-	find -name '*.expand' | xargs rm
+	find -name '*.expand' | xargs rm -f
 
 rebuild: clean all
 
@@ -95,7 +95,11 @@ $(APPLY_EXECUTABLE): $(APPLY_OBJS)
 
 run: $(IFILTER_EXECUTABLE)
 	rm -rf cocolog/*
-	./$(IFILTER_EXECUTABLE) $(CMDLINE)
+	./$(IFILTER_EXECUTABLE) $(IFILTER_CMDLINE)
+
+symrun: $(SYMREG_EXECUTABLE)
+	rm -rf cocolog/*
+	./$(SYMREG_EXECUTABLE) $(SYMREG_CMDLINE)
 
 minirun: $(IFILTER_EXECUTABLE)
 	rm -rf cocolog/*
@@ -125,11 +129,11 @@ plot:
 
 valgrind: $(IFILTER_EXECUTABLE)
 	rm -rf cocolog/*
-	valgrind --track-origins=yes --leak-check=full ./$(IFILTER_EXECUTABLE) $(CMDLINE)
+	valgrind --track-origins=yes --leak-check=full ./$(IFILTER_EXECUTABLE) $(IFILTER_CMDLINE)
 
 leaks: $(IFILTER_EXECUTABLE)
 	rm -rf cocolog/*
-	valgrind --track-origins=yes --leak-check=full --show-reachable=yes ./$(IFILTER_EXECUTABLE) $(CMDLINE)
+	valgrind --track-origins=yes --leak-check=full --show-reachable=yes ./$(IFILTER_EXECUTABLE) $(IFILTER_CMDLINE)
 
 callgraph:
 	$(MAKE) CFLAGS='$(CFLAGS) -fdump-rtl-expand' clean all
@@ -152,10 +156,10 @@ $(IFILTER_BUILDDIR)/%.o: %.c
 
 $(IFILTER_BUILDDIR)/%.d: %.c
 	@mkdir -p `dirname $@`
-	$(CC) $(IFILTER_CFLAGS) -MM -MT $(<:%.c=$(IFILTER_BUILDDIR)/%.o) $< -o $@
+	@$(CC) $(IFILTER_CFLAGS) -MM -MT $(<:%.c=$(IFILTER_BUILDDIR)/%.o) $< -o $@
 
-include $(IFILTER_DEPS)
-include $(APPLY_DEPS)
+-include $(IFILTER_DEPS)
+-include $(APPLY_DEPS)
 
 # rules to build symbolic regression
 
@@ -173,6 +177,6 @@ $(SYMREG_BUILDDIR)/%.o: %.c
 
 $(SYMREG_BUILDDIR)/%.d: %.c
 	@mkdir -p `dirname $@`
-	$(CC) $(SYMREG_CFLAGS) -MM -MT $(<:%.c=$(SYMREG_BUILDDIR)/%.o) $< -o $@
+	@$(CC) $(SYMREG_CFLAGS) -MM -MT $(<:%.c=$(SYMREG_BUILDDIR)/%.o) $< -o $@
 
-include $(SYMREG_DEPS)
+-include $(SYMREG_DEPS)
