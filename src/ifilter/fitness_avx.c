@@ -18,8 +18,8 @@
  */
 
 
-#include "fitness.h"
-#include "cgp/cgp_avx.h"
+#include "../fitness.h"
+#include "cgp_avx.h"
 
 
 /**

@@ -124,7 +124,11 @@ img_image_t fitness_filter_image(ga_chr_t chr)
 
         cgp_value_t *inputs = w->pixels;
         cgp_value_t output_pixel;
-        cgp_get_output(chr, inputs, &output_pixel);
+        bool should_restart = cgp_get_output(chr, inputs, &output_pixel);
+        if (should_restart) {
+            i = 0;
+            continue;
+        }
 
         img_set_pixel(filtered, w->pos_x, w->pos_y, output_pixel);
     }
@@ -138,23 +142,30 @@ img_image_t fitness_filter_image(ga_chr_t chr)
  *
  * @param  chr
  * @param  w
- * @return
+ * @param  diff
+ * @return Whether CGP function has changed and evaluation should be restarted
  */
-int _fitness_get_diff(ga_chr_t chr, img_window_t *w)
+int _fitness_get_diff(ga_chr_t chr, img_window_t *w, int *diff)
 {
     cgp_value_t *inputs = w->pixels;
     cgp_value_t output_pixel;
-    cgp_get_output(chr, inputs, &output_pixel);
-    return output_pixel - img_get_pixel(_original_image, w->pos_x, w->pos_y);
+    bool should_restart = cgp_get_output(chr, inputs, &output_pixel);
+    *diff = output_pixel - img_get_pixel(_original_image, w->pos_x, w->pos_y);
+    return should_restart;
 }
 
 
 double _fitness_get_sqdiffsum_scalar(ga_chr_t chr)
 {
     double sum = 0;
+    int diff;
     for (int i = 0; i < _noisy_image_windows->size; i++) {
         img_window_t *w = &_noisy_image_windows->windows[i];
-        double diff = _fitness_get_diff(chr, w);
+        bool should_restart = _fitness_get_diff(chr, w, &diff);
+        if (should_restart) {
+            i = 0;
+            continue;
+        }
         sum += diff * diff;
     }
     #pragma omp atomic
@@ -165,6 +176,10 @@ double _fitness_get_sqdiffsum_scalar(ga_chr_t chr)
 
 double _fitness_get_sqdiffsum_simd(ga_chr_t chr, img_pixel_t *original, img_pixel_t *noisy[WINDOW_SIZE], int data_length)
 {
+    #ifdef SYMREG
+        return 0;
+    #endif
+
     fitness_simd_func_t func = NULL;
     int block_size = 0;
     double sum = 0;
@@ -249,6 +264,7 @@ ga_fitness_t fitness_eval_or_predict_cgp(ga_chr_t chr)
 double _fitness_predict_cgp_scalar(ga_chr_t cgp_chr, pred_genome_t predictor)
 {
     double sum = 0;
+    int diff;
 
     for (int i = 0; i < predictor->used_pixels; i++) {
         // fetch window specified by predictor
@@ -256,7 +272,11 @@ double _fitness_predict_cgp_scalar(ga_chr_t cgp_chr, pred_genome_t predictor)
         assert(index < _noisy_image_windows->size);
         img_window_t *w = &_noisy_image_windows->windows[index];
 
-        int diff = _fitness_get_diff(cgp_chr, w);
+        bool should_restart = _fitness_get_diff(cgp_chr, w, &diff);
+        if (should_restart) {
+            i = 0;
+            continue;
+        }
         sum += diff * diff;
     }
 
@@ -280,8 +300,8 @@ ga_fitness_t fitness_predict_cgp_by_genome(ga_chr_t cgp_chr, pred_genome_t predi
     double sum = 0;
 
     if (can_use_simd()) {
-        sum = _fitness_get_sqdiffsum_simd(cgp_chr, predictor->original_simd,
-            predictor->pixels_simd, predictor->used_pixels);
+        sum = _fitness_get_sqdiffsum_simd(cgp_chr, predictor->output_simd,
+            predictor->inputs_simd, predictor->used_pixels);
 
     } else {
         sum = _fitness_predict_cgp_scalar(cgp_chr, predictor);
@@ -373,29 +393,6 @@ ga_fitness_t fitness_eval_circular_predictor(ga_chr_t pred_chr)
 }
 
 
-        /*
-        if (_genome_repeated_subtype == circular) {
-            int best_offset = 0;
-            ga_fitness_t best_fitness = 0;
-
-            for (int i = 0; i < PRED_CIRCULAR_TRIES; i++) {
-                genome->_circular_offset = rand_urange(0, _max_genome_length - 1);
-                _pred_calculate_repeated_phenotype(genome);
-                ga_fitness_t fit = fitness_eval_predictor_genome(genome);
-                if (i == 0 || ga_is_better(PRED_PROBLEM_TYPE, fit, best_fitness)) {
-                    best_offset = genome->_circular_offset;
-                    best_fitness = fit;
-                }
-                printf("%p #%d: %u; %.10g\n", genome, i, genome->_circular_offset, fit);
-            }
-            genome->_circular_offset = best_offset;
-
-        } else {
-            genome->_circular_offset = 0;
-        }
-        */
-
-
 /**
  * Fills simd-friendly predictor arrays with correct image data
  * @param  genome
@@ -406,9 +403,9 @@ void fitness_prepare_predictor_for_simd(pred_genome_t predictor)
         pred_gene_t index = predictor->pixels[i];
         assert(index < _noisy_image_windows->size);
 
-        predictor->original_simd[i] = _original_image->data[index];
+        predictor->output_simd[i] = _original_image->data[index];
         for (int w = 0; w < WINDOW_SIZE; w++) {
-            predictor->pixels_simd[w][i] = _noisy_image_simd[w][index];
+            predictor->inputs_simd[w][i] = _noisy_image_simd[w][index];
         }
     }
 }

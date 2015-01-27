@@ -24,7 +24,7 @@
 #include <getopt.h>
 
 #include "image.h"
-#include "cgp/cgp.h"
+#include "../cgp/cgp.h"
 
 
 const char* help =

@@ -23,21 +23,47 @@ CFLAGS=-g -Wall -std=c11 -fopenmp -O0 -D_XOPEN_SOURCE=700 \
 	-DSSE2 -DxAVX2 -DDEBUG -DxVERBOSE -DxCGP_LIMIT_FUNCS
 LIBS=-lm -lc
 
-SOURCES=main.c cpu.c ga.c cgp/cgp_core.c cgp/cgp_dump.c cgp/cgp_load.c cgp/cgp_avx.c cgp/cgp_sse.c \
-	predictors.c image.c fitness.c fitness_avx.c fitness_sse.c \
+SRCDIR=.
+BUILDDIR=build
+
+# for .depend only
+SRCS=\
+	main.c cpu.c ga.c cgp/cgp_core.c cgp/cgp_dump.c cgp/cgp_load.c \
+	predictors.c fitness.c \
 	archive.c config.c algo.c baldwin.c utils.c \
-	logging/history.c logging/base.c logging/text.c logging/csv.c logging/summary.c
+	logging/history.c logging/base.c logging/text.c logging/csv.c logging/summary.c \
 
-EXECUTABLE=coco
-OFILES= main.o cpu.o ga.o cgp/cgp_core.o cgp/cgp_dump.o cgp/cgp_load.o cgp/cgp_avx.o cgp/cgp_sse.o \
-	predictors.o image.o fitness.o fitness_avx.o fitness_sse.o \
-	archive.o config.o algo.o baldwin.o utils.o \
-	logging/history.o logging/base.o logging/text.o logging/csv.o logging/summary.o
+IFILTER_SRCS=$(SRCS) ifilter/cgp_ifilter.c \
+	ifilter/cgp_sse.c ifilter/fitness_sse.c \
+	ifilter/cgp_avx.c ifilter/fitness_avx.c \
+	ifilter/image.c
 
-EXECUTABLE_APPLY=coco_apply
-OFILES_APPLY= image.o ga.o cgp/cgp_core.o cgp/cgp_load.o main_apply.o
+SYMREG_SRCS=$(SRCS) symreg/cgp_symreg.c
 
-CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_15.png -g 10000 -a cgp -S 100 -I 25 -k 10000
+IFILTER_CFLAGS=$(CFLAGS)
+IFILTER_EXECUTABLE=coco
+IFILTER_BUILDDIR=$(BUILDDIR)/ifilter
+IFILTER_OBJS = $(IFILTER_SRCS:%.c=$(IFILTER_BUILDDIR)/%.o)
+IFILTER_DEPS = $(IFILTER_SRCS:%.c=$(IFILTER_BUILDDIR)/%.d)
+
+SYMREG_CFLAGS=$(CFLAGS) -DSYMREG
+SYMREG_EXECUTABLE=coco_symreg
+SYMREG_BUILDDIR=$(BUILDDIR)/symreg
+SYMREG_OBJS = $(SYMREG_SRCS:%.c=$(SYMREG_BUILDDIR)/%.o)
+SYMREG_DEPS = $(SYMREG_SRCS:%.c=$(SYMREG_BUILDDIR)/%.d)
+
+APPLY_CFLAGS=$(CFLAGS)
+APPLY_EXECUTABLE=coco_apply
+APPLY_BUILDDIR=$(IFILTER_BUILDDIR)
+APPLY_OBJS=$(IFILTER_BUILDDIR)/ifilter/image.o $(IFILTER_BUILDDIR)/ga.o \
+	$(IFILTER_BUILDDIR)/cgp/cgp_core.o $(IFILTER_BUILDDIR)/cgp/cgp_load.o \
+	$(IFILTER_BUILDDIR)/ifilter/cgp_ifilter.o $(IFILTER_BUILDDIR)/ifilter/main_apply.o
+APPLY_DEPS = $(APPLY_OBJS:%.o=%.d)
+
+EXECUTABLES=$(IFILTER_EXECUTABLE) $(APPLY_EXECUTABLE)
+# $(SYMREG_EXECUTABLE)
+
+CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_15.png -g 10000 -a coev -S 100 -I 25 -k 10000 -l cocolog
 ANSELM_HOST=anselm
 ANSELM_PATH=~/xwigla00
 MERLIN_HOST=merlin
@@ -45,31 +71,37 @@ MERLIN_PATH=~/coco
 
 .PHONY: clean run minirun zip tar upload start depend anselmup anselmdown merlinup rebuild callgraph
 
-all: $(EXECUTABLE) $(EXECUTABLE_APPLY)
+all: $(EXECUTABLES)
 
 clean:
-	rm -f *.o cgp/*.o logging/*.o
+	rm -rf build
 	rm -rf cocolog/*
-	rm -f $(EXECUTABLE) $(EXECUTABLE).exe $(EXECUTABLE).exe.stackdump
-	rm -f $(EXECUTABLE_APPLY) $(EXECUTABLE_APPLY).exe $(EXECUTABLE_APPLY).exe.stackdump
+	rm -f $(IFILTER_EXECUTABLE) $(IFILTER_EXECUTABLE).exe $(IFILTER_EXECUTABLE).exe.stackdump
+	rm -f $(APPLY_EXECUTABLE) $(APPLY_EXECUTABLE).exe $(APPLY_EXECUTABLE).exe.stackdump
+	rm -f $(SYMREG_EXECUTABLE) $(SYMREG_EXECUTABLE).exe $(SYMREG_EXECUTABLE).exe.stackdump
 	rm -f xwigla00.zip xwigla00.tar.gz
-	rm -f *.expand cgp/*.expand logging/*.expand
+	find -name '*.expand' | xargs rm
 
 rebuild: clean all
 
-$(EXECUTABLE): $(OFILES)
-	$(CC) $(CFLAGS) -o $@ $(OFILES) $(LIBS)
+$(IFILTER_EXECUTABLE): $(IFILTER_OBJS)
+	$(CC) $(IFILTER_CFLAGS) -o $@ $(IFILTER_OBJS) $(LIBS)
 
-$(EXECUTABLE_APPLY): $(OFILES_APPLY)
-	$(CC) $(CFLAGS) -o $(EXECUTABLE_APPLY) $(OFILES_APPLY) $(LIBS)
+$(SYMREG_EXECUTABLE): $(SYMREG_OBJS)
+	$(CC) $(SYMREG_CFLAGS) -o $(SYMREG_EXECUTABLE) $(SYMREG_OBJS) $(LIBS)
 
-run: $(EXECUTABLE)
+$(APPLY_EXECUTABLE): $(APPLY_OBJS)
+	$(CC) $(APPLY_CFLAGS) -o $(APPLY_EXECUTABLE) $(APPLY_OBJS) $(LIBS)
+
+run: $(IFILTER_EXECUTABLE)
 	rm -rf cocolog/*
-	./$(EXECUTABLE) $(CMDLINE)
+	./$(IFILTER_EXECUTABLE) $(CMDLINE)
 
-minirun: $(EXECUTABLE)
+minirun: $(IFILTER_EXECUTABLE)
 	rm -rf cocolog/*
-	./$(EXECUTABLE) -i ../images/10x10.png -n ../images/10x10_sp25.png -a baldwin -g 1000 -S 75 -I 50 -N 50
+	./$(IFILTER_EXECUTABLE) -i ../images/10x10.png -n ../images/10x10_sp25.png -a baldwin -g 1000 -S 75 -I 50 -N 50
+
+# deployment
 
 tar:
 	cd .. && tar czf xwigla00.tar.gz src/*.c src/*.h src/*/*.c src/*/*.h src/Makefile src/tests/* src/stb/* # images/* #-C doc/ doc.pdf
@@ -80,63 +112,67 @@ anselmup: tar
 	scp ../xwigla00.tar.gz $(ANSELM_HOST):$(ANSELM_PATH)
 	ssh $(ANSELM_HOST) "cd $(ANSELM_PATH) && tar -xzvf xwigla00.tar.gz && cd src && module load gcc/4.9.0 && make clean all"
 
-anselmdown:
-	ssh $(ANSELM_HOST) "cd $(ANSELM_PATH)/results && tar -czvf ../results.tar.gz --exclude='img_filtered_*.png' *"
-	scp $(ANSELM_HOST):$(ANSELM_PATH)/results.tar.gz ../anselm/
-	cd ../anselm/ && tar -xzvf results.tar.gz
-
 merlinup: tar
 	find -type f | xargs chmod ug+rw
 	find -type d | xargs chmod ug+rwx
 	scp ../xwigla00.tar.gz $(MERLIN_HOST):$(MERLIN_PATH)
 	ssh $(MERLIN_HOST) "cd $(MERLIN_PATH) && tar -xzvf xwigla00.tar.gz && cd src && make clean all"
 
-# AVX2 support
-
-cgp/cgp_avx.o: cgp/cgp_avx.c
-	$(CC) $(CFLAGS) -mavx2 -c $< -o $@
-
-fitness_avx.o: fitness_avx.c
-	$(CC) $(CFLAGS) -mavx2 -c $< -o $@
-
-# SSE2 support
-
-cgp/cgp_sse.o: cgp/cgp_sse.c
-	$(CC) $(CFLAGS) -msse2 -c $< -o $@
-
-fitness_sse.o: fitness_sse.c
-	$(CC) $(CFLAGS) -msse2 -c $< -o $@
-
 # some stuff to increase average developer happiness
 
 plot:
 	gnuplot cocolog.gp
 
-valgrind: $(EXECUTABLE)
+valgrind: $(IFILTER_EXECUTABLE)
 	rm -rf cocolog/*
-	valgrind --track-origins=yes --leak-check=full ./$(EXECUTABLE) $(CMDLINE)
+	valgrind --track-origins=yes --leak-check=full ./$(IFILTER_EXECUTABLE) $(CMDLINE)
 
-leaks: $(EXECUTABLE)
+leaks: $(IFILTER_EXECUTABLE)
 	rm -rf cocolog/*
-	valgrind --track-origins=yes --leak-check=full --show-reachable=yes ./$(EXECUTABLE) $(CMDLINE)
+	valgrind --track-origins=yes --leak-check=full --show-reachable=yes ./$(IFILTER_EXECUTABLE) $(CMDLINE)
 
 callgraph:
 	$(MAKE) CFLAGS='$(CFLAGS) -fdump-rtl-expand' clean all
 	find -name '*.expand' | grep -v 'main_apply' | xargs egypt --omit stbi_load,stbi_write_png,log_entry_prolog,can_use_sse2 | dot -Grankdir=LR  -Tpng -o callgraph.png
 	rm *.expand cgp/*.expand logging/*.expand
 
-# general rules
+# rules to build image filters
 
-%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+$(IFILTER_BUILDDIR)/%_avx.o: %_avx.c
+	@mkdir -p `dirname $@`
+	$(CC) $(IFILTER_CFLAGS) -mavx2 -c $< -o $@
 
-# dependencies
+$(IFILTER_BUILDDIR)/%_sse.o: %_sse.c
+	@mkdir -p `dirname $@`
+	$(CC) $(IFILTER_CFLAGS) -msse2 -c $< -o $@
 
-depend: .depend
+$(IFILTER_BUILDDIR)/%.o: %.c
+	@mkdir -p `dirname $@`
+	$(CC) $(IFILTER_CFLAGS) -c $< -o $@
 
-.depend: $(SOURCES)
-	rm -f ./.depend
-	$(CC) $(CFLAGS) -MM $(SOURCES) >>./.depend;
+$(IFILTER_BUILDDIR)/%.d: %.c
+	@mkdir -p `dirname $@`
+	$(CC) $(IFILTER_CFLAGS) -MM -MT $(<:%.c=$(IFILTER_BUILDDIR)/%.o) $< -o $@
 
-include .depend
+include $(IFILTER_DEPS)
+include $(APPLY_DEPS)
 
+# rules to build symbolic regression
+
+$(SYMREG_BUILDDIR)/%_avx.o: %_avx.c
+	@mkdir -p `dirname $@`
+	$(CC) $(SYMREG_CFLAGS) -mavx2 -c $< -o $@
+
+$(SYMREG_BUILDDIR)/%_sse.o: %_sse.c
+	@mkdir -p `dirname $@`
+	$(CC) $(SYMREG_CFLAGS) -msse2 -c $< -o $@
+
+$(SYMREG_BUILDDIR)/%.o: %.c
+	@mkdir -p `dirname $@`
+	$(CC) $(SYMREG_CFLAGS) -c $< -o $@
+
+$(SYMREG_BUILDDIR)/%.d: %.c
+	@mkdir -p `dirname $@`
+	$(CC) $(SYMREG_CFLAGS) -MM -MT $(<:%.c=$(SYMREG_BUILDDIR)/%.o) $< -o $@
+
+include $(SYMREG_DEPS)

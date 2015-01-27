@@ -22,16 +22,17 @@
 
 #include <immintrin.h>
 
-#include "cgp_core.h"
+#include "../cgp/cgp_core.h"
 
 
-typedef __m256i __m256i_aligned __attribute__ ((aligned (32)));
+typedef __m128i __m128i_aligned __attribute__ ((aligned (16)));
 
 
 /**
- * Calculate output of given chromosome and inputs using AVX instructions
+ * Calculate output of given chromosome and inputs using SSE instructions
  * @param chr
  * @param inputs
  * @param outputs
  */
-void cgp_get_output_avx(ga_chr_t chromosome, __m256i_aligned inputs[CGP_INPUTS], __m256i_aligned outputs[CGP_OUTPUTS]);
+void cgp_get_output_sse(ga_chr_t chromosome,
+    __m128i_aligned inputs[CGP_INPUTS], __m128i_aligned outputs[CGP_OUTPUTS]);

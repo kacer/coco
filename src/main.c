@@ -32,7 +32,7 @@
 #include "cpu.h"
 #include "algo.h"
 #include "utils.h"
-#include "image.h"
+#include "ifilter/image.h"
 #include "random.h"
 #include "config.h"
 #include "cgp/cgp.h"

@@ -27,29 +27,6 @@
 #define FITNESS_PRECISE_FMT "%a"
 
 
-static inline const char* cgp_func_name(cgp_func_t f) {
-    const char *func_names[] = {
-        " FF ",     // 255
-        "  a ",     // a
-        "FF-a",     // 255 - a
-        " or ",     // a or b
-        "~1|2",     // (not a) or b
-        " and",     // a and b
-        "nand",     // not (a and b)
-        " xor",     // a xor b
-        "a>>1",     // a >> 1
-        "a>>2",     // a >> 2
-        "swap",     // a <-> b
-        " +  ",     // a + b
-        " +S ",     // a +S b
-        " avg",     // (a + b) >> 1
-        " max",     // max(a, b)
-        " min",     // min(a, b)
-    };
-    return func_names[f];
-}
-
-
 /**
  * Dumps chromosome to given file pointer
  * @param fp

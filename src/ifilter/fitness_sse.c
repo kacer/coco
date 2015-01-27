@@ -18,8 +18,8 @@
  */
 
 
-#include "fitness.h"
-#include "cgp/cgp_sse.h"
+#include "../fitness.h"
+#include "cgp_sse.h"
 
 
 /**

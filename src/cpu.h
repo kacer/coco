@@ -53,6 +53,11 @@ bool can_use_sse2();
 
 
 static inline bool can_use_simd() {
+    #ifdef SYMREG
+        /* symbolic regression is not implemented with SIMD */
+        return false;
+    #endif
+
     #ifdef AVX2
         if (can_use_intel_core_4th_gen_features()) {
             return true;

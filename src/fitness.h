@@ -21,7 +21,7 @@
 #pragma once
 
 
-#include "image.h"
+#include "ifilter/image.h"
 #include "cgp/cgp.h"
 #include "archive.h"
 #include "predictors.h"

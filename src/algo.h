@@ -22,7 +22,7 @@
 
 
 #include "cgp/cgp.h"
-#include "image.h"
+#include "ifilter/image.h"
 #include "config.h"
 #include "archive.h"
 #include "baldwin.h"

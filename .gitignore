@@ -24,8 +24,8 @@
 coco
 coco_apply
 
-# Makefile little helper
-.depend
+# Build files
+build/
 
 # Private files
 *.sublime-workspace
@@ -39,6 +39,7 @@ src/*.bmp
 
 # Junk
 Thumbs.db
+callgraph.png
 
 # Experimental results
 results/*

@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "cpu.h"
+#include "../cpu.h"
 #include "image.h"
 
 #define STB_IMAGE_IMPLEMENTATION

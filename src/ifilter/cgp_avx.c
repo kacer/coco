@@ -22,8 +22,7 @@
 #include <assert.h>
 #include <immintrin.h>
 
-#include "cgp_sse.h"
-#include "../random.h"
+#include "cgp_avx.h"
 
 
 #define CURRENT(x) \
@@ -56,57 +55,51 @@
 #define UCFMT1 "%u"
 #define UCFMT4 UCFMT1 ", " UCFMT1 ", " UCFMT1 ", " UCFMT1
 #define UCFMT16 UCFMT4 ", " UCFMT4 ", " UCFMT4 ", " UCFMT4
+#define UCFMT32 UCFMT16 ", " UCFMT16
 
 #define UCVAL1(n) _tmp[n]
 #define UCVAL4(n) UCVAL1(n), UCVAL1(n+1), UCVAL1(n+2), UCVAL1(n+3)
 #define UCVAL16(n) UCVAL4(n), UCVAL4(n+4), UCVAL4(n+8), UCVAL4(n+12)
+#define UCVAL32(n) UCVAL16(n), UCVAL16(n+16)
 
 #define PRINT_REG(reg) do { \
-    __m128i _tmpval = reg; \
+    __m256i _tmpval = reg; \
     unsigned char *_tmp = (unsigned char*) &_tmpval; \
-    printf(UCFMT16 "\n", UCVAL16(0)); \
+    printf(UCFMT32 "\n", UCVAL32(0)); \
 } while(0);
 
 
 /**
- * Calculate output of given chromosome and inputs using SSE instructions
+ * Calculate output of given chromosome and inputs using AVX2 instructions
  * @param chr
  * @param inputs
  * @param outputs
  */
-void cgp_get_output_sse(ga_chr_t chromosome,
-    __m128i_aligned inputs[CGP_INPUTS], __m128i_aligned outputs[CGP_OUTPUTS])
+void cgp_get_output_avx(ga_chr_t chromosome,
+    __m256i_aligned inputs[CGP_INPUTS], __m256i_aligned outputs[CGP_OUTPUTS])
 {
-#ifdef SSE2
+#ifndef AVX2
+    assert(false);
+#else
     assert(CGP_OUTPUTS == 1);
     assert(CGP_ROWS == 4);
     assert(CGP_LBACK == 1);
 
     // previous and currently computed column
-    register __m128i prev0, prev1, prev2, prev3;
-    register __m128i current0, current1, current2, current3;
+    register __m256i prev0, prev1, prev2, prev3;
+    register __m256i current0, current1, current2, current3;
 
     // 0xFF constant
-    static __m128i_aligned FF;
-    FF = _mm_set1_epi8(0xFF);
+    static __m256i_aligned FF;
+    FF = _mm256_set1_epi8(0xFF);
 
     cgp_genome_t genome = (cgp_genome_t) chromosome->genome;
 
-    /* if primary output is connected to primary input, skip evaluation
+#ifdef TEST_EVAL_AVX
 
-    This cannot happen - CGP does not generate circuits like that
-
-    if (genome->outputs[0] < CGP_INPUTS) {
-        int i = genome->outputs[0];
-        _mm_store_si128(&outputs[0], inputs[i]);
-        return;
-    }
-    */
-
-#ifdef TEST_EVAL_SSE2
     for (int i = 0; i < CGP_INPUTS; i++) {
         unsigned char *_tmp = (unsigned char*) &inputs[i];
-        printf("I: %2d = " UCFMT16 "\n", i, UCVAL16(0));
+        printf("I: %2d = " UCFMT32 "\n", i, UCVAL32(0));
     }
 #endif
 
@@ -120,11 +113,11 @@ void cgp_get_output_sse(ga_chr_t chromosome,
             // skip inactive blocks
             if (!n->is_active) continue;
 
-            register __m128i A;
-            register __m128i B;
-            register __m128i Y;
-            register __m128i TMP;
-            register __m128i mask;
+            register __m256i A;
+            register __m256i B;
+            register __m256i Y;
+            register __m256i TMP;
+            register __m256i mask;
 
             LOAD_INPUT(A, n->inputs[0]);
             LOAD_INPUT(B, n->inputs[1]);
@@ -139,30 +132,30 @@ void cgp_get_output_sse(ga_chr_t chromosome,
                     break;
 
                 case inversion:
-                    Y = _mm_sub_epi8(FF, A);
+                    Y = _mm256_sub_epi8(FF, A);
                     break;
 
                 case b_or:
-                    Y = _mm_or_si128(A, B);
+                    Y = _mm256_or_si256(A, B);
                     break;
 
                 case b_not1or2:
                     // we don't have NOT instruction, we need to XOR with FF
-                    Y = _mm_xor_si128(FF, A);
-                    Y = _mm_or_si128(Y, B);
+                    Y = _mm256_xor_si256(FF, A);
+                    Y = _mm256_or_si256(Y, B);
                     break;
 
                 case b_and:
-                    Y = _mm_and_si128(A, B);
+                    Y = _mm256_and_si256(A, B);
                     break;
 
                 case b_nand:
-                    Y = _mm_and_si128(A, B);
-                    Y = _mm_xor_si128(FF, Y);
+                    Y = _mm256_and_si256(A, B);
+                    Y = _mm256_xor_si256(FF, Y);
                     break;
 
                 case b_xor:
-                    Y = _mm_xor_si128(A, B);
+                    Y = _mm256_xor_si256(A, B);
                     break;
 
                 case rshift1:
@@ -171,9 +164,9 @@ void cgp_get_output_sse(ga_chr_t chromosome,
                     // IN : [ 1 2 3 4 5 6 7 8 | A B C D E F G H]
                     // SHR: [ 0 1 2 3 4 5 6 7 | 8 A B C D E F G]
                     // MSK: [ 0 1 2 3 4 5 6 7 | 0 A B C D E F G]
-                    mask = _mm_set1_epi8(0x7F);
-                    Y = _mm_srli_epi16(A, 1);
-                    Y = _mm_and_si128(Y, mask);
+                    mask = _mm256_set1_epi8(0x7F);
+                    Y = _mm256_srli_epi16(A, 1);
+                    Y = _mm256_and_si256(Y, mask);
                     break;
 
                 case rshift2:
@@ -181,9 +174,9 @@ void cgp_get_output_sse(ga_chr_t chromosome,
                     // IN : [ 1 2 3 4 5 6 7 8 | A B C D E F G H]
                     // SHR: [ 0 0 1 2 3 4 5 6 | 7 8 A B C D E F]
                     // MSK: [ 0 0 1 2 3 4 5 6 | 0 0 A B C D E F]
-                    mask = _mm_set1_epi8(0x3F);
-                    Y = _mm_srli_epi16(A, 2);
-                    Y = _mm_and_si128(Y, mask);
+                    mask = _mm256_set1_epi8(0x3F);
+                    Y = _mm256_srli_epi16(A, 2);
+                    Y = _mm256_and_si256(Y, mask);
                     break;
 
                 case swap:
@@ -192,57 +185,57 @@ void cgp_get_output_sse(ga_chr_t chromosome,
                     // IN : [ 1 2 3 4 5 6 7 8 | A B C D E F G H]
                     // SHL: [ 5 6 7 8 A B C D | E F G H 0 0 0 0]
                     // MSK: [ 5 6 7 8 0 0 0 0 | E F G H 0 0 0 0]
-                    mask = _mm_set1_epi8(0xF0);
-                    TMP = _mm_slli_epi16(A, 4);
-                    TMP = _mm_and_si128(TMP, mask);
+                    mask = _mm256_set1_epi8(0xF0);
+                    TMP = _mm256_slli_epi16(A, 4);
+                    TMP = _mm256_and_si256(TMP, mask);
 
                     // Mask B
                     // IN : [ 1 2 3 4 5 6 7 8 | A B C D E F G H]
                     // MSK: [ 0 0 0 0 5 6 7 8 | 0 0 0 0 E F G H]
-                    mask = _mm_set1_epi8(0x0F);
-                    Y = _mm_and_si128(B, mask);
+                    mask = _mm256_set1_epi8(0x0F);
+                    Y = _mm256_and_si256(B, mask);
 
                     // Combine
-                    Y = _mm_or_si128(Y, TMP);
+                    Y = _mm256_or_si256(Y, TMP);
                     break;
 
                 case add:
-                    Y = _mm_add_epi8(A, B);
+                    Y = _mm256_add_epi8(A, B);
                     break;
 
                 case add_sat:
-                    Y = _mm_adds_epu8(A, B);
+                    Y = _mm256_adds_epu8(A, B);
                     break;
 
                 case avg:
                     // shift right first, then add, to avoid overflow
-                    mask = _mm_set1_epi8(0x7F);
-                    TMP = _mm_srli_epi16(A, 1);
-                    TMP = _mm_and_si128(TMP, mask);
+                    mask = _mm256_set1_epi8(0x7F);
+                    TMP = _mm256_srli_epi16(A, 1);
+                    TMP = _mm256_and_si256(TMP, mask);
 
-                    Y = _mm_srli_epi16(B, 1);
-                    Y = _mm_and_si128(Y, mask);
+                    Y = _mm256_srli_epi16(B, 1);
+                    Y = _mm256_and_si256(Y, mask);
 
-                    Y = _mm_add_epi8(Y, TMP);
+                    Y = _mm256_add_epi8(Y, TMP);
                     break;
 
                 case max:
-                    Y = _mm_max_epu8(A, B);
+                    Y = _mm256_max_epu8(A, B);
                     break;
 
                 case min:
-                    Y = _mm_min_epu8(A, B);
+                    Y = _mm256_min_epu8(A, B);
                     break;
             }
 
 
-#ifdef TEST_EVAL_SSE2
-            __m128i _tmpval = Y;
+#ifdef TEST_EVAL_AVX
+            __m256i _tmpval = Y;
             unsigned char *_tmp = (unsigned char*) &_tmpval;
-            printf("N: %2d = " UCFMT16 "\n", idx + CGP_INPUTS, UCVAL16(0));
+            printf("N: %2d = " UCFMT32 "\n", idx + CGP_INPUTS, UCVAL32(0));
 
             bool mismatch = false;
-            for (int i = 1; i < 16; i++) {
+            for (int i = 1; i < 32; i++) {
                 if (_tmp[i] != _tmp[0]) {
                     fprintf(stderr,
                         "Value mismatch on index %2d (%u instead of %u)\n",
@@ -256,8 +249,8 @@ void cgp_get_output_sse(ga_chr_t chromosome,
 #endif
 
             if (idx + CGP_INPUTS == genome->outputs[0]) {
-                _mm_store_si128(&outputs[0], Y);
-#ifndef TEST_EVAL_SSE2
+                _mm256_store_si256(&outputs[0], Y);
+#ifndef TEST_EVAL_AVX
                 return;
 #endif
             }
@@ -273,10 +266,10 @@ void cgp_get_output_sse(ga_chr_t chromosome,
         prev3 = current3;
     } // end of row
 
-#ifdef TEST_EVAL_SSE2
+#ifdef TEST_EVAL_AVX
     for (int i = 0; i < CGP_OUTPUTS; i++) {
         unsigned char *_tmp = (unsigned char*) &outputs[i];
-        printf("O: %2d = " UCFMT16 "\n", i, UCVAL16(0));
+        printf("O: %2d = " UCFMT32 "\n", i, UCVAL32(0));
     }
 #endif
 

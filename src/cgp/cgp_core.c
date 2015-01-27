@@ -216,12 +216,14 @@ bool cgp_randomize_gene(cgp_genome_t genome, int gene)
             #else
                 genome->nodes[node_index].function = (cgp_func_t) rand_range(0, CGP_FUNC_COUNT - 1);
             #endif
+            genome->nodes[node_index].is_constant = false;
             TEST_RANDOMIZE_PRINTF("func 0 - %u\n", CGP_FUNC_COUNT - 1);
             return genome->nodes[node_index].is_active;
 
         } else {
             // mutating input
             genome->nodes[node_index].inputs[gene_index] = rand_schoice(_allowed_gene_vals[col].size, _allowed_gene_vals[col].values);
+            genome->nodes[node_index].is_constant = false;
             TEST_RANDOMIZE_PRINTF("input choice from %u\n", _allowed_gene_vals[col].size);
             return genome->nodes[node_index].is_active;
         }
@@ -284,8 +286,9 @@ void cgp_copy_genome(void *_dst, void *_src)
 /**
  * Calculate output of given chromosome and inputs
  * @param chr
+ * @return Whether CGP function has changed and evaluation should be restarted
  */
-void cgp_get_output(ga_chr_t chromosome, cgp_value_t *inputs, cgp_value_t *outputs)
+bool cgp_get_output(ga_chr_t chromosome, cgp_value_t *inputs, cgp_value_t *outputs)
 {
     cgp_genome_t genome = (cgp_genome_t) chromosome->genome;
     cgp_value_t inner_outputs[CGP_INPUTS + CGP_NODES];
@@ -303,24 +306,14 @@ void cgp_get_output(ga_chr_t chromosome, cgp_value_t *inputs, cgp_value_t *outpu
         cgp_value_t B = inner_outputs[n->inputs[1]];
         cgp_value_t Y;
 
-        switch (n->function) {
-            case c255:          Y = 255;            break;
-            case identity:      Y = A;              break;
-            case inversion:     Y = 255 - A;        break;
-            case b_or:          Y = A | B;          break;
-            case b_not1or2:     Y = ~A | B;         break;
-            case b_and:         Y = A & B;          break;
-            case b_nand:        Y = ~(A & B);       break;
-            case b_xor:         Y = A ^ B;          break;
-            case rshift1:       Y = A >> 1;         break;
-            case rshift2:       Y = A >> 2;         break;
-            case swap:          Y = SWAP(A, B);     break;
-            case add:           Y = A + B;          break;
-            case add_sat:       Y = ADD_SAT(A, B);  break;
-            case avg:           Y = (A + B) >> 1;   break;
-            case max:           Y = MAX(A, B);      break;
-            case min:           Y = MIN(A, B);      break;
-            default:            abort();
+        if (n->is_constant) {
+            Y = n->constant_value;
+
+        } else {
+            bool should_restart = cgp_get_node_output(n, A, B, &Y);
+            if (should_restart) {
+                return true;
+            }
         }
 
         inner_outputs[CGP_INPUTS + i] = Y;
@@ -338,6 +331,8 @@ void cgp_get_output(ga_chr_t chromosome, cgp_value_t *inputs, cgp_value_t *outpu
         printf("O: %u = %u\n", i, outputs[i]);
     }
 #endif
+
+    return false;
 }
 
 

@@ -24,35 +24,19 @@
 #include "cgp_config.h"
 
 
+#ifdef SYMREG
+  #include "../symreg/cgp_symreg.h"
+#else
+  #include "../ifilter/cgp_ifilter.h"
+#endif
+
+
 #define CGP_FUNC_INPUTS 2
 #define CGP_NODES (CGP_COLS * CGP_ROWS)
 #define CGP_CHR_OUTPUTS_INDEX ((CGP_FUNC_INPUTS + 1) * CGP_NODES)
 #define CGP_CHR_LENGTH (CGP_CHR_OUTPUTS_INDEX + CGP_OUTPUTS)
 
 static const ga_problem_type_t CGP_PROBLEM_TYPE = maximize;
-
-typedef unsigned char cgp_value_t;
-
-#define CGP_FUNC_COUNT 16
-typedef enum
-{
-    c255 = 0,   // 255
-    identity,   // a
-    inversion,  // 255 - a
-    b_or,       // a or b
-    b_not1or2,  // (not a) or b
-    b_and,      // a and b
-    b_nand,     // not (a and b)
-    b_xor,      // a xor b
-    rshift1,    // a >> 1
-    rshift2,    // a >> 2
-    swap,       // a <-> b
-    add,        // a + b
-    add_sat,    // a +S b
-    avg,        // (a + b) >> 1
-    max,        // max(a, b)
-    min,        // min(a, b)
-} cgp_func_t;
 
 
 /**
@@ -62,6 +46,8 @@ typedef struct {
     int inputs[CGP_FUNC_INPUTS];
     cgp_func_t function;
     bool is_active;
+    bool is_constant;
+    cgp_value_t constant_value;
 } cgp_node_t;
 
 
@@ -155,8 +141,24 @@ void cgp_replace_chr(ga_chr_t chromosome, ga_chr_t replacement);
 /**
  * Calculate output of given chromosome and inputs
  * @param chr
+ * @return Whether CGP function has changed and evaluation should be restarted
  */
-void cgp_get_output(ga_chr_t chromosome, cgp_value_t *inputs, cgp_value_t *outputs);
+bool cgp_get_output(ga_chr_t chromosome, cgp_value_t *inputs, cgp_value_t *outputs);
+
+
+/**
+ * Calculates CGP node output value.
+ *
+ * Defined in cgp_symreg or cgp_ifilter
+ *
+ * @param  n CGP node
+ * @param  A Input value A
+ * @param  B Input value B
+ * @param  Y Output value
+ * @return Whether CGP function changed and evaluation should be restarted
+ */
+bool cgp_get_node_output(cgp_node_t *n, cgp_value_t A,
+    cgp_value_t B, cgp_value_t *Y);
 
 
 /**
