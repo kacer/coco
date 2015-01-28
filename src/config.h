@@ -48,7 +48,7 @@ typedef enum
 // multiple const to avoid "unused variable" warnings
 static const char * const config_algorithm_names[] = {
     "cgp",
-    "predictors",
+    "coev",
     "baldwin"
 };
 
