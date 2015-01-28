@@ -28,6 +28,7 @@
 
 typedef double cgp_value_t;
 #define CGP_VALUE_FORMAT "%.10g"
+#define CGP_ASCIIART_CONSTANT_FORMAT "%4f"
 
 /* node functions list */
 

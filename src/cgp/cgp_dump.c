@@ -20,6 +20,7 @@
 
 #include <stdlib.h>
 #include <stdarg.h>
+#include <string.h>
 
 #include "cgp_dump.h"
 
@@ -294,7 +295,11 @@ void cgp_dump_chr_asciiart(ga_chr_t chr, FILE *fp, bool only_active_blocks)
             if (only_active_blocks && !n->is_active) {
                 fprintf(fp, "                ");
             } else {
-                fprintf(fp, "[%2u]>|    |>[%2u]", n->inputs[0], CGP_INPUTS + i);
+                if (only_active_blocks && (CGP_FUNC_ARITY[n->function] < 1 || n->is_constant)) {
+                    fprintf(fp, "     |    |>[%2u]", CGP_INPUTS + i);
+                } else {
+                    fprintf(fp, "[%2u]>|    |>[%2u]", n->inputs[0], CGP_INPUTS + i);
+                }
             }
 
             if (x == CGP_COLS - 1) fprintf(fp, " |");
@@ -313,7 +318,20 @@ void cgp_dump_chr_asciiart(ga_chr_t chr, FILE *fp, bool only_active_blocks)
             if (only_active_blocks && !n->is_active) {
                 fprintf(fp, "                ");
             } else {
-                fprintf(fp, "[%2u]>|%s|     ", n->inputs[1], CGP_FUNC_NAMES[n->function]);
+
+                char name[5];
+                if (n->is_constant) {
+                    snprintf(name, 5, CGP_ASCIIART_CONSTANT_FORMAT, n->constant_value);
+                    name[4] = '\0';  // always null-terminated
+                } else {
+                    strncpy(name, CGP_FUNC_NAMES[n->function], 5);
+                }
+
+                if (only_active_blocks && (CGP_FUNC_ARITY[n->function] < 2 || n->is_constant)) {
+                    fprintf(fp, "     |%s|     ", name);
+                } else {
+                    fprintf(fp, "[%2u]>|%s|     ", n->inputs[1], name);
+                }
             }
 
             if (x == CGP_COLS - 1) fprintf(fp, " |");

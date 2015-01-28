@@ -28,6 +28,7 @@
 
 typedef unsigned char cgp_value_t;
 #define CGP_VALUE_FORMAT "%u"
+#define CGP_ASCIIART_CONSTANT_FORMAT "%4u"
 
 
 /* remember, number of inputs is declared in cgp_config.h */
