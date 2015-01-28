@@ -76,10 +76,10 @@ archive_t arc_create(int capacity, arc_func_vect_t methods, ga_problem_type_t pr
     arc->best_chromosome_ever = best_ever;
     arc->original_fitness = original_fitness;
     arc->capacity = capacity;
-    arc->stored = 0;
-    arc->pointer = 0;
     arc->methods = methods;
     arc->problem_type = problem_type;
+    arc->stored = 0;
+    arc->pointer = 0;
     return arc;
 }
 
@@ -98,6 +98,16 @@ void arc_destroy(archive_t arc)
     free(arc->original_fitness);
     ga_destroy_chr(arc->best_chromosome_ever, arc->methods.free_genome);
     free(arc);
+}
+
+
+/*
+ * Delete all items from archive
+ */
+void arc_empty(archive_t arc)
+{
+    arc->stored = 0;
+    arc->pointer = 0;
 }
 
 

@@ -93,6 +93,12 @@ void arc_destroy(archive_t arc);
 
 
 /**
+ * Delete all items from archive
+ */
+void arc_empty(archive_t arc);
+
+
+/**
  * Insert chromosome into archive
  *
  * Chromosome is copied into place and pointer to it is returned.
