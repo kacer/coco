@@ -108,8 +108,8 @@ static void handle_started(logger_t logger, history_entry_t *state)
 {
     fprintf(_get_fp(logger),
         "Evolution starts now.\n"
-        "Generation %d: Fitness predicted / real: " FITNESS_FMT " / " FITNESS_FMT "\n",
-        state->generation, state->predicted_fitness, state->real_fitness);
+        "Generation %d: Fitness predicted / real / predictor: " FITNESS_FMT " / " FITNESS_FMT " / " FITNESS_FMT "\n",
+        state->generation, state->predicted_fitness, state->real_fitness, state->active_predictor_fitness);
 }
 
 
@@ -144,8 +144,8 @@ static void handle_log_tick(logger_t logger, history_entry_t *state)
 {
     _USERTIME_STR;
     fprintf(_get_fp(logger),
-        "Generation %d: Fitness predicted / real: " FITNESS_FMT " / " FITNESS_FMT ". Usertime %s\n",
-        state->generation, state->predicted_fitness, state->real_fitness, _usertime_str);
+        "Generation %d: Fitness predicted / real / predictor: " FITNESS_FMT " / " FITNESS_FMT " / " FITNESS_FMT ". Usertime %s\n",
+        state->generation, state->predicted_fitness, state->real_fitness, state->active_predictor_fitness, _usertime_str);
 }
 
 
