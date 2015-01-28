@@ -70,6 +70,8 @@ int cgp_main(algo_data_t *wd)
 
 
         /* check stop conditions **********************************************/
+        /* (target fitness is checked after inserting better solution into
+            archive - we don't know real fitness yet) */
 
 
         int received_signal = check_signals(wd->cgp_population->generation);
@@ -77,14 +79,6 @@ int cgp_main(algo_data_t *wd)
         // last generation?
         if (wd->cgp_population->generation >= wd->config->max_generations) {
             finish_reason = generation_limit;
-            wd->finished = true;
-        }
-
-        // target fitness achieved?
-        if (wd->config->target_fitness != 0
-            && wd->cgp_population->best_fitness >= wd->config->target_fitness)
-        {
-            finish_reason = target_fitness;
             wd->finished = true;
         }
 
@@ -149,6 +143,17 @@ int cgp_main(algo_data_t *wd)
             } else if (need_history_entry_calc) {
                 real_fitness = fitness_eval_cgp(wd->cgp_population->best_chromosome);
             }
+        }
+
+
+        /* check for target fitness *******************************************/
+
+
+        if (wd->config->target_fitness != 0
+            && real_fitness >= wd->config->target_fitness)
+        {
+            finish_reason = target_fitness;
+            wd->finished = true;
         }
 
 
