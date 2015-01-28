@@ -110,7 +110,7 @@ ga_fitness_t _fitness_predict_cgp_by_genome(ga_chr_t cgp_chr, pred_genome_t pred
         assert(index < fitness_input_data->fitness_cases);
 
         cgp_value_t *inputs = &fitness_input_data->inputs[INPUT_IDX(index, 0)];
-        cgp_value_t target_output = fitness_input_data->outputs[i];
+        cgp_value_t target_output = fitness_input_data->outputs[index];
         cgp_value_t cgp_output;
 
         bool should_restart = cgp_get_output(cgp_chr, inputs, &cgp_output);
