@@ -51,7 +51,19 @@ SYMREG_EXECUTABLE=coco_symreg
 SYMREG_BUILDDIR=$(BUILDDIR)/symreg
 SYMREG_OBJS = $(SYMREG_SRCS:%.c=$(SYMREG_BUILDDIR)/%.o)
 SYMREG_DEPS = $(SYMREG_SRCS:%.c=$(SYMREG_BUILDDIR)/%.d)
-SYMREG_CMDLINE=-i ../functions/f001.dta -e 0.5 -g 10000 -a cgp -k 10000 -l cocolog -f 100 -p 12 -m 8 -P 32 -M 0.2 -S 0.06
+SYMREG_CMDLINE=-g 100000 -k 10000 -l cocolog \
+	-i ../functions/f004.dta -e 0.025 \
+	-a baldwin -S 100 -I 3 \
+	-f 100 \
+	-p 12 -m 8 \
+	-P 32 -M 0.2 \
+	--bw-zero-eps 0.5 \
+	--bw-slow-thr 0.1 \
+	--bw-zero-coef 0.9 \
+	--bw-decr-coef 0.96 \
+	--bw-slow-coef 1.07 \
+	--bw-fast-coef 1 \
+	--bw-interval 1000
 
 APPLY_CFLAGS=$(CFLAGS)
 APPLY_EXECUTABLE=coco_apply
@@ -125,6 +137,9 @@ merlinup: tar
 
 plot:
 	gnuplot cocolog.gp
+
+symplot:
+	gnuplot cocolog_symreg.gp
 
 valgrind: $(IFILTER_EXECUTABLE)
 	rm -rf cocolog/*
