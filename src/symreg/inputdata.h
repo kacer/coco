@@ -37,3 +37,6 @@ struct _input_data {
 
 
 void input_data_save(struct _input_data *data, FILE *file);
+
+
+void symreg_save_best(struct _input_data *data, FILE *file);

@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "../ga.h"
 #include "../inputdata.h"
 #include "inputdata.h"
 
@@ -107,5 +108,28 @@ void input_data_save(input_data_t *data, FILE *file)
             fprintf(file, "%lg\t", data->inputs[INPUT_IDX(case_idx, in_idx)]);
         }
         fprintf(file, "%lg\n", data->outputs[case_idx]);
+    }
+}
+
+
+void symreg_save_output(input_data_t *data, ga_chr_t chr, FILE *file)
+{
+    cgp_value_t outputs[data->fitness_cases];
+
+    for (int i = 0; i < data->fitness_cases; i++) {
+        cgp_value_t *inputs = &data->inputs[INPUT_IDX(i, 0)];
+        bool should_restart = cgp_get_output(chr, inputs, &outputs[i]);
+        if (should_restart) {
+            i = 0;
+            continue;
+        }
+    }
+
+    fprintf(file, "%u  %u\n", data->fitness_cases, CGP_INPUTS);
+    for (unsigned int case_idx = 0; case_idx < data->fitness_cases; case_idx++) {
+        for (int in_idx = 0; in_idx < CGP_INPUTS; in_idx++) {
+            fprintf(file, "%lg\t", data->inputs[INPUT_IDX(case_idx, in_idx)]);
+        }
+        fprintf(file, "%lg\n", outputs[case_idx]);
     }
 }

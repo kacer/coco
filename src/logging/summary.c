@@ -27,6 +27,7 @@
 #include "../utils.h"
 #include "../config.h"
 #include "../fitness.h"
+#include "../inputdata.h"
 
 
 struct logger_summary {
@@ -187,6 +188,17 @@ static void handle_finished(logger_t logger, finish_reason_t reason, history_ent
         }
 
         #ifdef SYMREG
+            SPRINTF_FILENAME("input.dta");
+            fp = fopen(_buffer, "wt");
+            if (fp) {
+                input_data_save(&work_data->input_data, fp);
+            }
+
+            SPRINTF_FILENAME("best.dta");
+            fp = fopen(_buffer, "wt");
+            if (fp) {
+                symreg_save_output(&work_data->input_data, circuit, fp);
+            }
 
         #else
             SPRINTF_FILENAME("img_original.png");
