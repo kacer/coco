@@ -17,7 +17,7 @@ set xtics 10000
 set ylabel "Fitness"
 set ytics 10
 set yrange [0:200]
-set xrange [0:30000]
+#set xrange [0:30000]
 
 set y2label "Prediktor [%]"
 set y2tics 5
