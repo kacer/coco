@@ -73,10 +73,10 @@ static config_t config = {
         .zero_epsilon = 0.001,
         .slow_threshold = 0.1,
 
-        .zero_coef = 0.93,
-        .decrease_coef = 0.97,
-        .increase_slow_coef = 1.03,
-        .increase_fast_coef = 1.00,
+        .zero_coef = 0.96,
+        .decrease_coef = 0.98,
+        .increase_slow_coef = 1.06,
+        .increase_fast_coef = 1.01,
 
     },
 
@@ -85,7 +85,7 @@ static config_t config = {
     .bw_increase_slow_increment_percent = 0.03,
     .bw_increase_fast_increment_percent = 0,
 
-    .log_interval = 0,
+    .log_interval = 10000,
     .log_dir = "",
 };
 
