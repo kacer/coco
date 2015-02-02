@@ -64,7 +64,7 @@ static config_t config = {
     .pred_offspring_combine = 0.5,
     .pred_genome_type = permuted,
 
-    .bw_interval = 0,
+    .bw_interval = 1000,
     .bw_config = {
         .algorithm = bwalg_last,
         .use_absolute_increments = false,
