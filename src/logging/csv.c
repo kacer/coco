@@ -138,7 +138,8 @@ static inline void _print_line(logger_t logger, history_entry_t *entry) {
         "%.10g,"     // entry->delta_real_fitness,
         "%.10g,"    // entry->delta_velocity,
         "%.10g,"     // logger_get_wallclock(logger).tv_sec / 60.0,
-        "%.10g\n",  // logger_get_usertime(logger).tv_sec / 60.0
+        "%.10g,"  // logger_get_usertime(logger).tv_sec / 60.0
+        "%d\n",       // entry->pred_generation
 
         entry->generation,
         entry->predicted_fitness,
@@ -154,7 +155,8 @@ static inline void _print_line(logger_t logger, history_entry_t *entry) {
         entry->delta_real_fitness,
         entry->delta_velocity,
         logger_get_wallclock(logger).tv_sec / 60.0,
-        logger_get_usertime(logger).tv_sec / 60.0
+        logger_get_usertime(logger).tv_sec / 60.0,
+        entry->pred_generation
     );
     fflush(fp);
 }
@@ -179,7 +181,8 @@ static void handle_started(logger_t logger, history_entry_t *state)
         "delta_fitness,"             // entry->delta_real_fitness,
         "delta_velocity,"           // entry->delta_velocity,
         "wallclock,"                 // logger_get_wallclock(logger).tv_sec / 60.0,
-        "usertime\n"                // logger_get_usertime(logger).tv_sec / 60.0
+        "usertime,"                 // logger_get_usertime(logger).tv_sec / 60.0
+        "pred_generation\n"         // entry->pred_generation
     );
 }
 

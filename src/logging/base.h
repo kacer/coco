@@ -31,6 +31,7 @@
 
 
 typedef enum {
+    undefined,
     generation_limit,
     target_fitness,
     signal_received,
