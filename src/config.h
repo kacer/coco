@@ -169,7 +169,7 @@ static inline void print_help() {
         "          Predictor mutation rate (in percent), default is 0.05.\n"
         "\n"
         "    --pred-population-size NUM, -P NUM\n"
-        "          Predictors population size, default is 10.\n"
+        "          Predictors population size, default is 32.\n"
         "\n"
         "    --pred-type TYPE, -T TYPE\n"
         "          Predictor genome type, one of {permuted|repeated}\n"
