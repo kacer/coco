@@ -76,7 +76,8 @@ void history_calc_entry(
     ga_fitness_t active_predictor_fitness,
     long cgp_evals,
     int pred_length,
-    int pred_used_length
+    int pred_used_length,
+    int pred_generation
 ) {
     entry->generation = generation;
     entry->delta_generation = generation - prev->generation;
@@ -104,6 +105,7 @@ void history_calc_entry(
 
     entry->pred_length = pred_length;
     entry->pred_used_length = pred_used_length;
+    entry->pred_generation = pred_generation;
 }
 
 

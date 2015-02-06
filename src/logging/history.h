@@ -55,6 +55,7 @@ typedef struct {
 
     int pred_length;
     int pred_used_length;
+    int pred_generation;
 } history_entry_t;
 
 
@@ -91,7 +92,8 @@ void history_calc_entry(
     ga_fitness_t active_predictor_fitness,
     long cgp_evals,
     int pred_length,
-    int pred_used_length
+    int pred_used_length,
+    int pred_generation
 );
 
 

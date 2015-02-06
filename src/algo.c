@@ -46,7 +46,7 @@ bool _should_apply_baldwin(bool is_better, algo_data_t *wd)
 int cgp_main(algo_data_t *wd)
 {
     history_entry_t current_history_entry;
-    finish_reason_t finish_reason;
+    finish_reason_t finish_reason = undefined;
 
     /* A. log start */
     logger_fire(&wd->loggers, started, history_last(&wd->history));
@@ -159,6 +159,7 @@ int cgp_main(algo_data_t *wd)
             ga_fitness_t active_predictor_fitness = -1;
             int pred_length = -1;
             int pred_used_length = -1;
+            int pred_generation = -1;
 
             if (wd->config->algorithm != simple_cgp) {
                 #pragma omp critical (PRED_ARCHIVE__CGP_POP)
@@ -166,6 +167,7 @@ int cgp_main(algo_data_t *wd)
                     ga_chr_t predictor = arc_get(wd->pred_archive, 0);
                     pred_used_length = ((pred_genome_t) predictor->genome)->used_pixels,
                     active_predictor_fitness = predictor->fitness;
+                    pred_generation = wd->pred_population->generation;
                 }
 
                 pred_length = pred_get_length();
@@ -180,7 +182,8 @@ int cgp_main(algo_data_t *wd)
                 active_predictor_fitness,
                 fitness_get_cgp_evals(),
                 pred_length,
-                pred_used_length
+                pred_used_length,
+                pred_generation
             );
         }
 
