@@ -467,6 +467,16 @@ S~takto tvořenými jedinci lze pracovat různými způsoby. Podobně, jako lze 
     \item Pokud fitness klesá, evoluce pravděpodobně opouští lokální optimum a mírné zkrácení prediktoru může pomoci postup urychlit.
 \end{itemize}
 
+\todo{
+Konkrétní pravidla + parametry:
+\begin{itemize}
+    \item jednoduchý přístup: poslední
+    \item medián, průměr několika záznamů, vážený průměr
+    \item odvodit nějaký vztah pomocí symreg přes více záznamů
+    \item hýbání s offsetem?
+ \end{itemize}
+}
+
 Protože může délka prediktoru klesnout pod únosnou mez (v~extrémním případě to může být pouze jeden případ fitness), je součástí algoritmu také dolní mez nepřesnosti prediktoru, která je určena jako poměr mezi predikovanou a skutečnou hodnotou fitness kandidátního filtru. V~případě překročení této meze se délka prediktoru vždy zvýší bez ohledu na aktuální průběh evoluce.
 
 S~plasticitou jedinců lze pracovat i dalšími způsoby. Například nově vytvořený prediktor může experimentovat s~offsetem a snažit se tak maximalizovat svou fitness -- tímto je simulováno jeho učení a přizpůsobování se prostředí. Další možností je v~situaci, kdy evoluce filtrů stagnuje, skokově změnit offset všech prediktorů v~populaci, což může pomoci v~posunu z~lokálního optima. Všechny zmíněné možnosti lze kombinovat.
@@ -480,6 +490,8 @@ Navrhovaný program pracuje na principech koevoluce popsané v~části \ref{secC
 
 U~populace obrazových filtrů jsou použity dvě různé fitness funkce. \emph{Skutečná fitness} je určena pomocí celé množiny případů fitness a slouží pro výpočet fitness prediktorů a také pro posuzování průběhu evoluce při modifikaci proměnné \emph{maxUsedGenes}. Oproti tomu \emph{predikovaná fitness} používá při výpočtu pouze případy fitness určené prediktorem. Používá se pro ohodnocení jak obrazových filtrů, tak prediktorů.
 
+\todo{Formálně fitness}
+
 \subsection{Paměť průběhu evoluce}
 
 Pro účely ovlivňování tvorby fenotypu prediktorů fitness je potřeba udržovat historii změn fitness kandidátních filtrů delší, než jen mezi aktuální a novou generací. Protože není potřeba udržovat celou historii, ale zajímá nás jen poslední vývoj, jsou nejstarší položky přepisovány novějšími -- z~implementačního pohledu jde o~kruhový buffer. Ukládá se zejména:
@@ -491,6 +503,8 @@ Pro účely ovlivňování tvorby fenotypu prediktorů fitness je potřeba udrž
 \end{itemize}
 
 Nové položky mohou být do paměti vkládány průběžně v~určitých časových intervalech (např. každých tisíc generací) nebo pouze pokud je (predikovaná) fitness nejlepšího filtru vyšší, než byla fitness rodiče. V~prvním případě je možné, že fitness bude delší dobu stejná a kruhový buffer již nebude obsahovat informaci o~směru poslední změny. Proto pamět obsahuje zvláštní pozici pro poslední záznam s~nenulovým rozdílem fitness. Tato pozice není součástí kruhového bufferu.
+
+\todo{Konkrétní popis všech položek v historii}
 
 \subsection{Archivy}
 
@@ -506,11 +520,47 @@ Evoluce kandidátních filtrů probíhá stejně jako v~případě bez koevoluce
 
 Evoluce je, podobně jako v~případě bez koevoluce, ukončena po dosažení stanoveného počtu generací nebo požadované hodnoty PSNR.
 
+\todo{Presny algoritmus (pseudokod) kazde populace}
+
+\chapter{Implementace}
+\label{chImplementation}
+
+\todo{Jazyk, překladač, std=c11}
+
+\todo{Inicializace PRNG}
+
+\section{Paralelizace}
+
+\todo{OpenMP}
+\todo{Jak je to rozdělené na vlákna}
+
+\subsection{Přístup ke sdílené paměti (archivy, populace)}
+\todo{Kde všude je třeba strkat zámky}
+\todo{Skoro čtenář/písař}
+
+
+\section{Akcelerace výpočtu CGP pomocí SIMD instrukcí}
+
+\todo{Popis SSE2, AVX, AVX2 + jiný memory layout}
+
+\section{Logování, možnost napojení na GUI}
+
+
+\chapter{Experimentální vyhodnocení}
+\label{chExperiments}
+
+\todo{Ladění parametrů}
+
+\todo{Statistika pravidel: jak často které}
+\todo{Rychlost mezi populacemi}
+
+\todo{Konvergence délky prediktoru při různé počáteční délce}
+
+\todo{Porovnání různé šumy s CGP/Coev}
+
+\todo{Sobel?}
+
+
+
 \chapter{Závěr}
-
-Tento semestrální projekt se zabývá problematikou evolučních algoritmů, evolučního návrhu obrazových filtrů a vztahem mezi učením a evolucí. Následně je navržen systém pro tvorbu obrazových filtrů využívající souběžné učení v~koevoluci s~prediktory fitness. Použití souběžného učení by mělo pomoci překonat některé nedostatky koevolučního algoritmu, zejména nutnost experimentálně nalézt nejvhodnější velikost prediktoru fitness.
-
-% Kapitola \ref{chEA} postupně představuje principy evolučních algoritmů, genetického algoritmu, kartézského genetického programování, použití koevoluce a v~závěru se zabývá souběžným učením a plasticitou fitness. Následující kapitola \ref{chDesign} je věnována návrhu systému pro tvorbu obrazových filtrů s~použitím souběžného učení.
-
-V~navazující diplomové práci bude navržený systém implementován a následně otestován. Experimenty budou zaměřeny především na kvalitu výsledných filtrů a čas běhu programu. Výsledky dosažené při použití souběžného učení budou porovnány s~implementací koevoluce používající prediktory fitness pevné délky a také se variantou, kdy je prediktor fitness generován programem vyvíjeným pomocí kartézského genetického programování.
-
+\label{chConclusions}
