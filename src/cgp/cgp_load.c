@@ -58,6 +58,7 @@ int cgp_load_chr_compat(ga_chr_t chr, FILE *fp)
         int nodeid;
         count = fscanf(fp, "([%u] %u, %u, %u)",
             &nodeid, &n->inputs[0], &n->inputs[1], &n->function);
+        n->is_constant = false;
         if (count != 4) return -1;
         if (nodeid != CGP_INPUTS + i) return -1;
     }

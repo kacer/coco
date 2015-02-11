@@ -44,7 +44,7 @@ IFILTER_EXECUTABLE=coco
 IFILTER_BUILDDIR=$(BUILDDIR)/ifilter
 IFILTER_OBJS = $(IFILTER_SRCS:%.c=$(IFILTER_BUILDDIR)/%.o)
 IFILTER_DEPS = $(IFILTER_SRCS:%.c=$(IFILTER_BUILDDIR)/%.d)
-IFILTER_CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_15.png -g 10000 -a baldwin -S 100 -I 25 -k 10000 -l cocolog
+IFILTER_CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_15.png -g 1 -a baldwin -S 100 -I 25 -k 10000 -l cocolog
 
 SYMREG_CFLAGS=$(CFLAGS) -DSYMREG -DCGP_COLS=32 -DCGP_ROWS=1 -DCGP_LBACK=32
 SYMREG_EXECUTABLE=coco_symreg
@@ -70,7 +70,8 @@ APPLY_EXECUTABLE=coco_apply
 APPLY_BUILDDIR=$(IFILTER_BUILDDIR)
 APPLY_OBJS=$(IFILTER_BUILDDIR)/ifilter/image.o $(IFILTER_BUILDDIR)/ga.o \
 	$(IFILTER_BUILDDIR)/cgp/cgp_core.o $(IFILTER_BUILDDIR)/cgp/cgp_load.o \
-	$(IFILTER_BUILDDIR)/ifilter/cgp_ifilter.o $(IFILTER_BUILDDIR)/ifilter/main_apply.o
+	$(IFILTER_BUILDDIR)/cgp/cgp_dump.o $(IFILTER_BUILDDIR)/ifilter/cgp_ifilter.o \
+	$(IFILTER_BUILDDIR)/ifilter/main_apply.o
 APPLY_DEPS = $(APPLY_OBJS:%.o=%.d)
 
 EXECUTABLES=$(IFILTER_EXECUTABLE) $(APPLY_EXECUTABLE) $(SYMREG_EXECUTABLE)

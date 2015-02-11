@@ -21,6 +21,9 @@
 #pragma once
 
 
+#include <stdio.h>
+
+
 #define WINDOW_SIZE 9
 #define WINDOW_CENTER 4
 
@@ -64,6 +67,14 @@ img_image_t img_create(int width, int height, int comp);
  * @return
  */
 img_image_t img_load(char const *filename);
+
+
+/**
+ * Loads image from stream
+ * @param  filename
+ * @return
+ */
+img_image_t img_load_stream(FILE *file);
 
 
 /**
@@ -118,6 +129,13 @@ void img_destroy(img_image_t img);
  * @param img
  */
 void img_windows_destroy(img_window_array_t arr);
+
+
+/**
+ * Clears all data associated with image windows from memory
+ * @param img
+ */
+void img_windows_simd_destroy(img_pixel_t *windows[WINDOW_SIZE]);
 
 
 /**

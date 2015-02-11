@@ -18,8 +18,9 @@
  */
 
 
-#include <stdlib.h>
+#include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "../cpu.h"
 #include "image.h"
@@ -62,6 +63,27 @@ img_image_t img_load(char const *filename) {
     if (img == NULL) return NULL;
 
     img->data = stbi_load(filename, &(img->width), &(img->height), &(img->comp), COMP);
+    if (img->data == NULL) {
+        printf("%s", stbi__g_failure_reason);
+        free(img);
+        return NULL;
+    }
+
+    img->comp = COMP;
+    return img;
+}
+
+
+/**
+ * Loads image from stream
+ * @param  filename
+ * @return
+ */
+img_image_t img_load_stream(FILE *file) {
+    img_image_t img = (img_image_t) malloc(sizeof(struct img_image));
+    if (img == NULL) return NULL;
+
+    img->data = stbi_load_from_file(file, &(img->width), &(img->height), &(img->comp), COMP);
     if (img->data == NULL) {
         printf("%s", stbi__g_failure_reason);
         free(img);
@@ -121,6 +143,19 @@ void img_destroy(img_image_t img) {
 void img_windows_destroy(img_window_array_t arr) {
     if (arr != NULL) free(arr->windows);
     free(arr);
+}
+
+
+/**
+ * Clears all data associated with image windows from memory
+ * @param img
+ */
+void img_windows_simd_destroy(img_pixel_t *windows[WINDOW_SIZE]) {
+    if (windows != NULL) {
+        for (int i = 0; i < WINDOW_SIZE; i++) {
+            free(windows[i]);
+        }
+    }
 }
 
 
@@ -230,7 +265,7 @@ int img_split_windows_simd(img_image_t img, img_pixel_t *out[WINDOW_SIZE])
 
 
 /**
- * Calculates fitness using the PSNR (peak signal-to-noise ratio) function.
+ * Calculates PSNR (peak signal-to-noise ratio) of two images.
  * The higher the value, the better the filter.
  *
  * @param  original image
@@ -253,5 +288,5 @@ double img_psnr(img_image_t original, img_image_t filtered)
         }
     }
 
-    return coef / sum;
+    return 10 * log10(coef / sum);
 }

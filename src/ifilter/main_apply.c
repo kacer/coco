@@ -27,6 +27,9 @@
 #include "../cgp/cgp.h"
 
 
+static const int SSE2_STEP = 16;
+
+
 const char* help =
     "Colearning in Coevolutionary Algorithms\n"
     "Bc. Michal Wiglasz <xwigla00@stud.fit.vutbr.cz>\n"
@@ -57,9 +60,13 @@ const char* help =
     "    --chromosome FILE, -c FILE\n"
     "          CGP chromosome describing filter\n"
     "    --input FILE, -i FILE\n"
-    "          Input image filename\n"
+    "          Input image filename (stdin by default)\n"
     "    --output FILE, -o FILE\n"
-    "          Output image filename\n";
+    "          Output image filename (stdout by default)\n"
+    "    --calc-psnr FILE, -p FILE\n"
+    "          Print PSNR with reference image and print it to stderr\n"
+    "    --print-ascii, -a\n"
+    "          Prints loaded chromosome as ASCII-art to stderr\n";
 
 
 /******************************************************************************/
@@ -73,13 +80,16 @@ int main(int argc, char *argv[])
         {"chromosome", required_argument, 0, 'c'},
         {"input", required_argument, 0, 'i'},
         {"output", required_argument, 0, 'o'},
+        {"calc-psnr", required_argument, 0, 'p'},
+        {"print-ascii", no_argument, 0, 'a'},
 
         {0, 0, 0, 0}
     };
 
-    static const char *short_options = "hc:i:o:";
+    static const char *short_options = "hc:i:o:p:a";
 
     img_image_t input_image = NULL;
+    img_image_t reference_image = NULL;
     img_window_array_t input_image_windows = NULL;
     img_image_t output_image = NULL;
     FILE *output_image_file = NULL;
@@ -94,6 +104,10 @@ int main(int argc, char *argv[])
         Parse command line
      */
 
+    bool input_file_given = false;
+    bool output_file_given = false;
+    bool print_ascii_art = false;
+
     while (1) {
         FILE *chromosome_file;
         int option_index;
@@ -107,11 +121,12 @@ int main(int argc, char *argv[])
 
             case 'i':
                 input_image = img_load(optarg);
+                input_file_given = true;
                 break;
 
             case 'o':
-                printf("output: %s\n", optarg);
                 output_image_file = fopen(optarg, "wb");
+                output_file_given = true;
                 break;
 
             case 'c':
@@ -126,10 +141,30 @@ int main(int argc, char *argv[])
                 fclose(chromosome_file);
                 break;
 
+            case 'a':
+                print_ascii_art = true;
+                break;
+
+            case 'p':
+                reference_image = img_load(optarg);
+                if (!reference_image) {
+                    fprintf(stderr, "Failed to load reference image.\n");
+                    return 1;
+                }
+                break;
+
             default:
                 fprintf(stderr, "Invalid arguments.\n");
                 return 1;
         }
+    }
+
+    if (!input_file_given) {
+        input_image = img_load_stream(stdin);
+    }
+
+    if (!output_file_given) {
+        output_image_file = stdout;
     }
 
     /*
@@ -163,6 +198,14 @@ int main(int argc, char *argv[])
     }
 
     /*
+        Print chromosome to stderr
+     */
+
+    if (print_ascii_art) {
+        cgp_dump_chr(chromosome, stderr, asciiart_active);
+    }
+
+    /*
         Filter image
     */
 
@@ -177,12 +220,27 @@ int main(int argc, char *argv[])
     }
 
     /*
+        Print PSNR to stderr
+     */
+
+    if (reference_image) {
+        double psnr = img_psnr(reference_image, output_image);
+        fprintf(stderr, "%g\n", psnr);
+    }
+
+    /*
         Write PNG
      */
 
     int len;
     unsigned char *png = img_save_png_to_mem(output_image, &len);
-
     fwrite(png, sizeof(unsigned char), len, output_image_file);
     fclose(output_image_file);
+    free(png);
+
+    ga_destroy_chr(chromosome, cgp_free_genome);
+    img_destroy(output_image);
+    img_destroy(input_image);
+    img_destroy(reference_image);
+    img_windows_destroy(input_image_windows);
 }
