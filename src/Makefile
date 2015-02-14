@@ -44,7 +44,7 @@ IFILTER_EXECUTABLE=coco
 IFILTER_BUILDDIR=$(BUILDDIR)/ifilter
 IFILTER_OBJS = $(IFILTER_SRCS:%.c=$(IFILTER_BUILDDIR)/%.o)
 IFILTER_DEPS = $(IFILTER_SRCS:%.c=$(IFILTER_BUILDDIR)/%.d)
-IFILTER_CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_15.png -g 1 -a baldwin -S 100 -I 25 -k 10000 -l cocolog
+IFILTER_CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_15.png -g 1000 -a baldwin -S 100 -I 25 -k 10000 -l cocolog
 
 SYMREG_CFLAGS=$(CFLAGS) -DSYMREG -DCGP_COLS=32 -DCGP_ROWS=1 -DCGP_LBACK=32
 SYMREG_EXECUTABLE=coco_symreg
@@ -178,7 +178,6 @@ $(IFILTER_BUILDDIR)/%.o: %.c
 
 $(IFILTER_BUILDDIR)/%.d: %.c
 	@mkdir -p `dirname $@`
-	@echo CC $@
 	@@$(CC) $(IFILTER_CFLAGS) -MM -MT $(<:%.c=$(IFILTER_BUILDDIR)/%.o) $< -o $@
 
 -include $(IFILTER_DEPS)
@@ -203,7 +202,6 @@ $(SYMREG_BUILDDIR)/%.o: %.c
 
 $(SYMREG_BUILDDIR)/%.d: %.c
 	@mkdir -p `dirname $@`
-	@echo CC $@
 	@@$(CC) $(SYMREG_CFLAGS) -MM -MT $(<:%.c=$(SYMREG_BUILDDIR)/%.o) $< -o $@
 
 -include $(SYMREG_DEPS)
