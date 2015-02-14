@@ -165,13 +165,14 @@ void* cgp_alloc_genome()
 {
     cgp_genome_t genome = malloc(sizeof(struct cgp_genome));
     if (genome) {
-        genome->nodes = (cgp_node_t*)
-            malloc(sizeof(cgp_node_t) * _settings->cols * _settings->rows);
-        genome->outputs = (int*) malloc(sizeof(int) * _settings->outputs);
         genome->inputs_count = _settings->inputs;
         genome->outputs_count = _settings->outputs;
         genome->cols = _settings->cols;
         genome->rows = _settings->rows;
+
+        genome->nodes = (cgp_node_t*)
+            malloc(sizeof(cgp_node_t) * cgp_nodes_count(genome));
+        genome->outputs = (int*) malloc(sizeof(int) * genome->outputs_count);
     }
     return genome;
 }

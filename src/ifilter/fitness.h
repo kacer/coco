@@ -34,7 +34,8 @@ static const int FITNESS_AVX2_STEP = 32;
  */
 typedef double (*fitness_simd_func_t)(
     img_pixel_t *original,
-    img_pixel_t *noisy[WINDOW_SIZE],
+    img_pixel_t *noisy,
+    int row_length,
     ga_chr_t chr,
     int offset,
     int valid_pixels_count);
@@ -55,7 +56,8 @@ typedef double (*fitness_simd_func_t)(
  */
 double _fitness_get_sqdiffsum_sse(
     img_pixel_t *original,
-    img_pixel_t *noisy[WINDOW_SIZE],
+    img_pixel_t *noisy,
+    int row_length,
     ga_chr_t chr,
     int offset,
     int block_size);
@@ -76,7 +78,8 @@ double _fitness_get_sqdiffsum_sse(
  */
 double _fitness_get_sqdiffsum_avx(
     img_pixel_t *original,
-    img_pixel_t *noisy[WINDOW_SIZE],
+    img_pixel_t *noisy,
+    int row_length,
     ga_chr_t chr,
     int offset,
     int block_size);

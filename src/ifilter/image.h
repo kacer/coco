@@ -87,9 +87,11 @@ img_window_array_t img_split_windows(img_image_t img);
 
 /**
  * Splits image into windows, suitably for SIMD processing
- * @return
+ * @param  img
+ * @param  out output 2D array [pixelpos][window]
+ * @return row length (in output array)
  */
-int img_split_windows_simd(img_image_t img, img_pixel_t *out[WINDOW_SIZE]);
+int img_split_windows_simd(img_image_t img, img_pixel_t **out);
 
 
 /**
@@ -135,7 +137,7 @@ void img_windows_destroy(img_window_array_t arr);
  * Clears all data associated with image windows from memory
  * @param img
  */
-void img_windows_simd_destroy(img_pixel_t *windows[WINDOW_SIZE]);
+void img_windows_simd_destroy(img_pixel_t *windows);
 
 
 /**

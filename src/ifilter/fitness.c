@@ -38,7 +38,7 @@ static double _psnr_coeficient;
 bool _fitness_get_diff(ga_chr_t chr, img_window_t *w, int *diff);
 double _fitness_get_sqdiffsum_scalar(ga_chr_t chr);
 double _fitness_get_sqdiffsum_simd(ga_chr_t chr, img_pixel_t *original,
-    img_pixel_t *noisy[WINDOW_SIZE], int data_length);
+    img_pixel_t *noisy, int row_length, int data_length);
 double _fitness_predict_cgp_scalar(ga_chr_t cgp_chr, pred_genome_t predictor);
 
 static inline double fitness_psnr_coeficient(int pixels_count)
@@ -76,7 +76,8 @@ ga_fitness_t fitness_eval_cgp(ga_chr_t chr)
 
     if(can_use_simd()) {
         sum = _fitness_get_sqdiffsum_simd(chr, fitness_input_data->img_original->data,
-            fitness_input_data->img_noisy_simd, fitness_input_data->fitness_cases);
+            fitness_input_data->img_noisy_simd, fitness_input_data->simd_row_length,
+             fitness_input_data->fitness_cases);
 
     } else {
         sum = _fitness_get_sqdiffsum_scalar(chr);
@@ -103,7 +104,8 @@ ga_fitness_t fitness_predict_cgp(ga_chr_t cgp_chr, ga_chr_t pred_chr)
 
     if (can_use_simd()) {
         sum = _fitness_get_sqdiffsum_simd(cgp_chr, predictor->output_simd,
-            predictor->inputs_simd, predictor->used_pixels);
+            predictor->inputs_simd, predictor->simd_row_length,
+            predictor->used_pixels);
 
     } else {
         sum = _fitness_predict_cgp_scalar(cgp_chr, predictor);
@@ -127,7 +129,8 @@ void fitness_prepare_predictor_for_simd(pred_genome_t predictor)
 
         predictor->output_simd[i] = fitness_input_data->img_original->data[index];
         for (int w = 0; w < WINDOW_SIZE; w++) {
-            predictor->inputs_simd[w][i] = fitness_input_data->img_noisy_simd[w][index];
+            predictor->inputs_simd[w * predictor->simd_row_length + i] =
+                fitness_input_data->img_noisy_simd[w * fitness_input_data->simd_row_length + index];
         }
     }
 }
@@ -173,7 +176,7 @@ double _fitness_get_sqdiffsum_scalar(ga_chr_t chr)
 }
 
 
-double _fitness_get_sqdiffsum_simd(ga_chr_t chr, img_pixel_t *original, img_pixel_t *noisy[WINDOW_SIZE], int data_length)
+double _fitness_get_sqdiffsum_simd(ga_chr_t chr, img_pixel_t *original, img_pixel_t *noisy, int row_length, int data_length)
 {
     #ifdef SYMREG
         return 0;
@@ -204,7 +207,7 @@ double _fitness_get_sqdiffsum_simd(ga_chr_t chr, img_pixel_t *original, img_pixe
     data_length -= unaligned_bytes;
 
     for (; offset < data_length; offset += block_size) {
-        sum += func(original, noisy, chr, offset, block_size);
+        sum += func(original, noisy, row_length, chr, offset, block_size);
         #pragma omp atomic
             fitness_cgp_evals += block_size;
     }
@@ -213,7 +216,7 @@ double _fitness_get_sqdiffsum_simd(ga_chr_t chr, img_pixel_t *original, img_pixe
     // offset is set correctly here - it points to first pixel after
     // aligned data (we subtracted no. unaligned bytes before)
     if (unaligned_bytes > 0) {
-        sum += func(original, noisy, chr, offset, unaligned_bytes);
+        sum += func(original, noisy, row_length, chr, offset, unaligned_bytes);
         #pragma omp atomic
             fitness_cgp_evals += unaligned_bytes;
     }

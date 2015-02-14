@@ -137,20 +137,19 @@ void* pred_alloc_genome()
     // allocate space for simd-friendly data using calloc, since we
     // want initialized padding bits
     if (can_use_simd()) {
-        int size = _settings->genotype_length;
-        int padding = SIMD_PADDING_BYTES - (size % SIMD_PADDING_BYTES);
-        genome->output_simd = (cgp_value_t *) calloc(size + padding, sizeof(cgp_value_t));
+        // TODO: implement proper deallocation on failure
+
+        int length = _settings->genotype_length;
+        int padding = SIMD_PADDING_LENGTH - (length % SIMD_PADDING_LENGTH);
+        genome->simd_row_length = length + padding;
+        genome->output_simd = (cgp_value_t *) calloc(genome->simd_row_length, sizeof(cgp_value_t));
         if (genome->output_simd == NULL) {
-            // TODO: implement proper deallocation on failure
-            // Whatever, if it fails, everything fails, OS cleans it, so...
             return NULL;
         }
 
-        for (int i = 0; i < CGP_INPUTS; i++) {
-            genome->inputs_simd[i] = (cgp_value_t *) calloc(size + padding, sizeof(cgp_value_t));
-            if (genome->inputs_simd[i] == NULL) {
-                return NULL;
-            }
+        genome->inputs_simd = (cgp_value_t *) calloc(CGP_INPUTS * genome->simd_row_length, sizeof(cgp_value_t));
+        if (genome->inputs_simd == NULL) {
+            return NULL;
         }
     }
 
@@ -171,9 +170,7 @@ void pred_free_genome(void *_genome)
     if (_settings->genome_type != permuted) free(genome->pixels);
     if (can_use_simd()) {
         free(genome->output_simd);
-        for (int i = 0; i < CGP_INPUTS; i++) {
-            free(genome->inputs_simd[i]);
-        }
+        free(genome->inputs_simd);
     }
     free(genome);
 }
@@ -298,7 +295,11 @@ void pred_copy_genome(void *_dst, void *_src)
     if (can_use_simd()) {
         memcpy(dst->output_simd, src->output_simd, sizeof(cgp_value_t) * src->used_pixels);
         for (int w = 0; w < CGP_INPUTS; w++) {
-            memcpy(dst->inputs_simd[w], src->inputs_simd[w], sizeof(cgp_value_t) * src->used_pixels);
+            memcpy(
+                dst->inputs_simd + (w * dst->simd_row_length),
+                src->inputs_simd + (w * src->simd_row_length),
+                sizeof(cgp_value_t) * src->used_pixels
+            );
         }
     }
 

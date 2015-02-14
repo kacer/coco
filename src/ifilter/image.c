@@ -148,14 +148,10 @@ void img_windows_destroy(img_window_array_t arr) {
 
 /**
  * Clears all data associated with image windows from memory
- * @param img
+ * @param windows 2D array [pixelpos][window]
  */
-void img_windows_simd_destroy(img_pixel_t *windows[WINDOW_SIZE]) {
-    if (windows != NULL) {
-        for (int i = 0; i < WINDOW_SIZE; i++) {
-            free(windows[i]);
-        }
-    }
+void img_windows_simd_destroy(img_pixel_t *windows) {
+    free(windows);
 }
 
 
@@ -223,44 +219,36 @@ img_window_array_t img_split_windows(img_image_t img) {
 
 /**
  * Splits image into windows, suitably for SIMD processing
- * @param  filename
- * @return 0 on success
+ * @param  img
+ * @param  out output 2D array [pixelpos][window]
+ * @return row length (in output array)
  */
-int img_split_windows_simd(img_image_t img, img_pixel_t *out[WINDOW_SIZE])
+int img_split_windows_simd(img_image_t img, img_pixel_t **out)
 {
     // align length to 256bits
-    int size = img->width * img->height;
-    int padding = SIMD_PADDING_BYTES - (size % SIMD_PADDING_BYTES);
+    int length = img->width * img->height;
+    int padding = SIMD_PADDING_LENGTH - (length % SIMD_PADDING_LENGTH);
+    int row_length = length + padding;
 
-    for (int i = 0; i < WINDOW_SIZE; i++) {
-        out[i] = (img_pixel_t*) malloc(sizeof(img_pixel_t) * (size + padding));
-        if (out[i] == NULL) {
-            // TODO: dealloc
-            return -1;
-        }
-    }
+    // calloc - padding bytes should be zero
+    *out = (img_pixel_t*) calloc(WINDOW_SIZE * row_length, sizeof(img_pixel_t));
 
     for (int x = 0; x < img->width; x++) {
         for (int y = 0; y < img->height; y++) {
             int index = img_pixel_index(img, x, y);
-            out[0][index] = img->data[get_neighbour_index(x, y, img->width, img->height, -1, -1)];
-            out[1][index] = img->data[get_neighbour_index(x, y, img->width, img->height,  0, -1)];
-            out[2][index] = img->data[get_neighbour_index(x, y, img->width, img->height, +1, -1)];
-            out[3][index] = img->data[get_neighbour_index(x, y, img->width, img->height, -1,  0)];
-            out[4][index] = img->data[get_neighbour_index(x, y, img->width, img->height,  0,  0)];
-            out[5][index] = img->data[get_neighbour_index(x, y, img->width, img->height, +1,  0)];
-            out[6][index] = img->data[get_neighbour_index(x, y, img->width, img->height, -1, +1)];
-            out[7][index] = img->data[get_neighbour_index(x, y, img->width, img->height,  0, +1)];
-            out[8][index] = img->data[get_neighbour_index(x, y, img->width, img->height, +1, +1)];
+            (*out)[0 * row_length + index] = img->data[get_neighbour_index(x, y, img->width, img->height, -1, -1)];
+            (*out)[1 * row_length + index] = img->data[get_neighbour_index(x, y, img->width, img->height,  0, -1)];
+            (*out)[2 * row_length + index] = img->data[get_neighbour_index(x, y, img->width, img->height, +1, -1)];
+            (*out)[3 * row_length + index] = img->data[get_neighbour_index(x, y, img->width, img->height, -1,  0)];
+            (*out)[4 * row_length + index] = img->data[get_neighbour_index(x, y, img->width, img->height,  0,  0)];
+            (*out)[5 * row_length + index] = img->data[get_neighbour_index(x, y, img->width, img->height, +1,  0)];
+            (*out)[6 * row_length + index] = img->data[get_neighbour_index(x, y, img->width, img->height, -1, +1)];
+            (*out)[7 * row_length + index] = img->data[get_neighbour_index(x, y, img->width, img->height,  0, +1)];
+            (*out)[8 * row_length + index] = img->data[get_neighbour_index(x, y, img->width, img->height, +1, +1)];
         }
     }
 
-    // set padding bits to zero
-    for (int i = 0; i < 9; i++) {
-        memset(&(out[i][size]), 0, sizeof(img_pixel_t) * padding);
-    }
-
-    return 0;
+    return row_length;
 }
 
 

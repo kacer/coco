@@ -30,7 +30,7 @@
 #include <cpuid.h>
 
 
-#define SIMD_PADDING_BYTES 32
+#define SIMD_PADDING_LENGTH 32
 
 
 /**

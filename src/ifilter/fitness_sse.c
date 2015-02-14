@@ -22,16 +22,6 @@
 #include "../fitness.h"
 #include "../cgp/cgp_sse.h"
 
-/*
-int cgp_get_output_simd(
-    ga_chr_t chr,
-    cgp_value_t *inputs[CGP_INPUTS],
-    cgp_value_t *outputs[CGP_OUTPUTS],
-    int offset)
-{
-
-}
-*/
 
 /**
  * Calculates difference between original and filtered pixel using SSE2
@@ -48,14 +38,15 @@ int cgp_get_output_simd(
  */
 double _fitness_get_sqdiffsum_sse(
     img_pixel_t *original,
-    img_pixel_t *noisy[WINDOW_SIZE],
+    img_pixel_t *noisy,
+    int row_length,
     ga_chr_t chr,
     int offset,
     int valid_pixels_count)
 {
     img_pixel_t outputs[CGP_OUTPUTS * SSE2_BLOCK_SIZE];
     bool should_restart;
-    int block_size = cgp_sse_get_output(chr, noisy, offset, outputs, &should_restart);
+    int block_size = cgp_sse_get_output(chr, noisy, offset, outputs, row_length, &should_restart);
     assert(valid_pixels_count <= block_size);
 
     double sum = 0;

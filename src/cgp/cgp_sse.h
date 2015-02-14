@@ -45,9 +45,10 @@ typedef __m128i __m128i_aligned __attribute__ ((aligned (16)));
  */
 int cgp_sse_get_output(
     ga_chr_t chromosome,
-    cgp_value_t *input_data[CGP_INPUTS],
+    cgp_value_t *input_data,
     int input_offset,
     cgp_value_t *output_data,
+    int row_length,
     bool *should_restart);
 
 

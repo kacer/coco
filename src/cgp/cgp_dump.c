@@ -313,7 +313,8 @@ void cgp_dump_chr_asciiart(ga_chr_t chr, FILE *fp, bool only_active_blocks)
                 if (only_active_blocks && (CGP_FUNC_ARITY[n->function] < 1 || n->is_constant)) {
                     fprintf(fp, "     |    |>[%2u]", genome->inputs_count + i);
                 } else {
-                    fprintf(fp, "[%2u]>|    |>[%2u]", n->inputs[0], genome->inputs_count + i);
+                    unsigned int tmp = n->inputs[0];
+                    fprintf(fp, "[%2u]>|    |>[%2u]", tmp, genome->inputs_count + i);
                 }
             }
 

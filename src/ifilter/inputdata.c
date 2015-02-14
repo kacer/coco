@@ -42,7 +42,7 @@ bool input_data_load(input_data_t *data, config_t *config)
     data->img_noisy_windows = img_split_windows(data->img_noisy);
 
     if (can_use_simd()) {
-        img_split_windows_simd(data->img_noisy, data->img_noisy_simd);
+        data->simd_row_length = img_split_windows_simd(data->img_noisy, &data->img_noisy_simd);
     }
 
     data->fitness_cases = data->img_original->width * data->img_original->height;

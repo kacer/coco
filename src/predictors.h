@@ -54,7 +54,8 @@ struct pred_genome {
 
     /* simd-friendly prepared image data */
     cgp_value_t *output_simd;
-    cgp_value_t *inputs_simd[CGP_INPUTS];
+    cgp_value_t *inputs_simd;  // 2D array
+    int simd_row_length;
 };
 typedef struct pred_genome* pred_genome_t;
 

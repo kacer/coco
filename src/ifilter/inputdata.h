@@ -30,7 +30,10 @@ struct _input_data {
     img_image_t img_noisy;
 
     img_window_array_t img_noisy_windows;
-    img_pixel_t *img_noisy_simd[WINDOW_SIZE];
+
+    /* simd support */
+    img_pixel_t *img_noisy_simd;  // 2D-array!
+    int simd_row_length;
 };
 
 

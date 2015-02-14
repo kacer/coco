@@ -37,11 +37,14 @@
  */
 double _fitness_get_sqdiffsum_avx(
     img_pixel_t *original,
-    img_pixel_t *noisy[WINDOW_SIZE],
+    img_pixel_t *noisy,
+    int row_length,
     ga_chr_t chr,
     int offset,
     int block_size)
 {
+    return 0;
+    /*
     __m256i_aligned avx_inputs[CGP_INPUTS];
     __m256i_aligned avx_outputs[CGP_OUTPUTS];
     unsigned char *outputs_ptr = (unsigned char*) &avx_outputs;
@@ -58,5 +61,6 @@ double _fitness_get_sqdiffsum_avx(
         sum += diff * diff;
     }
     return sum;
+    */
 }
 
