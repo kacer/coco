@@ -36,6 +36,7 @@ static int_array _allowed_gene_vals[CGP_COLS];
 static int _mutation_rate;
 static ga_fitness_func_t _fitness_func;
 
+
 #ifdef CGP_LIMIT_FUNCS
     static int _allowed_functions_list[] = {
         c255,

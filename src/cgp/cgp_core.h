@@ -30,7 +30,6 @@
 #endif
 
 
-#define CGP_FUNC_INPUTS 2
 #define CGP_NODES (CGP_COLS * CGP_ROWS)
 #define CGP_CHR_OUTPUTS_INDEX ((CGP_FUNC_INPUTS + 1) * CGP_NODES)
 #define CGP_CHR_LENGTH (CGP_CHR_OUTPUTS_INDEX + CGP_OUTPUTS)
@@ -54,7 +53,7 @@ typedef struct {
  * Chromosome
  */
 struct cgp_genome {
-    cgp_node_t nodes[CGP_COLS * CGP_ROWS];
+    cgp_node_t nodes[CGP_NODES];
     int outputs[CGP_OUTPUTS];
 };
 typedef struct cgp_genome* cgp_genome_t;
