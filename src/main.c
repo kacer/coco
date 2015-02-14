@@ -90,8 +90,11 @@ static config_t config = {
 };
 
 
-// predictor evolution settings and current state
+// predictor evolution settings
 static pred_settings_t pred_settings;
+
+// CGP evolution settings
+static cgp_settings_t cgp_settings;
 
 // algorithm working data
 // everything else is statically initialized to NULL
@@ -201,7 +204,14 @@ int main(int argc, char *argv[])
     rand_init_seed(config.random_seed);
 
     // cgp evolution
-    cgp_init(config.cgp_mutate_genes, fitness_eval_or_predict_cgp);
+    cgp_settings.inputs = CGP_INPUTS;
+    cgp_settings.outputs = CGP_OUTPUTS;
+    cgp_settings.cols = CGP_COLS;
+    cgp_settings.rows = CGP_ROWS;
+    cgp_settings.lback = CGP_LBACK;
+    cgp_settings.mutation_rate = config.cgp_mutate_genes;
+    cgp_settings.fitness_function = fitness_eval_or_predict_cgp;
+    cgp_init(&cgp_settings);
 
     // predictors population and both archives
     if (config.algorithm != simple_cgp) {

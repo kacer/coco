@@ -91,17 +91,6 @@ void cgp_dump_chr_code(ga_chr_t chr, FILE *fp);
 void cgp_dump_chr_asciiart(ga_chr_t chr, FILE *fp, bool only_active_blocks);
 
 
-static inline int cgp_dump_chr_asciiart_width() {
-    return 5 + CGP_COLS * 18 + 5;
-}
-
-
-static inline int cgp_dump_chr_asciiart_height() {
-    // header + border + nodes + border
-    return 5 + 1 + (CGP_ROWS * 4) + 1;
-}
-
-
 /**
  * Dumps whole population to given file pointer with chromosomes in
  * CGP-viewer compatible format

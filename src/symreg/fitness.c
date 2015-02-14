@@ -38,14 +38,6 @@
 static double _epsilon;
 
 
-/* Private functions */
-
-static inline double fitness_psnr_coeficient(int pixels_count)
-{
-    return 255 * 255 * (double)pixels_count;
-}
-
-
 /** Public and "friend" API ***************************************************/
 
 

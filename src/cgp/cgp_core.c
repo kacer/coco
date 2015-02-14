@@ -24,6 +24,7 @@
 
 #include "cgp_core.h"
 #include "../random.h"
+#include "../fitness.h"
 
 
 typedef struct {
@@ -32,9 +33,8 @@ typedef struct {
 } int_array;
 
 
-static int_array _allowed_gene_vals[CGP_COLS];
-static int _mutation_rate;
-static ga_fitness_func_t _fitness_func;
+static int_array *_allowed_gene_vals;
+static cgp_settings_t *_settings;
 
 
 #ifdef CGP_LIMIT_FUNCS
@@ -66,27 +66,27 @@ static ga_fitness_func_t _fitness_func;
 /**
  * Initialize CGP internals
  */
-void cgp_init(int mutation_rate, ga_fitness_func_t fitness_func)
+void cgp_init(cgp_settings_t *settings)
 {
-    _mutation_rate = mutation_rate;
-    _fitness_func = fitness_func;
+    _settings = settings;
+    _allowed_gene_vals = (int_array*) malloc(sizeof(int_array) * settings->cols);
 
     // calculate allowed values of node inputs in each column
-    for (int x = 0; x < CGP_COLS; x++) {
+    for (int x = 0; x < _settings->cols; x++) {
         // range of outputs which can be connected to node in i-th column
         // maximum is actually by 1 larger than maximum allowed value
         // (so there is `val < maximum` in the for loop below instead of `<=`)
-        int minimum = CGP_ROWS * (x - CGP_LBACK) + CGP_INPUTS;
-        if (minimum < CGP_INPUTS) minimum = CGP_INPUTS;
-        int maximum = CGP_ROWS * x + CGP_INPUTS;
+        int minimum = _settings->rows * (x - _settings->lback) + _settings->inputs;
+        if (minimum < _settings->inputs) minimum = _settings->inputs;
+        int maximum = _settings->rows * x + _settings->inputs;
 
-        int size = CGP_INPUTS + maximum - minimum;
+        int size = _settings->inputs + maximum - minimum;
         _allowed_gene_vals[x].size = size;
         _allowed_gene_vals[x].values = (int*) malloc(sizeof(int) * size);
 
         int key = 0;
         // primary inputs
-        for (int val = 0; val < CGP_INPUTS; val++, key++) {
+        for (int val = 0; val < _settings->inputs; val++, key++) {
             _allowed_gene_vals[x].values[key] = val;
         }
 
@@ -98,7 +98,7 @@ void cgp_init(int mutation_rate, ga_fitness_func_t fitness_func)
 
 
 #ifdef TEST_INIT
-    for (int x = 0; x < CGP_COLS; x++) {
+    for (int x = 0; x < _settings->cols; x++) {
         printf ("x = %d: ", x);
         for (int y = 0; y < _allowed_gene_vals[x].size; y++) {
             if (y > 0) printf(", ");
@@ -115,7 +115,7 @@ void cgp_init(int mutation_rate, ga_fitness_func_t fitness_func)
  */
 void cgp_deinit()
 {
-    for (int x = 0; x < CGP_COLS; x++) {
+    for (int x = 0; x < _settings->cols; x++) {
         free(_allowed_gene_vals[x].values);
     }
 }
@@ -135,13 +135,22 @@ ga_pop_t cgp_init_pop(int pop_size)
         .free_genome = cgp_free_genome,
         .init_genome = cgp_randomize_genome,
 
-        .fitness = _fitness_func,
+        .fitness = _settings->fitness_function,
         .offspring = cgp_offspring,
     };
 
     /* initialize GA */
     ga_pop_t pop = ga_create_pop(pop_size, CGP_PROBLEM_TYPE, methods);
     return pop;
+}
+
+
+/**
+ * Returns l-back parameter value
+ */
+int cgp_get_lback()
+{
+    return _settings->lback;
 }
 
 
@@ -154,7 +163,17 @@ ga_pop_t cgp_init_pop(int pop_size)
  */
 void* cgp_alloc_genome()
 {
-    return malloc(sizeof(struct cgp_genome));
+    cgp_genome_t genome = malloc(sizeof(struct cgp_genome));
+    if (genome) {
+        genome->nodes = (cgp_node_t*)
+            malloc(sizeof(cgp_node_t) * _settings->cols * _settings->rows);
+        genome->outputs = (int*) malloc(sizeof(int) * _settings->outputs);
+        genome->inputs_count = _settings->inputs;
+        genome->outputs_count = _settings->outputs;
+        genome->cols = _settings->cols;
+        genome->rows = _settings->rows;
+    }
+    return genome;
 }
 
 
@@ -166,7 +185,7 @@ int cgp_randomize_genome(ga_chr_t chromosome)
 {
     cgp_genome_t genome = (cgp_genome_t) chromosome->genome;
 
-    for (int i = 0; i < CGP_CHR_LENGTH; i++) {
+    for (int i = 0; i < cgp_genome_length(genome); i++) {
         cgp_randomize_gene(genome, i);
     }
 
@@ -184,6 +203,11 @@ int cgp_randomize_genome(ga_chr_t chromosome)
  */
 void cgp_free_genome(void *genome)
 {
+    if (genome) {
+        cgp_genome_t _genome = (cgp_genome_t) genome;
+        free(_genome->nodes);
+        free(_genome->outputs);
+    }
     free(genome);
 }
 
@@ -199,14 +223,14 @@ void cgp_free_genome(void *genome)
  */
 bool cgp_randomize_gene(cgp_genome_t genome, int gene)
 {
-    if (gene >= CGP_CHR_LENGTH)
+    if (gene >= cgp_genome_length(genome))
         return false;
 
-    if (gene < CGP_CHR_OUTPUTS_INDEX) {
+    if (gene < cgp_output_genes_offset(genome)) {
         // mutating node input or function
         int node_index = gene / 3;
         int gene_index = gene % 3;
-        int col = cgp_node_col(node_index);
+        int col = cgp_node_col(genome, node_index);
 
         TEST_RANDOMIZE_PRINTF("gene %u, node %u, gene %u, col %u\n", gene, node_index, gene_index, col);
 
@@ -231,9 +255,9 @@ bool cgp_randomize_gene(cgp_genome_t genome, int gene)
 
     } else {
         // mutating primary output connection
-        int index = gene - CGP_CHR_OUTPUTS_INDEX;
-        genome->outputs[index] = rand_range(CGP_INPUTS, CGP_INPUTS + CGP_NODES - 1);
-        TEST_RANDOMIZE_PRINTF("out %u - %u\n", CGP_INPUTS, CGP_INPUTS + CGP_NODES - 1);
+        int index = gene - cgp_output_genes_offset(genome);
+        genome->outputs[index] = rand_range(genome->inputs_count, genome->inputs_count + cgp_nodes_count(genome) - 1);
+        TEST_RANDOMIZE_PRINTF("out %u - %u\n", genome->inputs_count, genome->inputs_count + cgp_nodes_count(genome) - 1);
         return true;
     }
 }
@@ -245,12 +269,12 @@ bool cgp_randomize_gene(cgp_genome_t genome, int gene)
  */
 void cgp_mutate_chr(ga_chr_t chromosome)
 {
-    assert(_mutation_rate <= CGP_CHR_LENGTH);
     cgp_genome_t genome = (cgp_genome_t) chromosome->genome;
+    assert(_settings->mutation_rate <= cgp_genome_length(genome));
 
-    int genes_to_change = rand_range(1, _mutation_rate);
+    int genes_to_change = rand_range(1, _settings->mutation_rate);
     for (int i = 0; i < genes_to_change; i++) {
-        int gene = rand_range(0, CGP_CHR_LENGTH - 1);
+        int gene = rand_range(0, cgp_genome_length(genome) - 1);
         cgp_randomize_gene(genome, gene);
     }
 
@@ -270,8 +294,8 @@ void cgp_copy_genome(void *_dst, void *_src)
     cgp_genome_t dst = (cgp_genome_t) _dst;
     cgp_genome_t src = (cgp_genome_t) _src;
 
-    memcpy(dst->nodes, src->nodes, sizeof(cgp_node_t) * CGP_NODES);
-    memcpy(dst->outputs, src->outputs, sizeof(int) * CGP_OUTPUTS);
+    memcpy(dst->nodes, src->nodes, sizeof(cgp_node_t) * cgp_nodes_count(src));
+    memcpy(dst->outputs, src->outputs, sizeof(int) * src->outputs_count);
 }
 
 
@@ -292,12 +316,12 @@ void cgp_copy_genome(void *_dst, void *_src)
 bool cgp_get_output(ga_chr_t chromosome, cgp_value_t *inputs, cgp_value_t *outputs)
 {
     cgp_genome_t genome = (cgp_genome_t) chromosome->genome;
-    cgp_value_t inner_outputs[CGP_INPUTS + CGP_NODES];
+    cgp_value_t inner_outputs[genome->inputs_count + cgp_nodes_count(genome)];
 
     // copy primary inputs to working array
-    memcpy(inner_outputs, inputs, sizeof(cgp_value_t) * CGP_INPUTS);
+    memcpy(inner_outputs, inputs, sizeof(cgp_value_t) * genome->inputs_count);
 
-    for (int i = 0; i < CGP_NODES; i++) {
+    for (int i = 0; i < cgp_nodes_count(genome); i++) {
         cgp_node_t *n = &(genome->nodes[i]);
 
         // skip inactive blocks
@@ -317,18 +341,18 @@ bool cgp_get_output(ga_chr_t chromosome, cgp_value_t *inputs, cgp_value_t *outpu
             }
         }
 
-        inner_outputs[CGP_INPUTS + i] = Y;
+        inner_outputs[genome->inputs_count + i] = Y;
     }
 
-    for (int i = 0; i < CGP_OUTPUTS; i++) {
+    for (int i = 0; i < genome->outputs_count; i++) {
         outputs[i] = inner_outputs[genome->outputs[i]];
     }
 
 #ifdef TEST_EVAL
-    for (int i = 0; i < CGP_INPUTS + CGP_NODES; i++) {
-        printf("%c: %u = %u\n", (i < CGP_INPUTS? 'I' : 'N'), i, inner_outputs[i]);
+    for (int i = 0; i < genome->inputs_count + cgp_nodes_count(genome); i++) {
+        printf("%c: %u = %u\n", (i < genome->inputs_count? 'I' : 'N'), i, inner_outputs[i]);
     }
-    for (int i = 0; i < CGP_OUTPUTS; i++) {
+    for (int i = 0; i < genome->outputs_count; i++) {
         printf("O: %u = %u\n", i, outputs[i]);
     }
 #endif
@@ -347,13 +371,13 @@ void cgp_find_active_blocks(ga_chr_t chromosome)
     cgp_genome_t genome = (cgp_genome_t) chromosome->genome;
 
     // first mark all nodes as inactive
-    for (int i = CGP_NODES - 1; i >= 0; i--) {
+    for (int i = cgp_nodes_count(genome) - 1; i >= 0; i--) {
         genome->nodes[i].is_active = false;
     }
 
     // mark inputs of primary outputs as active
-    for (int i = 0; i < CGP_OUTPUTS; i++) {
-        int index = genome->outputs[i] - CGP_INPUTS;
+    for (int i = 0; i < genome->outputs_count; i++) {
+        int index = genome->outputs[i] - genome->inputs_count;
         // index may be negative (primary input), so do the check...
         if (index >= 0) {
             genome->nodes[index].is_active = true;
@@ -362,13 +386,13 @@ void cgp_find_active_blocks(ga_chr_t chromosome)
 
     // then walk nodes backwards and mark inputs of active nodes
     // as active nodes
-    for (int i = CGP_NODES - 1; i >= 0; i--) {
+    for (int i = cgp_nodes_count(genome) - 1; i >= 0; i--) {
         if (!genome->nodes[i].is_active) continue;
         cgp_node_t *n = &(genome->nodes[i]);
 
         int arity = CGP_FUNC_ARITY[n->function];
         for (int k = 0; k < arity; k++) {
-            int index = n->inputs[k] - CGP_INPUTS;
+            int index = n->inputs[k] - genome->inputs_count;
             // index may be negative (primary input), so do the check...
             if (index >= 0) {
                 genome->nodes[index].is_active = true;

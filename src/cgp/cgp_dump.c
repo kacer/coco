@@ -63,7 +63,7 @@ void cgp_dump_chr_outputs(ga_chr_t chr, FILE *fp)
     cgp_genome_t genome = (cgp_genome_t) chr->genome;
 
     fprintf(fp, "(");
-    for (int i = 0; i < CGP_OUTPUTS; i++) {
+    for (int i = 0; i < genome->outputs_count; i++) {
         if (i > 0) fprintf(fp, ", ");
         fprintf(fp, "%u", genome->outputs[i]);
     }
@@ -78,13 +78,21 @@ void cgp_dump_chr_outputs(ga_chr_t chr, FILE *fp)
  */
 void cgp_dump_chr_header(ga_chr_t chr, FILE *fp)
 {
+    cgp_genome_t genome = (cgp_genome_t) chr->genome;
+
     fprintf(fp,
         "Inputs: %u\n"
         "Outputs: %u\n"
         "Size: %u x %u\n"
         "Blocks: %u-ary, %u output(s), %u functions\n",
-        CGP_INPUTS, CGP_OUTPUTS, CGP_COLS, CGP_ROWS, CGP_FUNC_INPUTS,
-        1, CGP_FUNC_COUNT);
+        genome->inputs_count,
+        genome->outputs_count,
+        genome->cols,
+        genome->rows,
+        CGP_FUNC_INPUTS,
+        1,
+        CGP_FUNC_COUNT
+    );
 
     if (chr->has_fitness) {
         fprintf(fp, "Fitness: %lf\n", chr->fitness);
@@ -104,13 +112,19 @@ void cgp_dump_chr_compat(ga_chr_t chr, FILE *fp)
     cgp_genome_t genome = (cgp_genome_t) chr->genome;
 
     fprintf(fp, "{%u, %u, %u, %u, %u, %u, %u}",
-        CGP_INPUTS, CGP_OUTPUTS, CGP_COLS, CGP_ROWS, CGP_FUNC_INPUTS,
-        1, CGP_FUNC_COUNT);
+        genome->inputs_count,
+        genome->outputs_count,
+        genome->cols,
+        genome->rows,
+        CGP_FUNC_INPUTS,
+        1,
+        CGP_FUNC_COUNT
+    );
 
-    for (int i = 0; i < CGP_NODES; i++) {
+    for (int i = 0; i < cgp_nodes_count(genome); i++) {
         cgp_node_t *n = &(genome->nodes[i]);
         fprintf(fp, "([%u] %u, %u, %u)",
-            CGP_INPUTS + i, n->inputs[0], n->inputs[1], n->function);
+            genome->inputs_count + i, n->inputs[0], n->inputs[1], n->function);
     }
 
     cgp_dump_chr_outputs(chr, fp);
@@ -128,21 +142,21 @@ void cgp_dump_chr_readable(ga_chr_t chr, FILE *fp)
 
     cgp_dump_chr_header(chr, fp);
 
-    for (int y = 0; y < CGP_ROWS; y++) {
-        for (int x = 0; x < CGP_COLS; x++) {
-            int i = cgp_node_index(x, y);
+    for (int y = 0; y < genome->rows; y++) {
+        for (int x = 0; x < genome->cols; x++) {
+            int i = cgp_node_index(genome, x, y);
             cgp_node_t *n = &(genome->nodes[i]);
 
             fprintf(fp, "([%2u] %2u, %2u, %2u)  ",
-                CGP_INPUTS + i, n->inputs[0], n->inputs[1], n->function);
+                genome->inputs_count + i, n->inputs[0], n->inputs[1], n->function);
         }
-        if (CGP_OUTPUTS <= CGP_ROWS && y < CGP_OUTPUTS) {
+        if (genome->outputs_count <= genome->rows && y < genome->outputs_count) {
             fprintf(fp, "  (%2u)", genome->outputs[y]);
         }
         fprintf(fp, "\n");
     }
 
-    if (CGP_OUTPUTS > CGP_ROWS) {
+    if (genome->outputs_count > genome->rows) {
         fprintf(fp, "Primary outputs: ");
         cgp_dump_chr_outputs(chr, fp);
     }
@@ -159,9 +173,9 @@ void cgp_dump_chr_code(ga_chr_t chr, FILE *fp)
     cgp_genome_t genome = (cgp_genome_t) chr->genome;
 
     fprintf(fp, "%s", CGP_CODE_PROLOG);
-    fprintf(fp, "cgp_value_t cgp(cgp_value_t inputs[%d])\n{\n", CGP_INPUTS);
+    fprintf(fp, "cgp_value_t cgp(cgp_value_t inputs[%d])\n{\n", genome->inputs_count);
 
-    for (int i = 0; i < CGP_NODES; i++) {
+    for (int i = 0; i < cgp_nodes_count(genome); i++) {
         cgp_node_t *n = &(genome->nodes[i]);
         if (n->is_active) {
             int arity = CGP_FUNC_ARITY[n->function];
@@ -172,16 +186,16 @@ void cgp_dump_chr_code(ga_chr_t chr, FILE *fp)
                 continue;
             }
 
-            if (n->inputs[0] < CGP_INPUTS) {
+            if (n->inputs[0] < genome->inputs_count) {
                 snprintf(input1, 20, "inputs[%d]", n->inputs[0]);
             } else {
-                snprintf(input1, 20, "n%02d", n->inputs[0] - CGP_INPUTS);
+                snprintf(input1, 20, "n%02d", n->inputs[0] - genome->inputs_count);
             }
 
-             if (n->inputs[1] < CGP_INPUTS) {
+             if (n->inputs[1] < genome->inputs_count) {
                 snprintf(input2, 20, "inputs[%d]", n->inputs[1]);
             } else {
-                snprintf(input2, 20, "n%02d", n->inputs[1] - CGP_INPUTS);
+                snprintf(input2, 20, "n%02d", n->inputs[1] - genome->inputs_count);
             }
 
             fprintf(fp, "\tcgp_value_t n%02d = ", i);
@@ -199,7 +213,7 @@ void cgp_dump_chr_code(ga_chr_t chr, FILE *fp)
         }
     }
 
-    fprintf(fp, "\treturn n%02d;\n", genome->outputs[0] - CGP_INPUTS);
+    fprintf(fp, "\treturn n%02d;\n", genome->outputs[0] - genome->inputs_count);
     fprintf(fp, "}");
 }
 
@@ -212,7 +226,8 @@ void cgp_dump_chr_code(ga_chr_t chr, FILE *fp)
  */
 void cgp_dump_chr_asciiart_input(int *in_counter, ga_chr_t chr, FILE *fp)
 {
-    if (*in_counter < CGP_INPUTS) fprintf(fp, "[%2u]>| ", (*in_counter)++);
+    cgp_genome_t genome = (cgp_genome_t) chr->genome;
+    if (*in_counter < genome->inputs_count) fprintf(fp, "[%2u]>| ", (*in_counter)++);
     else fprintf(fp, "     | ");
 }
 
@@ -226,7 +241,7 @@ void cgp_dump_chr_asciiart_input(int *in_counter, ga_chr_t chr, FILE *fp)
 void cgp_dump_chr_asciiart_output(int *out_counter, ga_chr_t chr, FILE *fp)
 {
     cgp_genome_t genome = (cgp_genome_t) chr->genome;
-    if (*out_counter < CGP_OUTPUTS) fprintf(fp, ">[%2u]", genome->outputs[(*out_counter)++]);
+    if (*out_counter < genome->outputs_count) fprintf(fp, ">[%2u]", genome->outputs[(*out_counter)++]);
 }
 
 
@@ -257,20 +272,20 @@ void cgp_dump_chr_asciiart(ga_chr_t chr, FILE *fp, bool only_active_blocks)
 
     /* top of the circuit */
     fprintf(fp, "     .--");
-    for (int x = 0; x < CGP_COLS; x++) {
+    for (int x = 0; x < genome->cols; x++) {
         fprintf(fp, "----------------");
-        if (x == CGP_COLS - 1) fprintf(fp, ".\n");
+        if (x == genome->cols - 1) fprintf(fp, ".\n");
         else fprintf(fp, "--");
     }
 
-    for (int y = 0; y < CGP_ROWS; y++) {
+    for (int y = 0; y < genome->rows; y++) {
         if (y != 0) cgp_dump_chr_asciiart_input(&in_counter, chr, fp);
         else fprintf(fp, "     | ");
 
         /* top of the blocks */
         fprintf(fp, " ");
-        for (int x = 0; x < CGP_COLS; x++) {
-            int i = cgp_node_index(x, y);
+        for (int x = 0; x < genome->cols; x++) {
+            int i = cgp_node_index(genome, x, y);
             cgp_node_t *n = &(genome->nodes[i]);
 
             if (only_active_blocks && !n->is_active) {
@@ -279,7 +294,7 @@ void cgp_dump_chr_asciiart(ga_chr_t chr, FILE *fp, bool only_active_blocks)
                 fprintf(fp, "    .----.      ");
             }
 
-            if (x == CGP_COLS - 1) fprintf(fp, "|");
+            if (x == genome->cols - 1) fprintf(fp, "|");
             else fprintf(fp, "  ");
         }
 
@@ -288,21 +303,21 @@ void cgp_dump_chr_asciiart(ga_chr_t chr, FILE *fp, bool only_active_blocks)
         cgp_dump_chr_asciiart_input(&in_counter, chr, fp);
 
         /* first line of blocks */
-        for (int x = 0; x < CGP_COLS; x++) {
-            int i = cgp_node_index(x, y);
+        for (int x = 0; x < genome->cols; x++) {
+            int i = cgp_node_index(genome, x, y);
             cgp_node_t *n = &(genome->nodes[i]);
 
             if (only_active_blocks && !n->is_active) {
                 fprintf(fp, "                ");
             } else {
                 if (only_active_blocks && (CGP_FUNC_ARITY[n->function] < 1 || n->is_constant)) {
-                    fprintf(fp, "     |    |>[%2u]", CGP_INPUTS + i);
+                    fprintf(fp, "     |    |>[%2u]", genome->inputs_count + i);
                 } else {
-                    fprintf(fp, "[%2u]>|    |>[%2u]", n->inputs[0], CGP_INPUTS + i);
+                    fprintf(fp, "[%2u]>|    |>[%2u]", n->inputs[0], genome->inputs_count + i);
                 }
             }
 
-            if (x == CGP_COLS - 1) fprintf(fp, " |");
+            if (x == genome->cols - 1) fprintf(fp, " |");
             else fprintf(fp, "  ");
         }
 
@@ -311,8 +326,8 @@ void cgp_dump_chr_asciiart(ga_chr_t chr, FILE *fp, bool only_active_blocks)
         cgp_dump_chr_asciiart_input(&in_counter, chr, fp);
 
         /* second line of blocks */
-        for (int x = 0; x < CGP_COLS; x++) {
-            int i = cgp_node_index(x, y);
+        for (int x = 0; x < genome->cols; x++) {
+            int i = cgp_node_index(genome, x, y);
             cgp_node_t *n = &(genome->nodes[i]);
 
             if (only_active_blocks && !n->is_active) {
@@ -334,7 +349,7 @@ void cgp_dump_chr_asciiart(ga_chr_t chr, FILE *fp, bool only_active_blocks)
                 }
             }
 
-            if (x == CGP_COLS - 1) fprintf(fp, " |");
+            if (x == genome->cols - 1) fprintf(fp, " |");
             else fprintf(fp, "  ");
         }
 
@@ -344,8 +359,8 @@ void cgp_dump_chr_asciiart(ga_chr_t chr, FILE *fp, bool only_active_blocks)
 
         /* bottom of the blocks */
         fprintf(fp, " ");
-        for (int x = 0; x < CGP_COLS; x++) {
-            int i = cgp_node_index(x, y);
+        for (int x = 0; x < genome->cols; x++) {
+            int i = cgp_node_index(genome, x, y);
             cgp_node_t *n = &(genome->nodes[i]);
 
             if (only_active_blocks && !n->is_active) {
@@ -354,7 +369,7 @@ void cgp_dump_chr_asciiart(ga_chr_t chr, FILE *fp, bool only_active_blocks)
                 fprintf(fp, "    '----'      ");
             }
 
-            if (x == CGP_COLS - 1) fprintf(fp, "|");
+            if (x == genome->cols - 1) fprintf(fp, "|");
             else fprintf(fp, "  ");
         }
 
@@ -364,9 +379,9 @@ void cgp_dump_chr_asciiart(ga_chr_t chr, FILE *fp, bool only_active_blocks)
 
     /* bottom of the circuit */
     fprintf(fp, "     '--");
-    for (int x = 0; x < CGP_COLS; x++) {
+    for (int x = 0; x < genome->cols; x++) {
         fprintf(fp, "----------------");
-        if (x == CGP_COLS - 1) fprintf(fp, "'\n");
+        if (x == genome->cols - 1) fprintf(fp, "'\n");
         else fprintf(fp, "--");
     }
 }

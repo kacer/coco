@@ -41,18 +41,19 @@ int cgp_load_chr_compat(ga_chr_t chr, FILE *fp)
 
 
     if (count != 7) return -1;
-    if (inputs != CGP_INPUTS) return -2;
-    if (outputs != CGP_OUTPUTS) return -2;
-    if (cols != CGP_COLS) return -2;
-    if (rows != CGP_ROWS) return -2;
     if (func_inputs != CGP_FUNC_INPUTS) return -2;
     if (func_outputs != 1) return -2;
     if (func_count != CGP_FUNC_COUNT) return -2;
 
+    genome->cols = cols;
+    genome->rows = rows;
+    genome->inputs_count = inputs;
+    genome->outputs_count = outputs;
+
     // nodes
 
 
-    for (int i = 0; i < CGP_NODES; i++) {
+    for (int i = 0; i < cgp_nodes_count(genome); i++) {
         cgp_node_t *n = &genome->nodes[i];
 
         int nodeid;
@@ -67,7 +68,7 @@ int cgp_load_chr_compat(ga_chr_t chr, FILE *fp)
 
 
     count = fscanf(fp, "(");
-    for (int i = 0; i < CGP_OUTPUTS; i++) {
+    for (int i = 0; i < genome->outputs_count; i++) {
         if (i > 0) {
             count = fscanf(fp, ",");
         }
