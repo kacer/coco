@@ -91,21 +91,12 @@ ga_fitness_t fitness_eval_cgp(ga_chr_t chr);
 /**
  * If predictors archive is empty, returns `fitness_eval_cgp` result.
  * If there is at least one predictor in archive
- * returns `fitness_predict_cgp` result using first predictor in archive.
+ * returns predicted fitness using first predictor in archive.
  *
  * @param  chr
  * @return fitness value
  */
 ga_fitness_t fitness_eval_or_predict_cgp(ga_chr_t chr);
-
-
-/**
- * Predictes CGP circuit fitness
- *
- * @param  chr
- * @return fitness value
- */
-ga_fitness_t fitness_predict_cgp(ga_chr_t cgp_chr, ga_chr_t pred_chr);
 
 
 /**

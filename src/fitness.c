@@ -39,8 +39,6 @@ archive_t fitness_cgp_archive;
 archive_t fitness_pred_archive;
 long fitness_cgp_evals;
 
-ga_fitness_t _fitness_eval_predictor_genome(pred_genome_t predictor);
-
 
 /**
  * Initializes fitness module
@@ -77,23 +75,11 @@ void fitness_deinit()
 ga_fitness_t fitness_eval_or_predict_cgp(ga_chr_t chr)
 {
     if (fitness_pred_archive && fitness_pred_archive->stored > 0) {
-        return fitness_predict_cgp(chr, arc_get(fitness_pred_archive, 0));
+        pred_genome_t predictor = (pred_genome_t) arc_get(fitness_pred_archive, 0)->genome;
+        return _fitness_predict_cgp_by_genome(chr, predictor);
     } else {
         return fitness_eval_cgp(chr);
     }
-}
-
-
-/**
- * Predictes CGP circuit fitness
- *
- * @param  chr
- * @return fitness value
- */
-ga_fitness_t fitness_predict_cgp(ga_chr_t cgp_chr, ga_chr_t pred_chr)
-{
-    pred_genome_t predictor = (pred_genome_t) pred_chr->genome;
-    return _fitness_predict_cgp_by_genome(cgp_chr, predictor);
 }
 
 
@@ -106,7 +92,13 @@ ga_fitness_t fitness_predict_cgp(ga_chr_t cgp_chr, ga_chr_t pred_chr)
 ga_fitness_t fitness_eval_predictor(ga_chr_t pred_chr)
 {
     pred_genome_t predictor = (pred_genome_t) pred_chr->genome;
-    return _fitness_eval_predictor_genome(predictor);
+    double sum = 0;
+    for (int i = 0; i < fitness_cgp_archive->stored; i++) {
+        ga_chr_t cgp_chr = arc_get(fitness_cgp_archive, i);
+        double predicted = _fitness_predict_cgp_by_genome(cgp_chr, predictor);
+        sum += fabs(cgp_chr->fitness - predicted);
+    }
+    return sum / fitness_cgp_archive->stored;
 }
 
 
@@ -121,7 +113,7 @@ ga_fitness_t fitness_eval_circular_predictor(ga_chr_t pred_chr)
 {
     pred_genome_t predictor = (pred_genome_t) pred_chr->genome;
     int best_offset = predictor->_circular_offset;
-    ga_fitness_t best_fitness = _fitness_eval_predictor_genome(predictor);
+    ga_fitness_t best_fitness = fitness_eval_predictor(pred_chr);
 
     for (int i = 0; i < PRED_CIRCULAR_TRIES; i++) {
         // generate new phenotype
@@ -130,7 +122,7 @@ ga_fitness_t fitness_eval_circular_predictor(ga_chr_t pred_chr)
         pred_calculate_phenotype(predictor);
 
         // calculate predictor fitness
-        ga_fitness_t fit = _fitness_eval_predictor_genome(predictor);
+        ga_fitness_t fit = fitness_eval_predictor(pred_chr);
 
         // if it is better, store it
         if (ga_is_better(PRED_PROBLEM_TYPE, fit, best_fitness)) {
@@ -147,20 +139,3 @@ ga_fitness_t fitness_eval_circular_predictor(ga_chr_t pred_chr)
     return best_fitness;
 }
 
-
-/**
- * Evaluates predictor fitness
- *
- * @param  chr
- * @return fitness value
- */
-ga_fitness_t _fitness_eval_predictor_genome(pred_genome_t predictor)
-{
-    double sum = 0;
-    for (int i = 0; i < fitness_cgp_archive->stored; i++) {
-        ga_chr_t cgp_chr = arc_get(fitness_cgp_archive, i);
-        double predicted = _fitness_predict_cgp_by_genome(cgp_chr, predictor);
-        sum += fabs(cgp_chr->fitness - predicted);
-    }
-    return sum / fitness_cgp_archive->stored;
-}
