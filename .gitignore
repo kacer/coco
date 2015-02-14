@@ -23,6 +23,7 @@
 *.exe.stackdump
 coco
 coco_apply
+coco_symreg
 
 # Build files
 build/
