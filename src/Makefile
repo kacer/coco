@@ -33,7 +33,7 @@ SRCS=\
 	logging/history.c logging/base.c logging/text.c logging/csv.c logging/summary.c \
 
 IFILTER_SRCS=$(SRCS) ifilter/cgp.c ifilter/inputdata.c ifilter/fitness.c \
-	ifilter/cgp_sse.c ifilter/fitness_sse.c \
+	cgp/cgp_sse.c ifilter/cgp_sse.c ifilter/fitness_sse.c \
 	ifilter/cgp_avx.c ifilter/fitness_avx.c \
 	ifilter/image.c
 

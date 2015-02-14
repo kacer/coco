@@ -43,27 +43,41 @@ typedef __m128i __m128i_aligned __attribute__ ((aligned (16)));
  * @param output_data will be written here (two-dimensional array!)
  * @return number of items written to output_data
  */
-int cgp_get_output_sse(
+int cgp_sse_get_output(
     ga_chr_t chromosome,
     cgp_value_t *input_data[CGP_INPUTS],
     int input_offset,
-    cgp_value_t *output_data);
+    cgp_value_t *output_data,
+    bool *should_restart);
 
 
-static inline cgp_value_t cgp_get_output_value_sse(
+/**
+ * Calculates CGP node output value using SSE instructions
+ *
+ * @param  n CGP node
+ * @param  A Input value A
+ * @param  B Input value B
+ * @param Whether CGP function has changed and evaluation should be restarted
+ * @return Output value
+ */
+__m128i cgp_sse_get_node_output(
+    cgp_node_t *n,
+    __m128i A,
+    __m128i B,
+    bool *should_restart);
+
+
+/**
+ * Extracts output value from returned block
+ * @param  output_data
+ * @param  output_idx
+ * @param  offset
+ * @return
+ */
+static inline cgp_value_t cgp_sse_extract_output(
     cgp_value_t *output_data,
     int output_idx,
     int offset)
 {
     return output_data[output_idx * SSE2_BLOCK_SIZE + offset];
-}
-
-
-static inline void cgp_set_output_values_sse(
-    cgp_value_t *output_data,
-    int output_idx,
-    __m128i value)
-{
-    __m128i *dest = (__m128i*)(&output_data[output_idx * SSE2_BLOCK_SIZE]);
-    _mm_store_si128(dest, value);
 }

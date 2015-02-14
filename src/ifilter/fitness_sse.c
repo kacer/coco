@@ -20,7 +20,7 @@
 #include <assert.h>
 
 #include "../fitness.h"
-#include "cgp_sse.h"
+#include "../cgp/cgp_sse.h"
 
 /*
 int cgp_get_output_simd(
@@ -54,12 +54,13 @@ double _fitness_get_sqdiffsum_sse(
     int valid_pixels_count)
 {
     img_pixel_t outputs[CGP_OUTPUTS * SSE2_BLOCK_SIZE];
-    int block_size = cgp_get_output_sse(chr, noisy, offset, outputs);
+    bool should_restart;
+    int block_size = cgp_sse_get_output(chr, noisy, offset, outputs, &should_restart);
     assert(valid_pixels_count <= block_size);
 
     double sum = 0;
     for (int i = 0; i < valid_pixels_count; i++) {
-        img_pixel_t filtered = cgp_get_output_value_sse(outputs, 0, i);
+        img_pixel_t filtered = cgp_sse_extract_output(outputs, 0, i);
         int diff = filtered - original[offset + i];
         sum += diff * diff;
     }
