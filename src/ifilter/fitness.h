@@ -25,6 +25,10 @@
 #include "image.h"
 
 
+static const int FITNESS_SSE2_STEP = 16;
+static const int FITNESS_AVX2_STEP = 32;
+
+
 /**
  * SIMD fitness evaluator prototype
  */
@@ -33,7 +37,7 @@ typedef double (*fitness_simd_func_t)(
     img_pixel_t *noisy[WINDOW_SIZE],
     ga_chr_t chr,
     int offset,
-    int block_size);
+    int valid_pixels_count);
 
 
 /**

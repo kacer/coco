@@ -17,10 +17,21 @@
  *   \___)     (___/
  */
 
+#include <assert.h>
 
 #include "../fitness.h"
 #include "cgp_sse.h"
 
+/*
+int cgp_get_output_simd(
+    ga_chr_t chr,
+    cgp_value_t *inputs[CGP_INPUTS],
+    cgp_value_t *outputs[CGP_OUTPUTS],
+    int offset)
+{
+
+}
+*/
 
 /**
  * Calculates difference between original and filtered pixel using SSE2
@@ -32,7 +43,7 @@
  * @param  noisy_image_simd
  * @param  chr
  * @param  offset Where to start in arrays
- * @param  block_size How many pixels to process
+ * @param  valid_pixels_count How many pixels to process
  * @return
  */
 double _fitness_get_sqdiffsum_sse(
@@ -40,21 +51,16 @@ double _fitness_get_sqdiffsum_sse(
     img_pixel_t *noisy[WINDOW_SIZE],
     ga_chr_t chr,
     int offset,
-    int block_size)
+    int valid_pixels_count)
 {
-    __m128i_aligned sse_inputs[CGP_INPUTS];
-    __m128i_aligned sse_outputs[CGP_OUTPUTS];
-    unsigned char *outputs_ptr = (unsigned char*) &sse_outputs;
-
-    for (int i = 0; i < CGP_INPUTS; i++) {
-        sse_inputs[i] = _mm_load_si128((__m128i*)(&noisy[i][offset]));
-    }
-
-    cgp_get_output_sse(chr, sse_inputs, sse_outputs);
+    img_pixel_t outputs[CGP_OUTPUTS * SSE2_BLOCK_SIZE];
+    int block_size = cgp_get_output_sse(chr, noisy, offset, outputs);
+    assert(valid_pixels_count <= block_size);
 
     double sum = 0;
-    for (int i = 0; i < block_size; i++) {
-        int diff = outputs_ptr[i] - original[offset + i];
+    for (int i = 0; i < valid_pixels_count; i++) {
+        img_pixel_t filtered = cgp_get_output_value_sse(outputs, 0, i);
+        int diff = filtered - original[offset + i];
         sum += diff * diff;
     }
     return sum;

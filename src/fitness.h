@@ -28,9 +28,6 @@
 #include "predictors.h"
 
 
-static const int FITNESS_SSE2_STEP = 16;
-static const int FITNESS_AVX2_STEP = 32;
-
 static const int PRED_CIRCULAR_TRIES = 3;
 
 
@@ -38,6 +35,23 @@ extern input_data_t *fitness_input_data;
 extern archive_t fitness_cgp_archive;
 extern archive_t fitness_pred_archive;
 extern long fitness_cgp_evals;
+
+
+/**
+ * Problem-specific functions
+ */
+typedef void (*fitness_init_func_t)(
+    config_t *config,
+    input_data_t *input,
+    archive_t cgp_archive,
+    archive_t pred_archive);
+
+typedef ga_fitness_t (*fitness_cgp_eval_func_t)(
+    ga_chr_t chr);
+
+typedef ga_fitness_t (*fitness_cgp_predict_func_t)(
+    ga_chr_t cgp_chr,
+    ga_chr_t pred_chr);
 
 
 /**
@@ -78,6 +92,7 @@ static inline long fitness_get_cgp_evals()
 {
     return fitness_cgp_evals;
 }
+
 
 /**
  * Evaluates CGP circuit fitness

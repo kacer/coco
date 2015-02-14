@@ -52,34 +52,46 @@
     } \
 } while(0);
 
-#define UCFMT1 "%u"
-#define UCFMT4 UCFMT1 ", " UCFMT1 ", " UCFMT1 ", " UCFMT1
-#define UCFMT16 UCFMT4 ", " UCFMT4 ", " UCFMT4 ", " UCFMT4
+#ifdef TEST_EVAL_SSE2
+    #define UCFMT1 "%u"
+    #define UCFMT4 UCFMT1 ", " UCFMT1 ", " UCFMT1 ", " UCFMT1
+    #define UCFMT16 UCFMT4 ", " UCFMT4 ", " UCFMT4 ", " UCFMT4
 
-#define UCVAL1(n) _tmp[n]
-#define UCVAL4(n) UCVAL1(n), UCVAL1(n+1), UCVAL1(n+2), UCVAL1(n+3)
-#define UCVAL16(n) UCVAL4(n), UCVAL4(n+4), UCVAL4(n+8), UCVAL4(n+12)
+    #define UCVAL1(n) _tmp[n]
+    #define UCVAL4(n) UCVAL1(n), UCVAL1(n+1), UCVAL1(n+2), UCVAL1(n+3)
+    #define UCVAL16(n) UCVAL4(n), UCVAL4(n+4), UCVAL4(n+8), UCVAL4(n+12)
 
-#define PRINT_REG(reg) do { \
-    __m128i _tmpval = reg; \
-    unsigned char *_tmp = (unsigned char*) &_tmpval; \
-    printf(UCFMT16 "\n", UCVAL16(0)); \
-} while(0);
-
+    #define PRINT_REG(reg) do { \
+        __m128i _tmpval = reg; \
+        unsigned char *_tmp = (unsigned char*) &_tmpval; \
+        printf(UCFMT16 "\n", UCVAL16(0)); \
+    } while(0);
+#endif
 
 /**
  * Calculate output of given chromosome and inputs using SSE instructions
  * @param chr
- * @param inputs
- * @param outputs
+ * @param input_data
+ * @param input_offset offset from which to copy input data to SSE registers
+ * @param output_data will be written here
+ * @return number of items written to output_data
  */
-void cgp_get_output_sse(ga_chr_t chromosome,
-    __m128i_aligned inputs[CGP_INPUTS], __m128i_aligned outputs[CGP_OUTPUTS])
+int cgp_get_output_sse(
+    ga_chr_t chromosome,
+    cgp_value_t *input_data[CGP_INPUTS],
+    int input_offset,
+    cgp_value_t *output_data)
 {
 #ifdef SSE2
     assert(CGP_OUTPUTS == 1);
     assert(CGP_ROWS == 4);
     assert(CGP_LBACK == 1);
+
+    // copy input data (because input data array may be unaligned...)
+    __m128i_aligned inputs[CGP_INPUTS];
+    for (int i = 0; i < CGP_INPUTS; i++) {
+        inputs[i] = _mm_load_si128((__m128i*)(&input_data[i][input_offset]));
+    }
 
     // previous and currently computed column
     register __m128i prev0, prev1, prev2, prev3;
@@ -255,9 +267,9 @@ void cgp_get_output_sse(ga_chr_t chromosome,
 #endif
 
             if (idx + CGP_INPUTS == genome->outputs[0]) {
-                _mm_store_si128(&outputs[0], Y);
+                cgp_set_output_values_sse(output_data, 0, Y);
 #ifndef TEST_EVAL_SSE2
-                return;
+                return SSE2_BLOCK_SIZE;
 #endif
             }
 
@@ -279,6 +291,7 @@ void cgp_get_output_sse(ga_chr_t chromosome,
     }
 #endif
 
+    return SSE2_BLOCK_SIZE;
 
 #endif
 }
