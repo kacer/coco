@@ -39,4 +39,4 @@ struct _input_data {
 void input_data_save(struct _input_data *data, FILE *file);
 
 
-void symreg_save_best(struct _input_data *data, FILE *file);
+void symreg_save_output(input_data_t *data, ga_chr_t chr, FILE *file);
