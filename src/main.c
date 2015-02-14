@@ -91,7 +91,7 @@ static config_t config = {
 
 
 // predictor evolution settings and current state
-static pred_metadata_t pred_metadata;
+static pred_settings_t pred_settings;
 
 // algorithm working data
 // everything else is statically initialized to NULL
@@ -249,16 +249,16 @@ int main(int argc, char *argv[])
             }
         }
 
-        pred_metadata.genome_type = config.pred_genome_type;
-        pred_metadata.max_gene_value = img_size - 1;
-        pred_metadata.genotype_length = pred_max_size;
-        pred_metadata.genotype_used_length = pred_initial_size;
-        pred_metadata.mutation_rate = config.pred_mutation_rate;
-        pred_metadata.offspring_elite = config.pred_offspring_elite;
-        pred_metadata.offspring_combine = config.pred_offspring_combine;
+        pred_settings.genome_type = config.pred_genome_type;
+        pred_settings.max_gene_value = img_size - 1;
+        pred_settings.genotype_length = pred_max_size;
+        pred_settings.genotype_used_length = pred_initial_size;
+        pred_settings.mutation_rate = config.pred_mutation_rate;
+        pred_settings.offspring_elite = config.pred_offspring_elite;
+        pred_settings.offspring_combine = config.pred_offspring_combine;
 
         // predictors evolution
-        pred_init(&pred_metadata);
+        pred_init(&pred_settings);
 
         // cgp archive
         arc_func_vect_t arc_cgp_methods = {

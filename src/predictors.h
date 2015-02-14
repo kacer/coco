@@ -59,7 +59,7 @@ struct pred_genome {
 typedef struct pred_genome* pred_genome_t;
 
 
-/* metadata types *************************************************************/
+/* settings types *************************************************************/
 
 
 typedef enum {
@@ -88,7 +88,7 @@ typedef struct {
     /* relative number of elite and crossovered children */
     float offspring_elite;
     float offspring_combine;
-} pred_metadata_t;
+} pred_settings_t;
 
 
 /* initialization *************************************************************/
@@ -97,7 +97,7 @@ typedef struct {
 /**
  * Initialize predictor internals
  */
-void pred_init(pred_metadata_t *metadata);
+void pred_init(pred_settings_t *settings);
 
 
 /**
