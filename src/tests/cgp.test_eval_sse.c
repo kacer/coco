@@ -1,7 +1,7 @@
 /**
  * Tests CGP evaluation = calculation of the outputs.
- * Compile with -DTEST_EVAL_SSE2 -DSSE2
- * Source files cgp_core.c cgp_dump.c cgp_sse.c cpu.c ga.c
+ * Compile with -DTEST_EVAL_SSE2 -DSSE2 -DCGP_COLS=8 -DCGP_ROWS=4 -DCGP_LBACK=1 -msse2
+ * Source files cgp/cgp_core.c cgp/cgp_dump.c ifilter/cgp_sse.c ifilter/cgp_ifilter.c cpu.c ga.c
  */
 
 #include <stdlib.h>
@@ -9,8 +9,8 @@
 #include <immintrin.h>
 
 #include "../cpu.h"
-#include "../cgp.h"
-#include "../cgp_sse.h"
+#include "../cgp/cgp.h"
+#include "../ifilter/cgp_sse.h"
 
 
 
@@ -66,6 +66,7 @@ int main(int argc, char const *argv[])
             n->inputs[1] = i + CGP_INPUTS - CGP_ROWS;
             n->function = (cgp_func_t) (i % CGP_FUNC_COUNT);
             n->is_active = true;
+            n->is_constant = false;
         }
     }
 

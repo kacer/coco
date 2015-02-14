@@ -20,7 +20,7 @@
 
 CC=gcc
 CFLAGS=-g -Wall -std=c11 -fopenmp -O2 -D_XOPEN_SOURCE=700 \
-	-DSSE2 -DxAVX2 -DDEBUG -DxVERBOSE -DxCGP_LIMIT_FUNCS
+	-DSSE2 -DAVX2 -DDEBUG -DxVERBOSE -DxCGP_LIMIT_FUNCS
 LIBS=-lm -lc
 
 SRCDIR=.
@@ -146,6 +146,10 @@ valgrind: $(IFILTER_EXECUTABLE)
 	rm -rf cocolog/*
 	valgrind --track-origins=yes --leak-check=full ./$(IFILTER_EXECUTABLE) $(IFILTER_CMDLINE)
 
+gdb: $(IFILTER_EXECUTABLE)
+	rm -rf cocolog/*
+	gdb --args ./$(IFILTER_EXECUTABLE) $(IFILTER_CMDLINE)
+
 leaks: $(IFILTER_EXECUTABLE)
 	rm -rf cocolog/*
 	valgrind --track-origins=yes --leak-check=full --show-reachable=yes ./$(IFILTER_EXECUTABLE) $(IFILTER_CMDLINE)
@@ -159,19 +163,23 @@ callgraph:
 
 $(IFILTER_BUILDDIR)/%_avx.o: %_avx.c
 	@mkdir -p `dirname $@`
-	$(CC) $(IFILTER_CFLAGS) -mavx2 -c $< -o $@
+	@echo CC -mavx2 $@
+	@$(CC) $(IFILTER_CFLAGS) -mavx2 -c $< -o $@
 
 $(IFILTER_BUILDDIR)/%_sse.o: %_sse.c
 	@mkdir -p `dirname $@`
-	$(CC) $(IFILTER_CFLAGS) -msse2 -c $< -o $@
+	@echo CC -msse2 $@
+	@$(CC) $(IFILTER_CFLAGS) -msse2 -c $< -o $@
 
 $(IFILTER_BUILDDIR)/%.o: %.c
 	@mkdir -p `dirname $@`
-	$(CC) $(IFILTER_CFLAGS) -c $< -o $@
+	@echo CC $@
+	@$(CC) $(IFILTER_CFLAGS) -c $< -o $@
 
 $(IFILTER_BUILDDIR)/%.d: %.c
 	@mkdir -p `dirname $@`
-	@$(CC) $(IFILTER_CFLAGS) -MM -MT $(<:%.c=$(IFILTER_BUILDDIR)/%.o) $< -o $@
+	@echo CC $@
+	@@$(CC) $(IFILTER_CFLAGS) -MM -MT $(<:%.c=$(IFILTER_BUILDDIR)/%.o) $< -o $@
 
 -include $(IFILTER_DEPS)
 -include $(APPLY_DEPS)
@@ -180,18 +188,22 @@ $(IFILTER_BUILDDIR)/%.d: %.c
 
 $(SYMREG_BUILDDIR)/%_avx.o: %_avx.c
 	@mkdir -p `dirname $@`
-	$(CC) $(SYMREG_CFLAGS) -mavx2 -c $< -o $@
+	@echo CC -mavx2 $@
+	@$(CC) $(SYMREG_CFLAGS) -mavx2 -c $< -o $@
 
 $(SYMREG_BUILDDIR)/%_sse.o: %_sse.c
 	@mkdir -p `dirname $@`
-	$(CC) $(SYMREG_CFLAGS) -msse2 -c $< -o $@
+	@echo CC -msse2 $@
+	@$(CC) $(SYMREG_CFLAGS) -msse2 -c $< -o $@
 
 $(SYMREG_BUILDDIR)/%.o: %.c
 	@mkdir -p `dirname $@`
-	$(CC) $(SYMREG_CFLAGS) -c $< -o $@
+	@echo CC $@
+	@$(CC) $(SYMREG_CFLAGS) -c $< -o $@
 
 $(SYMREG_BUILDDIR)/%.d: %.c
 	@mkdir -p `dirname $@`
-	@$(CC) $(SYMREG_CFLAGS) -MM -MT $(<:%.c=$(SYMREG_BUILDDIR)/%.o) $< -o $@
+	@echo CC $@
+	@@$(CC) $(SYMREG_CFLAGS) -MM -MT $(<:%.c=$(SYMREG_BUILDDIR)/%.o) $< -o $@
 
 -include $(SYMREG_DEPS)

@@ -78,9 +78,7 @@
 void cgp_get_output_avx(ga_chr_t chromosome,
     __m256i_aligned inputs[CGP_INPUTS], __m256i_aligned outputs[CGP_OUTPUTS])
 {
-#ifndef AVX2
-    assert(false);
-#else
+#ifdef AVX2
     assert(CGP_OUTPUTS == 1);
     assert(CGP_ROWS == 4);
     assert(CGP_LBACK == 1);

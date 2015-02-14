@@ -1,7 +1,7 @@
 /**
  * Tests CGP evaluation = calculation of the outputs.
- * Compile with -DTEST_EVAL_AVX -DAVX2
- * Source files cgp_core.c cgp_dump.c cgp_avx.c cpu.c ga.c
+ * Compile with -DTEST_EVAL_AVX -DAVX2 -DCGP_COLS=8 -DCGP_ROWS=4 -DCGP_LBACK=1 -mavx2
+ * Source files cgp/cgp_core.c cgp/cgp_dump.c ifilter/cgp_avx.c ifilter/cgp_ifilter.c cpu.c ga.c
  */
 
 #include <stdlib.h>
@@ -9,8 +9,8 @@
 #include <immintrin.h>
 
 #include "../cpu.h"
-#include "../cgp.h"
-#include "../cgp_avx.h"
+#include "../cgp/cgp.h"
+#include "../ifilter/cgp_avx.h"
 
 
 
@@ -67,6 +67,8 @@ int main(int argc, char const *argv[])
             n->inputs[0] = i + CGP_INPUTS - y - y - 1;
             n->inputs[1] = i + CGP_INPUTS - CGP_ROWS;
             n->function = (cgp_func_t) (i % CGP_FUNC_COUNT);
+            n->is_active = true;
+            n->is_constant = false;
         }
     }
 

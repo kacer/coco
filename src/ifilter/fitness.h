@@ -63,15 +63,19 @@ double _fitness_get_sqdiffsum_sse(
  *
  * One call equals 32 CGP evaluations.
  *
+ * @param  original_image
+ * @param  noisy_image_simd
  * @param  chr
- * @param  w
+ * @param  offset Where to start in arrays
+ * @param  block_size How many pixels to process
  * @return
  */
 double _fitness_get_sqdiffsum_avx(
-    img_image_t _original_image,
-    img_pixel_t *_noisy_image_simd[WINDOW_SIZE],
+    img_pixel_t *original,
+    img_pixel_t *noisy[WINDOW_SIZE],
     ga_chr_t chr,
-    int offset);
+    int offset,
+    int block_size);
 
 
 /**
