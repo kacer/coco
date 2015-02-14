@@ -101,8 +101,9 @@ ga_fitness_t fitness_eval_cgp(ga_chr_t chr)
  * @param  chr
  * @return fitness value
  */
-ga_fitness_t _fitness_predict_cgp_by_genome(ga_chr_t cgp_chr, pred_genome_t predictor)
+ga_fitness_t fitness_predict_cgp(ga_chr_t cgp_chr, ga_chr_t pred_chr)
 {
+    pred_genome_t predictor = (pred_genome_t) pred_chr->genome;
     unsigned int hits = 0;
 
     for (int i = 0; i < predictor->used_pixels; i++) {
@@ -126,8 +127,6 @@ ga_fitness_t _fitness_predict_cgp_by_genome(ga_chr_t cgp_chr, pred_genome_t pred
     }
     #pragma omp atomic
         fitness_cgp_evals += predictor->used_pixels;
-
-    //printf(">>> c %d, hits:%3d, fitness: %.10g\n", predictor->used_pixels, hits, (100.0 * hits) / predictor->used_pixels);
 
     return (100.0 * hits) / predictor->used_pixels;
 }

@@ -32,12 +32,12 @@ SRCS=\
 	fitness.c predictors.c archive.c config.c algo.c baldwin.c utils.c \
 	logging/history.c logging/base.c logging/text.c logging/csv.c logging/summary.c \
 
-IFILTER_SRCS=$(SRCS) ifilter/cgp_ifilter.c ifilter/inputdata.c ifilter/fitness.c \
+IFILTER_SRCS=$(SRCS) ifilter/cgp.c ifilter/inputdata.c ifilter/fitness.c \
 	ifilter/cgp_sse.c ifilter/fitness_sse.c \
 	ifilter/cgp_avx.c ifilter/fitness_avx.c \
 	ifilter/image.c
 
-SYMREG_SRCS=$(SRCS) symreg/cgp_symreg.c symreg/inputdata.c symreg/fitness.c
+SYMREG_SRCS=$(SRCS) symreg/cgp.c symreg/inputdata.c symreg/fitness.c
 
 IFILTER_CFLAGS=$(CFLAGS) -DCGP_COLS=8 -DCGP_ROWS=4 -DCGP_LBACK=1
 IFILTER_EXECUTABLE=coco
@@ -70,7 +70,7 @@ APPLY_EXECUTABLE=coco_apply
 APPLY_BUILDDIR=$(IFILTER_BUILDDIR)
 APPLY_OBJS=$(IFILTER_BUILDDIR)/ifilter/image.o $(IFILTER_BUILDDIR)/ga.o \
 	$(IFILTER_BUILDDIR)/cgp/cgp_core.o $(IFILTER_BUILDDIR)/cgp/cgp_load.o \
-	$(IFILTER_BUILDDIR)/cgp/cgp_dump.o $(IFILTER_BUILDDIR)/ifilter/cgp_ifilter.o \
+	$(IFILTER_BUILDDIR)/cgp/cgp_dump.o $(IFILTER_BUILDDIR)/ifilter/cgp.o \
 	$(IFILTER_BUILDDIR)/ifilter/main_apply.o
 APPLY_DEPS = $(APPLY_OBJS:%.o=%.d)
 

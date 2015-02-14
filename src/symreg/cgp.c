@@ -36,8 +36,6 @@
 /**
  * Calculates CGP node output value.
  *
- * Defined in cgp_symreg or cgp_ifilter
- *
  * @param  n CGP node
  * @param  A Input value A
  * @param  B Input value B

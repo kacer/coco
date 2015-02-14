@@ -23,7 +23,7 @@
 
 #include <stdio.h>
 
-#include "cgp_symreg.h"
+#include "cgp.h"
 
 
 #define INPUT_IDX(case_idx, in_idx) (case_idx * CGP_INPUTS + in_idx)

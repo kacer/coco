@@ -24,9 +24,9 @@
 
 
 #ifdef SYMREG
-  #include "../symreg/cgp_symreg.h"
+  #include "../symreg/cgp.h"
 #else
-  #include "../ifilter/cgp_ifilter.h"
+  #include "../ifilter/cgp.h"
 #endif
 
 
@@ -148,7 +148,7 @@ bool cgp_get_output(ga_chr_t chromosome, cgp_value_t *inputs, cgp_value_t *outpu
 /**
  * Calculates CGP node output value.
  *
- * Defined in cgp_symreg or cgp_ifilter
+ * Defined in symreg/cgp.c or ifilter/cgp.c
  *
  * @param  n CGP node
  * @param  A Input value A

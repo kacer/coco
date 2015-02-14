@@ -1,7 +1,7 @@
 /**
  * Tests CGP evaluation = calculation of the outputs.
  * Compile with -DTEST_EVAL_SSE2 -DSSE2 -DCGP_COLS=8 -DCGP_ROWS=4 -DCGP_LBACK=1 -msse2
- * Source files cgp/cgp_core.c cgp/cgp_dump.c ifilter/cgp_sse.c ifilter/cgp_ifilter.c cpu.c ga.c
+ * Source files cgp/cgp_core.c cgp/cgp_dump.c ifilter/cgp_sse.c ifilter/cgp.c cpu.c ga.c
  */
 
 #include <stdlib.h>

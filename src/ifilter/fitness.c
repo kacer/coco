@@ -89,11 +89,14 @@ ga_fitness_t fitness_eval_cgp(ga_chr_t chr)
 /**
  * Predictes CGP circuit fitness
  *
- * @param  chr
+ * @param  cgp_chr
+ * @param  pred_chr
  * @return fitness value
  */
-ga_fitness_t _fitness_predict_cgp_by_genome(ga_chr_t cgp_chr, pred_genome_t predictor)
+ga_fitness_t fitness_predict_cgp(ga_chr_t cgp_chr, ga_chr_t pred_chr)
 {
+    pred_genome_t predictor = (pred_genome_t) pred_chr->genome;
+
     // PSNR coefficcient is different here (less pixels are used)
     double coef = fitness_psnr_coeficient(predictor->used_pixels);
     double sum = 0;

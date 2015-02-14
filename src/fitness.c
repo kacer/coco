@@ -75,8 +75,7 @@ void fitness_deinit()
 ga_fitness_t fitness_eval_or_predict_cgp(ga_chr_t chr)
 {
     if (fitness_pred_archive && fitness_pred_archive->stored > 0) {
-        pred_genome_t predictor = (pred_genome_t) arc_get(fitness_pred_archive, 0)->genome;
-        return _fitness_predict_cgp_by_genome(chr, predictor);
+        return fitness_predict_cgp(chr, arc_get(fitness_pred_archive, 0));
     } else {
         return fitness_eval_cgp(chr);
     }
@@ -91,11 +90,10 @@ ga_fitness_t fitness_eval_or_predict_cgp(ga_chr_t chr)
  */
 ga_fitness_t fitness_eval_predictor(ga_chr_t pred_chr)
 {
-    pred_genome_t predictor = (pred_genome_t) pred_chr->genome;
     double sum = 0;
     for (int i = 0; i < fitness_cgp_archive->stored; i++) {
         ga_chr_t cgp_chr = arc_get(fitness_cgp_archive, i);
-        double predicted = _fitness_predict_cgp_by_genome(cgp_chr, predictor);
+        double predicted = fitness_predict_cgp(cgp_chr, pred_chr);
         sum += fabs(cgp_chr->fitness - predicted);
     }
     return sum / fitness_cgp_archive->stored;
