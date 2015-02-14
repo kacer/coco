@@ -66,13 +66,15 @@ int cgp_load_chr_compat(ga_chr_t chr, FILE *fp)
     // primary outputs
 
 
-    fscanf(fp, "(");
+    count = fscanf(fp, "(");
     for (int i = 0; i < CGP_OUTPUTS; i++) {
-        if (i > 0) fscanf(fp, ",");
+        if (i > 0) {
+            count = fscanf(fp, ",");
+        }
         count = fscanf(fp, "%u", &genome->outputs[i]);
         if (count != 1) return -1;
     }
-    fscanf(fp, ")\n");
+    count = fscanf(fp, ")\n");
 
     cgp_find_active_blocks(chr);
 
