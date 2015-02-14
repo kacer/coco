@@ -187,7 +187,7 @@ void cgp_offspring(ga_pop_t pop);
  */
 static inline int cgp_nodes_count(cgp_genome_t genome)
 {
-    return genome->rows * genome->rows;
+    return genome->rows * genome->cols;
 }
 
 
@@ -199,7 +199,7 @@ static inline int cgp_nodes_count(cgp_genome_t genome)
  */
 static inline int cgp_output_genes_offset(cgp_genome_t genome)
 {
-    return ((CGP_FUNC_INPUTS + 1) * cgp_nodes_count(genome));
+    return (CGP_FUNC_INPUTS + 1) * cgp_nodes_count(genome);
 }
 
 
