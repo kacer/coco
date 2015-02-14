@@ -32,3 +32,13 @@ struct _input_data {
     img_window_array_t img_noisy_windows;
     img_pixel_t *img_noisy_simd[WINDOW_SIZE];
 };
+
+
+/**
+ * Filters noisy image using given filter. Caller is responsible for freeing
+ * the filtered image
+ *
+ * @param  chr
+ * @return filtered image
+ */
+img_image_t input_data_filter(input_data_t *data, ga_chr_t chr);

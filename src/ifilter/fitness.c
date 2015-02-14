@@ -65,36 +65,6 @@ void _fitness_init(config_t *config, input_data_t *input,
 
 
 /**
- * Filters image using given filter. Caller is responsible for freeing
- * the filtered image
- *
- * @param  chr
- * @return fitness value
- */
-img_image_t fitness_filter_image(ga_chr_t chr)
-{
-    img_image_t filtered = img_create(fitness_input_data->img_original->width, fitness_input_data->img_original->height,
-        fitness_input_data->img_original->comp);
-
-    for (int i = 0; i < fitness_input_data->fitness_cases; i++) {
-        img_window_t *w = &fitness_input_data->img_noisy_windows->windows[i];
-
-        cgp_value_t *inputs = w->pixels;
-        cgp_value_t output_pixel;
-        bool should_restart = cgp_get_output(chr, inputs, &output_pixel);
-        if (should_restart) {
-            i = 0;
-            continue;
-        }
-
-        img_set_pixel(filtered, w->pos_x, w->pos_y, output_pixel);
-    }
-
-    return filtered;
-}
-
-
-/**
  * Evaluates CGP circuit fitness
  *
  * @param  chr

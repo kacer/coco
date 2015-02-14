@@ -56,3 +56,31 @@ void input_data_destroy(input_data_t *data)
     img_destroy(data->img_original);
     img_destroy(data->img_noisy);
 }
+
+
+/**
+ * Filters noisy image using given filter. Caller is responsible for freeing
+ * the filtered image
+ *
+ * @param  chr
+ * @return filtered image
+ */
+img_image_t input_data_filter(input_data_t *data, ga_chr_t chr)
+{
+    img_image_t filtered = img_create(
+        data->img_original->width,
+        data->img_original->height,
+        data->img_original->comp);
+
+    if (filtered) {
+        for (int i = 0; i < data->fitness_cases; i++) {
+            img_window_t *w = &data->img_noisy_windows->windows[i];
+            cgp_value_t *inputs = w->pixels;
+            cgp_value_t output_pixel;
+            cgp_get_output(chr, inputs, &output_pixel);
+            img_set_pixel(filtered, w->pos_x, w->pos_y, output_pixel);
+        }
+    }
+
+    return filtered;
+}

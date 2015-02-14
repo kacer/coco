@@ -79,18 +79,6 @@ double _fitness_get_sqdiffsum_avx(
 
 
 /**
- * Filters image using given filter. Caller is responsible for freeing
- * the filtered image
- *
- * Works in single thread
- *
- * @param  chr
- * @return fitness value
- */
-img_image_t fitness_filter_image(ga_chr_t chr);
-
-
-/**
  * For testing purposes only
  */
 void fitness_test_init(img_image_t original_image,

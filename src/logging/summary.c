@@ -208,7 +208,7 @@ static void handle_finished(logger_t logger, finish_reason_t reason, history_ent
             img_save_png(work_data->input_data.img_noisy, _buffer);
 
             SPRINTF_FILENAME("img_best.png");
-            img_image_t img_best = fitness_filter_image(circuit);
+            img_image_t img_best = input_data_filter(&work_data->input_data, circuit);
             img_save_png(img_best, _buffer);
             img_destroy(img_best);
         #endif
