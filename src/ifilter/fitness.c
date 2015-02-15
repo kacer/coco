@@ -32,6 +32,10 @@
 static double _psnr_coeficient;
 
 
+static const int SSE2_BLOCK_SIZE = 16;
+static const int AVX2_BLOCK_SIZE = 32;
+
+
 /* Private functions */
 
 
@@ -178,31 +182,29 @@ double _fitness_get_sqdiffsum_scalar(ga_chr_t chr)
 
 double _fitness_get_sqdiffsum_simd(ga_chr_t chr, img_pixel_t *original, img_pixel_t *noisy, int row_length, int data_length)
 {
-    #ifdef SYMREG
-        return 0;
-    #endif
+    /* pick suitable simd function */
 
     fitness_simd_func_t func = NULL;
-    int block_size = 0;
-    double sum = 0;
-
+    int block_size;
     #ifdef AVX2
         if(can_use_intel_core_4th_gen_features()) {
             func = _fitness_get_sqdiffsum_avx;
-            block_size = FITNESS_AVX2_STEP;
+            block_size = AVX2_BLOCK_SIZE;
         }
     #endif
-
     #ifdef SSE2
         if(can_use_sse2()) {
             func = _fitness_get_sqdiffsum_sse;
-            block_size = FITNESS_SSE2_STEP;
+            block_size = SSE2_BLOCK_SIZE;
         }
     #endif
-
     assert(func != NULL);
 
+    /* calculate the fitness */
+
     int offset = 0;
+    double sum = 0;
+
     int unaligned_bytes = data_length % block_size;
     data_length -= unaligned_bytes;
 
