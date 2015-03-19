@@ -592,9 +592,6 @@ Nová položka je do paměti vložena vždy, když je predikovaná fitness nejle
 %     \right.
 % \end{equation}
 
-
-\todo{hýbání s offsetem?}
-
 \subsection{Archivy}
 
 Archiv kandidátních filtrů je reprezentován polem o~pevné délce. Pokud je zaplněn, jsou nejstarší položky přepisovány novými (kruhový buffer). Každý záznam obsahuje chromozom kandidátního filtru a jeho skutečnou fitness. Filtry obsažené v~archivu slouží k~výpočtu fitness prediktorů dle rovnice \ref{eqDesignPredFitness}.
@@ -685,12 +682,21 @@ V této práci je představen modifikovaný algoritmus koevoluce s prediktory fi
 
 Ukázalo se, že pokud má prediktor dostatečnou délku, bývá hodnota predikované fitness velmi blízko hodnotě skutečné fitness. Avšak v případě, že je prediktor již příliš krátký, může být predikovaná fitness i několikanásobně vyšší. Jako vhodná mez, kdy nepřesnost predikce již negativně ovlivňuje průběh evoluce obrazových filtrů, se ukázala hodnota $I_\mathit{threshold} = 1,2$. Po jejím překročení jsou prediktory skokově prodlouženy na dvojnásobek ($c_I = 2$).
 
-\subsection{Adaptace prediktorů na stagnující vývoj filtrů}
+\subsection{Změna velikosti prediktorů}
 
-Za stagnující vývoj je považován stav, kdy je absolutní hodnota rychlosti evoluce $|v|$ nižší než hodnota parametru $v_\mathit{zero}$, který byl ve všech případech nastaven na $0,001$. Velikost prediktorů se v tomto případě upravuje pomocí koeficientu $c_0$. Byly testovány hodnoty od $0,80$ až $1,19$ s krokem $0,01$, přičemž ostatní parametry měly fixní hodnoty. Pro každé nastavení bylo spuštěno 100 nezávislých běhů.
+Pro každý z parametrů byly testovány hodnoty od $0,80$ až $1,19$ s krokem $0,01$, přičemž ostatní parametry měly fixní hodnoty. Pro každé nastavení bylo spuštěno 100 nezávislých běhů. Evoluce byla ukončena po dosažení 30 tisíc generací CGP.
+
+\subsubsection*{Při neměnné fitness filtrů}
+
+Za stagnující vývoj je považován stav, kdy je absolutní hodnota rychlosti evoluce $|v|$ nižší než hodnota parametru $v_\mathit{zero}$, který byl ve všech případech nastaven na $0,001$. Velikost prediktorů se v tomto případě upravuje pomocí koeficientu $c_0$.
 
 Z dosažených výsledků vyplývá, že hodnota parametru $c_0$ neovlivňuje kvalitu nalezených filtrů. Ukazuje se ale, že tento parametr určuje trend změny velikosti prediktorů a tím i dobu výpočtu. U nižších hodnot velikost prediktoru v průběhu evoluce klesá. S rostoucí hodnotou má křivka průběhu velikosti prediktorů stále menší sklon a od hodnoty 0,94 velikost prediktorů už spíše roste. Pokud se hodnota parametru $c_0$ dále zvyšuje, tak se pouze urychluje konvergence velikosti k maximální hodnotě.
 
+\subsubsection*{Při klesající fitness filtrů}
+
+Druhé z pravidel se aplikuje v případě, že skutečná fitness nejlepšího jedince v populaci filtrů klesá ($v < -v_\mathit{zero}$). Velikost prediktoru se pak upraví dle parametru $c_{-1}$. Tento parametr má vliv na kvalitu filtrů, i když není úplně zřejmá vazba mezi hodnotou $c_{-1}$ a dosaženou kvalitou. Jako optimální se z tohoto pohledu jeví hodnoty $0,96$ a $0,97$. Také lze pozorovat, že s vyšší hodnotou roste i počet evaluací CGP a tím i doba běhu programu. Zajímavá je hodnota $c_{-1} = 1,00$, kdy se velikost prediktoru nijak nemění -- v tomto případě je algoritmus výrazně pomalejší než v případě jiných okolních hodnot. Zřejmě je pro evoluci výhodnější změna velikosti prediktoru jakýmkoliv směrem (a tím i změna predikované fitness filtrů), než pokud k žádné úpravě nedojde.
+
+\subsection*{Při rostoucí fitness filtrů}
 
 \subsection{Počáteční velikost prediktoru}
 
@@ -744,7 +750,7 @@ Ukazuje se, že pokaždé velikost prediktoru konverguje ke stejné hodnotě, ja
 %5\,\% & 13,6 -- 19,4\,\% & 19,2 -- 24,4\,\% & 24,9 -- 31,9\,\% \\
 %\hline
 
-\begin{figure}[htb]
+\begin{figure}[htbp]
     \centering
     \subfigure[5\% šum]{
         \centering
@@ -816,14 +822,38 @@ Na základě experimentů byly pro souběžné učení zvoleny tyto hodnoty para
 
 \section{Srovnání souběžného učení, koevoluce a CGP}
 
+\subsection{Šum sůl a pepř}
+
+% \afterpage{%
+%     \clearpage% Flush earlier floats (otherwise order might not be correct)
+%     \thispagestyle{empty}% empty page style (?)
+%     \begin{landscape}% Landscape page
+%         \centering % Center table
+%         \begin{tabular}{|l|*{27}{l|}}
+%             \hline
+%              velikost prediktoru & \multicolumn{3}{c|}{CGP} & \multicolumn{3}{c|}{0,5\,\%} & \multicolumn{3}{c|}{1\,\%} & \multicolumn{3}{c|}{5\,\%} & \multicolumn{3}{c|}{10\,\%} & \multicolumn{3}{c|}{15\,\%} & \multicolumn{3}{c|}{20\,\%} & \multicolumn{3}{c|}{25\,\%} & \multicolumn{3}{c|}{Souběžné učení} \\
+%             \hline
+
+%             intenzita šumu & min. & max. & med. & min. & max. & med. & min. & max. & med. & min. & max. & med. & min. & max. & med. & min. & max. & med. & min. & max. & med. & min. & max. & med. & min. & max. & med. \\
+%             \hline
+
+%             5\,\% & 23,5 & 41,4 & 34,5 & 34,9 \\
+
+%             \end{tabular}
+%         \captionof{table}{Table caption}% Add 'table' caption
+%     \end{landscape}
+%     \clearpage% Flush page
+% }
+
+\subsection{Impulzní šum}
+
+\subsection{Detektor hran}
 
 \todo{Statistika pravidel: jak často které}
 \todo{Rychlost mezi populacemi}
 
-\todo{Konvergence délky prediktoru při různé počáteční délce}
 
 \todo{Porovnání různé šumy s CGP/Coev}
-
 \todo{Sobel}
 
 
