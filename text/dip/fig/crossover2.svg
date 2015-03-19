@@ -57,7 +57,7 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1.979899"
-     inkscape:cx="284.43441"
+     inkscape:cx="173.31763"
      inkscape:cy="209.4594"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
@@ -67,8 +67,8 @@
      fit-margin-right="10"
      fit-margin-bottom="10"
      inkscape:window-width="1837"
-     inkscape:window-height="1057"
-     inkscape:window-x="1592"
+     inkscape:window-height="1177"
+     inkscape:window-x="1272"
      inkscape:window-y="-8"
      inkscape:window-maximized="1" />
   <metadata
@@ -79,7 +79,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -265,7 +265,7 @@
            y="197.20094"
            x="52.190887"
            id="tspan4148-16"
-           sodipodi:role="line">1</tspan></text>
+           sodipodi:role="line">A</tspan></text>
       <rect
          y="157.66882"
          x="77.509689"
@@ -284,7 +284,7 @@
            y="197.20094"
            x="102.11993"
            id="tspan4148-1-39"
-           sodipodi:role="line">1</tspan></text>
+           sodipodi:role="line">A</tspan></text>
       <rect
          y="157.66882"
          x="127.43874"
@@ -303,7 +303,7 @@
            y="197.20094"
            x="152.04898"
            id="tspan4148-5-6"
-           sodipodi:role="line">1</tspan></text>
+           sodipodi:role="line">A</tspan></text>
       <rect
          y="157.66882"
          x="177.36777"
@@ -322,7 +322,7 @@
            y="197.20094"
            x="201.97801"
            id="tspan4148-1-3-6"
-           sodipodi:role="line">1</tspan></text>
+           sodipodi:role="line">A</tspan></text>
       <rect
          y="157.66882"
          x="227.29683"
@@ -341,7 +341,7 @@
            y="197.20094"
            x="251.90706"
            id="tspan4148-9-0"
-           sodipodi:role="line">0</tspan></text>
+           sodipodi:role="line">B</tspan></text>
       <rect
          y="157.66882"
          x="277.22586"
@@ -360,7 +360,7 @@
            y="197.20094"
            x="301.83609"
            id="tspan4148-1-6-5"
-           sodipodi:role="line">0</tspan></text>
+           sodipodi:role="line">B</tspan></text>
       <rect
          y="157.66882"
          x="327.15488"
@@ -379,7 +379,7 @@
            y="197.20094"
            x="351.76511"
            id="tspan4148-5-2-8"
-           sodipodi:role="line">0</tspan></text>
+           sodipodi:role="line">B</tspan></text>
       <rect
          y="157.66882"
          x="377.08392"
@@ -398,7 +398,7 @@
            y="197.20094"
            x="401.69418"
            id="tspan4148-1-3-8-5"
-           sodipodi:role="line">0</tspan></text>
+           sodipodi:role="line">B</tspan></text>
     </g>
     <path
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:3.17600012;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
@@ -461,7 +461,7 @@
          id="tspan4148-5-20"
          x="151.9227"
          y="345.61911"
-         style="text-align:center;text-anchor:middle;fill:#ff0000;fill-opacity:1">1</tspan></text>
+         style="text-align:center;text-anchor:middle;fill:#ff0000;fill-opacity:1">A</tspan></text>
     <rect
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:3.17600012;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect3336-4-2-0"
@@ -480,7 +480,7 @@
          id="tspan4148-1-3-2"
          x="201.85173"
          y="345.61911"
-         style="text-align:center;text-anchor:middle;fill:#ff0000;fill-opacity:1">1</tspan></text>
+         style="text-align:center;text-anchor:middle;fill:#ff0000;fill-opacity:1">A</tspan></text>
     <rect
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:3.17600012;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect3336-1-87"
@@ -499,7 +499,7 @@
          id="tspan4148-9-3"
          x="251.78078"
          y="345.61911"
-         style="text-align:center;text-anchor:middle;fill:#ff0000;fill-opacity:1">0</tspan></text>
+         style="text-align:center;text-anchor:middle;fill:#ff0000;fill-opacity:1">B</tspan></text>
     <rect
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:3.17600012;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect3336-4-0-2"
@@ -575,7 +575,7 @@
          id="tspan4148-16-5"
          x="52.064621"
          y="420.14761"
-         style="text-align:center;text-anchor:middle;fill:#ff0000;fill-opacity:1">1</tspan></text>
+         style="text-align:center;text-anchor:middle;fill:#ff0000;fill-opacity:1">A</tspan></text>
     <rect
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:3.17600012;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect3336-4-5-1"
@@ -594,7 +594,7 @@
          id="tspan4148-1-39-5"
          x="101.99366"
          y="420.14761"
-         style="text-align:center;text-anchor:middle;fill:#ff0000;fill-opacity:1">1</tspan></text>
+         style="text-align:center;text-anchor:middle;fill:#ff0000;fill-opacity:1">A</tspan></text>
     <rect
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:3.17600012;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect3336-3-8-9"
@@ -661,7 +661,7 @@
        y="380.61548" />
     <text
        xml:space="preserve"
-       style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#ff0000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;"
+       style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#ff0000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        x="301.70981"
        y="420.14761"
        id="text4146-1-8-1-6"
@@ -670,7 +670,7 @@
          id="tspan4148-1-6-5-4"
          x="301.70981"
          y="420.14761"
-         style="text-align:center;text-anchor:middle;fill:#ff0000;fill-opacity:1;">0</tspan></text>
+         style="text-align:center;text-anchor:middle;fill:#ff0000;fill-opacity:1">B</tspan></text>
     <rect
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:3.17600012;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect3336-3-4-1-3"
@@ -680,7 +680,7 @@
        y="380.61548" />
     <text
        xml:space="preserve"
-       style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#ff0000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;"
+       style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#ff0000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        x="351.63882"
        y="420.14761"
        id="text4146-4-0-4-1"
@@ -689,7 +689,7 @@
          id="tspan4148-5-2-8-9"
          x="351.63882"
          y="420.14761"
-         style="text-align:center;text-anchor:middle;fill:#ff0000;fill-opacity:1;">0</tspan></text>
+         style="text-align:center;text-anchor:middle;fill:#ff0000;fill-opacity:1">B</tspan></text>
     <rect
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:3.17600012;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect3336-4-2-7-7-9"
@@ -699,7 +699,7 @@
        y="380.61548" />
     <text
        xml:space="preserve"
-       style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#ff0000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;"
+       style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#ff0000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        x="401.5679"
        y="420.14761"
        id="text4146-1-4-1-9-7"
@@ -708,7 +708,7 @@
          id="tspan4148-1-3-8-5-4"
          x="401.5679"
          y="420.14761"
-         style="text-align:center;text-anchor:middle;fill:#ff0000;fill-opacity:1;">0</tspan></text>
+         style="text-align:center;text-anchor:middle;fill:#ff0000;fill-opacity:1">B</tspan></text>
     <path
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        d="m 127.3867,48.500754 0,192.434066"
