@@ -199,13 +199,13 @@ Obrazové filtry se uplatňují i v jiných úlohách než filtrování šumu. J
     \subfigure[Vstupní obrázek]{
         \centering
             \includegraphics[width=0.27\textwidth]{fig/cameraman_256.png}
-        \label{obrTrenovaciPan}
+        \label{obrSobelIn}
     }
     \hskip1.5cm
     \subfigure[Sobelův operátor]{
         \centering
             \includegraphics[width=0.27\textwidth]{fig/cameraman_256_sobel.png}
-        \label{obrTrenovaciPan}
+        \label{obrSobelOut}
     }
     \caption{Příklad detekce hran.}
     \label{obrDetektor}
@@ -492,6 +492,7 @@ Plasticita je dosažena tím, že fenotyp netvoří všechny ukazatele obsažen�
 S~plasticitou jedinců lze pracovat různými způsoby. Především lze velikost prediktorů adaptovat na průběh evoluce kandidátních filtrů. Další možností je simulovat u prediktoru učení a adaptaci na prostředí tak, že nově vytvořený prediktor se snaží najít nejvýhodnější offset několika náhodnými pokusy. Také lze v~situaci, kdy evoluce filtrů stagnuje, skokově změnit offset všech prediktorů v~populaci, což může pomoci v~posunu z~lokálního optima. Všechny zmíněné možnosti lze kombinovat.
 
 \subsection{Adaptace velikosti prediktoru}
+\label{secDesignAdaptation}
 
 Podobně, jako lze pozorovat senzitivní období v~životě jedince (viz kapitola \ref{secPlasticity}), lze očekávat, že i populace prochází obdobími, kdy je celková schopnost adaptace vyšší (a fitness populace stoupá) a obdobími, kdy se adaptovat příliš nedokáže (a fitness se nemění). Na základě posledních změn fitness nejlepšího filtru v~populaci se pak upravuje velikost prediktoru prostřednictvím hodnoty \emph{maxUsedGenes}. Předpoklady jsou:
 
@@ -613,6 +614,8 @@ Evoluce je, podobně jako v~případě bez koevoluce, ukončena po dosažení st
 
 \todo{Jazyk, překladač, std=c11}
 
+\todo{knihovna pro obrazky}
+
 \subsection{Generování náhodných čísel}
 
 \section{Paralelizace}
@@ -632,7 +635,6 @@ Evoluce je, podobně jako v~případě bez koevoluce, ukončena po dosažení st
 \todo{Popis SSE2, AVX, AVX2 + jiný memory layout}
 
 \section{Logování, možnost napojení na GUI}
-
 
 \chapter{Experimentální vyhodnocení}
 \label{chExperiments}
@@ -684,19 +686,111 @@ Ukázalo se, že pokud má prediktor dostatečnou délku, bývá hodnota prediko
 
 \subsection{Změna velikosti prediktorů}
 
-Pro každý z parametrů byly testovány hodnoty od $0,80$ až $1,19$ s krokem $0,01$, přičemž ostatní parametry měly fixní hodnoty. Pro každé nastavení bylo spuštěno 100 nezávislých běhů. Evoluce byla ukončena po dosažení 30 tisíc generací CGP.
+Pro každý z parametrů byly testovány hodnoty z intervalu $0,8$ až $1,1$ (s krokem $0,01$), přičemž ostatní parametry měly fixní hodnoty. Počáteční velikost prediktoru byla nastavena na 50\,\% všech případů fitness. Evoluce byla ukončena po dosažení 30 tisíc generací CGP.
 
 \subsubsection*{Při neměnné fitness filtrů}
 
-Za stagnující vývoj je považován stav, kdy je absolutní hodnota rychlosti evoluce $|v|$ nižší než hodnota parametru $v_\mathit{zero}$, který byl ve všech případech nastaven na $0,001$. Velikost prediktorů se v tomto případě upravuje pomocí koeficientu $c_0$.
+Za stagnující vývoj je považován stav, kdy je absolutní hodnota rychlosti evoluce $|v|$ nižší než hodnota parametru $v_\mathit{zero}$, který byl ve všech případech nastaven na $0,001$. Velikost prediktorů se v tomto případě upravuje pomocí koeficientu $c_0$. Pro každou testovanou hodnotu bylo spuštěno celkem 100 nezávislých běhů.
 
-Z dosažených výsledků vyplývá, že hodnota parametru $c_0$ neovlivňuje kvalitu nalezených filtrů. Ukazuje se ale, že tento parametr určuje trend změny velikosti prediktorů a tím i dobu výpočtu. U nižších hodnot velikost prediktoru v průběhu evoluce klesá. S rostoucí hodnotou má křivka průběhu velikosti prediktorů stále menší sklon a od hodnoty 0,94 velikost prediktorů už spíše roste. Pokud se hodnota parametru $c_0$ dále zvyšuje, tak se pouze urychluje konvergence velikosti k maximální hodnotě.
+Jak je vidět na grafech \ref{plotZerocoef-30kg}, hodnota parametru $c_0$ neovlivňuje kvalitu nalezených filtrů. Ukazuje se ale, že tento parametr určuje trend změny velikosti prediktorů a tím i dobu výpočtu. U nižších hodnot velikost prediktoru v průběhu evoluce klesá. S rostoucí hodnotou má křivka průběhu velikosti prediktorů stále menší sklon a od hodnoty 0,94 velikost prediktorů už spíše roste. Pokud se hodnota parametru $c_0$ dále zvyšuje, tak se pouze urychluje konvergence velikosti k maximální hodnotě.
+
+\begin{figure}[tbp]
+    \centering
+    \subfigure[Kvalita nalezených filtrů]{
+        \centering
+           \includegraphics[width=0.95\textwidth]{fig/plot/tuning-zerocoef-30kg-psnr.pdf}
+    }
+    \subfigure[Doba běhu programu (součet všech vláken)]{
+        \centering
+            \includegraphics[width=0.95\textwidth]{fig/plot/tuning-zerocoef-30kg-utime.pdf}
+    }
+    \subfigure[Průběh velikosti prediktorů (průměr ze 100 běhů)]{
+        \centering
+            \includegraphics[width=0.95\textwidth]{fig/plot/tuning-zerocoef-30kg-predlen.pdf}
+    }
+    \caption{Vliv parametru $c_0$ (změna velikosti prediktoru při neměnné fitness filtrů)}
+    \label{plotZerocoef-30kg}
+\end{figure}
 
 \subsubsection*{Při klesající fitness filtrů}
 
-Druhé z pravidel se aplikuje v případě, že skutečná fitness nejlepšího jedince v populaci filtrů klesá ($v < -v_\mathit{zero}$). Velikost prediktoru se pak upraví dle parametru $c_{-1}$. Tento parametr má vliv na kvalitu filtrů, i když není úplně zřejmá vazba mezi hodnotou $c_{-1}$ a dosaženou kvalitou. Jako optimální se z tohoto pohledu jeví hodnoty $0,96$ a $0,97$. Také lze pozorovat, že s vyšší hodnotou roste i počet evaluací CGP a tím i doba běhu programu. Zajímavá je hodnota $c_{-1} = 1,00$, kdy se velikost prediktoru nijak nemění -- v tomto případě je algoritmus výrazně pomalejší než v případě jiných okolních hodnot. Zřejmě je pro evoluci výhodnější změna velikosti prediktoru jakýmkoliv směrem (a tím i změna predikované fitness filtrů), než pokud k žádné úpravě nedojde.
+Druhé z pravidel se aplikuje v případě, že skutečná fitness nejlepšího jedince v populaci filtrů klesá ($v < -v_\mathit{zero}$). Velikost prediktoru se pak upraví dle parametru $c_{-1}$. U tohoto parametru byly testovány hodnoty $0,8$ až $1,1$, dosažené výsledky z 24 nezávislých běhů znázorňují grafy na obrázku \ref{plotDecrcoef-30kg}. Tento parametr má větší vliv na kvalitu filtrů než parametr $c_0$, i když není úplně zřejmá vazba mezi hodnotou $c_{-1}$ a dosaženou kvalitou. Jako optimální se z tohoto pohledu jeví hodnoty $0,96$ a $0,97$. Také lze pozorovat, že s vyšší hodnotou roste i počet evaluací CGP a tím i doba běhu programu, i když ne tak razantně, jako v případě parametru $c_0$. Zajímavá je hodnota $c_{-1} = 1,00$, kdy se velikost prediktoru nijak nemění -- v tomto případě je algoritmus výrazně pomalejší než v případě jiných okolních hodnot. Zřejmě je pro evoluci výhodnější změna velikosti prediktoru jakýmkoliv směrem (a tím i změna predikované fitness filtrů), než pokud k žádné úpravě nedojde.
+
+\begin{figure}[tbp]
+    \centering
+    \subfigure[Kvalita nalezených filtrů]{
+        \centering
+           \includegraphics[width=0.95\textwidth]{fig/plot/tuning-decrcoef-30kg-psnr.pdf}
+    }
+    \vskip2\baselineskip
+    \subfigure[Doba běhu programu (součet všech vláken)]{
+        \centering
+            \includegraphics[width=0.95\textwidth]{fig/plot/tuning-decrcoef-30kg-utime.pdf}
+    }
+    \caption{Vliv parametru $c_{-1}$ (změna velikosti prediktoru při klesající fitness filtrů)}
+    \label{plotDecrcoef-30kg}
+\end{figure}
 
 \subsection*{Při rostoucí fitness filtrů}
+
+Pokud je rychlost $v$ vyšší než nula, rozlišuje se \uv{pomalý} a \uv{rychlý} nárůst fitness, čemuž odpovídají koeficienty $c_{+1}$ a $c_{+2}$. Jako práh byla zvolena hodnota $v_\mathit{slow} = 0,1$. Nejvhodnější hodnota obou parametrů byla hledána zvlášť, pro každé nastavení bylo spuštěno 100 běhů.
+
+V případě, že fitness filtrů roste pomaleji, uplatní se parametr $c_{+1}$. Jak je vidět na grafech na obrázku \ref{plotSlowcoef-30kg}, nemá jeho hodnota znatelný vliv na kvalitu filtrů. Podobně jako u jiných parametrů ovlivňující práci s velikostí prediktorů, má vyšší hodnota za následek pomalejší běh programu, ale rozdíl není natolik výrazný. Také zde je při nastavení $c_{+1}$ potřebný čas vyšší, než u okolních hodnot.
+
+Také v případě parametru $c_{+2}$ se ukazuje, že kvalita filtrů se příliš nemění, viz grafy na obrázku \ref{plotFastcoef-30kg}. Při pohledu na čas běhu programu se zdá, že je výhodnější i v tomto případě prediktory zkracovat. To je ale v rozporu s předpokladem (uvedeným v části \ref{secDesignAdaptation}), že pokud fitness filtrů roste, tak je vhodné prodlužovat prediktory a zpřesňovat predikovanou fitness. Ukazuje se, že je to způsobeno počáteční velikostí prediktorů (50\,\%), protože ta v průběhu evoluce konverguje k podstatně nižší hodnotě (jednotky procent), a proto je ve všech případech výhodnější zkracování. Pokud se počáteční velikost nastaví na 3\,\%, odpovídá chování předpokladům a vliv parametru $c_{+2}$ na čas běhu programu není tak výrazný, jak je vidět na grafu \ref{plotFastcoef-30kg-utime-i3}.
+
+\begin{figure}[p]
+    \centering
+    \subfigure[Kvalita nalezených filtrů]{
+        \centering
+           \includegraphics[width=0.95\textwidth]{fig/plot/tuning-slowcoef-30kg-psnr.pdf}
+    }
+    \vskip2\baselineskip
+    \subfigure[Doba běhu programu (součet všech vláken)]{
+        \centering
+            \includegraphics[width=0.95\textwidth]{fig/plot/tuning-slowcoef-30kg-utime.pdf}
+    }
+    \caption{Vliv parametru $c_{+1}$ (změna velikosti prediktoru při pomalu rostoucí fitness filtrů)}
+    \label{plotSlowcoef-30kg}
+\end{figure}
+
+\begin{figure}[p]
+    \centering
+    \subfigure[Kvalita nalezených filtrů, počáteční velikost 50\,\%]{
+        \centering
+           \includegraphics[width=0.95\textwidth]{fig/plot/tuning-fastcoef-i50-30kg-psnr.pdf}
+    }
+    \subfigure[Doba běhu programu (součet všech vláken), počáteční velikost 50\,\%]{
+        \centering
+            \includegraphics[width=0.95\textwidth]{fig/plot/tuning-fastcoef-i50-30kg-utime.pdf}
+    }
+    \subfigure[Doba běhu programu (součet všech vláken), počáteční velikost 3\,\%]{
+        \centering
+            \includegraphics[width=0.95\textwidth]{fig/plot/tuning-fastcoef-i3-30kg-utime.pdf}
+        \label{plotFastcoef-30kg-utime-i3}
+    }
+    \caption{Vliv parametru $c_{+2}$ (změna velikosti prediktoru při rychle rostoucí fitness filtrů)}
+    \label{plotFastcoef-30kg}
+\end{figure}
+
+
+\subsection{Četnost změny velikosti prediktoru}
+
+Jak bylo zmíněno v kapitole \ref{secDesignAdaptation}, ke změně velikosti prediktoru dochází při každé výměně rodiče v populaci filtrů. Volitelným parametrem lze ale nastavit, aby ke změně velikosti došlo nejpozději po uběhnutí určitém počtu generací CGP od poslední změny. Testovány byly hodnoty 1~000, 2~500, 5~000 a 7~500 generací, přičemž evoluce byla ukončena po 30 tisících generacích. Po porovnání výsledků získaných ze sta nezávislých běhů se ukazuje, že tento parametr nemá příliš vliv ani na rychlost programu, ani na kvalitu filtrů.
+
+\todo{prepocitat - pocital jsem s january15, kde 1k vypadal nadejne (+1\,dB), ale u november15 nedelal nic moc}
+
+\subsection{Inicializace prediktorů}
+
+Při tvorbě nových prediktorů fitness je nejjednodušší vytvořit jejich genom zcela náhodně. \todo{nevyhody?} Genom lze ale také inicializovat pomocí permutace všech možných hodnot.
+
+Ukazuje se ovšem, že při inicializaci permutací, mají získané obrazové filtry v průměru o něco menší fitness. Zdá se, že větší náhodnost genů je pro evoluci výhodnější.
+
+\todo{random, perm}
+
+\subsection{Výpočet rychlosti evoluce}
+
+\todo{last, avg7w, avg3, med3}
 
 \subsection{Počáteční velikost prediktoru}
 
@@ -754,15 +848,15 @@ Ukazuje se, že pokaždé velikost prediktoru konverguje ke stejné hodnotě, ja
     \centering
     \subfigure[5\% šum]{
         \centering
-            \includegraphics[width=0.9\textwidth]{fig/plot/initial-size/initial-size-5-30kg.pdf}
+            \includegraphics[width=0.95\textwidth]{fig/plot/initial-size/initial-size-5-30kg.pdf}
     }
     \subfigure[15\% šum]{
         \centering
-            \includegraphics[width=0.9\textwidth]{fig/plot/initial-size/initial-size-15-30kg.pdf}
+            \includegraphics[width=0.95\textwidth]{fig/plot/initial-size/initial-size-15-30kg.pdf}
     }
     \subfigure[50\% šum]{
         \centering
-            \includegraphics[width=0.9\textwidth]{fig/plot/initial-size/initial-size-50-30kg.pdf}
+            \includegraphics[width=0.95\textwidth]{fig/plot/initial-size/initial-size-50-30kg.pdf}
     }
     \caption{Vývoj velikosti prediktorů fitness při různé počáteční velikosti.}
     \label{plotInitialSize-30kg}
@@ -771,54 +865,48 @@ Ukazuje se, že pokaždé velikost prediktoru konverguje ke stejné hodnotě, ja
 
 \subsection{Zvolené hodnoty parametrů}
 
-Na základě experimentů byly pro souběžné učení zvoleny tyto hodnoty parametrů:
+Na základě provedených experimentů byly pro souběžné učení zvoleny hodnoty parametrů, které jsou uvedeny v tabulce \ref{tabParams}.
 
-% \begin{table}[htb]
-%     \renewcommand{\arraystretch}{1.2}
-%     \begin{minipage}[t]{.5\textwidth}
-%         \small\centering\begin{tabular}{|l|l|}
-%             \hline
-%             parametr & hodnota \\
-%             \hline
-%             $I_\mathit{threshold}$ & 1,2 \\
-%             $c_I$ & 2 \\
-%             $c_0$ & 0,93 \\
-%             $c_{-1}$ & 9,96 \\
-%             \\
-%             \hline
-%         \end{tabular}
+\todo{by-max}
 
-%     \end{minipage}
-%     \begin{minipage}[t]{.5\textwidth}
-%         \small\centering\begin{tabular}{|l|l|}
-%             \hline
-%             parametr & hodnota \\
-%             \hline
-%             $c_{+1}$ & 1,07 \\
-%             $c_{+2}$ & 1 \\
-%             $v_\mathit{zero}$ & 0,001 \\
-%             $v_\mathit{slow}$ & 0,1 \\
-%             počáteční velikost prediktoru & 3\,\% \\
-%             \hline
-%         \end{tabular}
+\begin{table}[h]
+    \renewcommand{\arraystretch}{1.2}
+    \catcode`\-=12
+    \centering
+    \begin{tabular}{|l|l|c|l|l|}
+        \cline{1-2}\cline{4-5}
+        parametr & hodnota & & parametr & hodnota \\
+        \cline{1-2}\cline{4-5}
+        $I_\mathit{threshold}$ & 1,2   & & $v_\mathit{zero}$ & 0,001 \\
+        $c_I$ & 2                      & & $v_\mathit{slow}$ & 0,1 \\
+        $c_0$ & 0,93                   & & počáteční velikost prediktorů & 3\,\% \\
+        $c_{-1}$ & 0,96                & & inicializace prediktorů & zcela náhodně \\
+        $c_{+1}$ & 1,07                & & změna velikosti & jen při změně rodiče \\
+        $c_{+2}$ & 1                   & & &\\
+        \cline{1-2}\cline{4-5}
+    \end{tabular}
+    \caption{Zvolené hodnoty parametrů souběžného učení}
+    \label{tabParams}
+\end{table}
 
-%     \end{minipage}
-%     \caption{Seznam funkcí výpočetních uzlů. Převzato z~článku \cite{SikuPPSN}.}
-%     \label{tabCGPFunctions}
-% \end{table}
+% \begin{itemize}
+%     \item $I_\mathit{threshold} = 1,2$,
+%     \item $c_I = 2$,
+%     \item $c_0 = 0,93$,
+%     \item $c_{-1} = 0,96$,
+%     \item $c_{+1} = 1,07$,
+%     \item $c_{+2} = 1$,
+%     \item $v_\mathit{zero} = 0.001$,
+%     \item $v_\mathit{slow} = 0.1$,
+%     \item počáteční velikost prediktoru: 3\,\% počtu případů fitness,
+%     \item inicializace prediktorů zcela náhodně.
+% \end{itemize}
 
-\begin{itemize}
-    \item $I_\mathit{threshold} = 1,2$,
-    \item $c_I = 2$,
-    \item $c_0 = 0,93$,
-    \item $c_{-1} = 0,96$,
-    \item $c_{+1} = 1,07$,
-    \item $c_{+2} = 1$,
-    \item $v_\mathit{zero} = 0.001$,
-    \item $v_\mathit{slow} = 0.1$,
-    \item počáteční velikost prediktoru: 3\,\% počtu případů fitness.
-\end{itemize}
 
+\section{Chování souběžného učení}
+\todo{chovani soubezneho uceni - vzit si jeden beh, vysvetlit ruzne pocatecni velikosti}
+\todo{Statistika pravidel: jak často které}
+\todo{Rychlost mezi populacemi}
 
 \section{Srovnání souběžného učení, koevoluce a CGP}
 
@@ -848,13 +936,6 @@ Na základě experimentů byly pro souběžné učení zvoleny tyto hodnoty para
 \subsection{Impulzní šum}
 
 \subsection{Detektor hran}
-
-\todo{Statistika pravidel: jak často které}
-\todo{Rychlost mezi populacemi}
-
-
-\todo{Porovnání různé šumy s CGP/Coev}
-\todo{Sobel}
 
 
 
