@@ -45,7 +45,7 @@ IFILTER_EXECUTABLE=coco
 IFILTER_BUILDDIR=$(BUILDDIR)/ifilter
 IFILTER_OBJS = $(IFILTER_SRCS:%.c=$(IFILTER_BUILDDIR)/%.o)
 IFILTER_DEPS = $(IFILTER_SRCS:%.c=$(IFILTER_BUILDDIR)/%.d)
-IFILTER_CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_15.png -g 30000 -a baldwin -S 100 -I 5 -k 10000 -l cocolog --log-pred-file ../anselm/predictors.log
+IFILTER_CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_15.png -g 30000 -a baldwin -S 100 -I 5 -k 10000 -l cocolog --log-pred-file cocolog/predictors.log
 
 SYMREG_CFLAGS=$(CFLAGS) -DSYMREG -DCGP_COLS=32 -DCGP_ROWS=1 -DCGP_LBACK=32
 SYMREG_EXECUTABLE=coco_symreg

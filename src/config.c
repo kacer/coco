@@ -503,6 +503,7 @@ void config_save_file(FILE *file, config_t *cfg)
     fprintf(file, "\n");
     fprintf(file, "log-dir: %s\n", cfg->log_dir);
     fprintf(file, "log-interval: %d\n", cfg->log_interval);
+    fprintf(file, "log-pred-file: %s\n", cfg->predictor_dump_file);
     fprintf(file, "\n");
     fprintf(file, "cgp-mutate: %d\n", cfg->cgp_mutate_genes);
     fprintf(file, "cgp-population-size: %d\n", cfg->cgp_population_size);
