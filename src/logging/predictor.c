@@ -22,8 +22,11 @@
 #include <assert.h>
 #include <string.h>
 
-#include "predictor.h"
+#include "../algo.h"
 #include "../utils.h"
+#include "../archive.h"
+
+#include "predictor.h"
 
 
 struct logger_predictor {
@@ -49,6 +52,7 @@ static inline FILE *_get_fp(logger_t logger) {
 
 /* event handlers */
 static void handle_better_pred(logger_t logger, int cgp_generation, ga_fitness_t old_fitness, ga_fitness_t new_fitness, ga_chr_t active_predictor);
+static void handle_finished(logger_t logger, finish_reason_t reason, history_entry_t *state, struct algo_data *work_data);
 static void handle_pred_length_change_applied(logger_t logger, int cgp_generation, unsigned int old_length, unsigned int new_length,
     unsigned int old_used_length, unsigned int new_used_length,
     ga_chr_t active_predictor);
@@ -75,6 +79,7 @@ logger_t logger_predictor_create(config_t *config, FILE *target)
 
     logger_init_base(base, config);
     base->handler_better_pred = handle_better_pred;
+    base->handler_finished = handle_finished;
     base->handler_pred_length_change_applied = handle_pred_length_change_applied;
     base->destructor = logger_predictor_destruct;
 
@@ -121,4 +126,14 @@ static void handle_pred_length_change_applied(logger_t logger, int cgp_generatio
     ga_chr_t active_predictor)
 {
     _log_predictor(logger, cgp_generation, active_predictor);
+}
+
+
+static void handle_finished(logger_t logger, finish_reason_t reason, history_entry_t *state,
+    struct algo_data *work_data)
+{
+    _log_predictor(logger,
+        work_data->cgp_population->generation,
+        arc_get(work_data->pred_archive, 0)
+    );
 }
