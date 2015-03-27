@@ -182,7 +182,7 @@ int main(int argc, char *argv[])
             logger_summary_create(work_data.config, config.log_dir, true));
     }
 
-    if (strlen(config.predictor_dump_file)) {
+    if (config.algorithm != simple_cgp && strlen(config.predictor_dump_file)) {
         if (strcmp(config.predictor_dump_file, "-") == 0) {
             logger_add(&work_data.loggers,
                 logger_predictor_create(work_data.config, stdout));
@@ -360,15 +360,15 @@ int main(int argc, char *argv[])
         arc_insert(work_data.cgp_archive, work_data.cgp_population->best_chromosome);
         ga_evaluate_pop(work_data.pred_population);
         arc_insert(work_data.pred_archive, work_data.pred_population->best_chromosome);
-    }
 
-    logger_fire(&work_data.loggers,
-        better_pred,
-        work_data.cgp_population->generation,
-        arc_get(work_data.pred_archive, 0)->fitness,
-        work_data.pred_population->best_fitness,
-        work_data.pred_population->best_chromosome
-    );
+        logger_fire(&work_data.loggers,
+            better_pred,
+            work_data.cgp_population->generation,
+            arc_get(work_data.pred_archive, 0)->fitness,
+            work_data.pred_population->best_fitness,
+            work_data.pred_population->best_chromosome
+        );
+    }
 
     /*
         Evolution itself
