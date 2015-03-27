@@ -29,6 +29,7 @@
 #include "csv.h"
 #include "text.h"
 #include "summary.h"
+#include "predictor.h"
 
 
 /* maximal number of active loggers */

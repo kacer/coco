@@ -30,7 +30,8 @@ BUILDDIR=build
 SRCS=\
 	main.c cpu.c ga.c cgp/cgp_core.c cgp/cgp_dump.c cgp/cgp_load.c \
 	fitness.c predictors.c archive.c config.c algo.c baldwin.c utils.c \
-	logging/history.c logging/base.c logging/text.c logging/csv.c logging/summary.c \
+	logging/history.c logging/base.c logging/text.c logging/csv.c \
+	logging/summary.c logging/predictor.c \
 
 IFILTER_SRCS=$(SRCS) ifilter/cgp.c ifilter/inputdata.c ifilter/fitness.c \
 	ifilter/cgp_sse.c ifilter/fitness_sse.c \
@@ -44,7 +45,7 @@ IFILTER_EXECUTABLE=coco
 IFILTER_BUILDDIR=$(BUILDDIR)/ifilter
 IFILTER_OBJS = $(IFILTER_SRCS:%.c=$(IFILTER_BUILDDIR)/%.o)
 IFILTER_DEPS = $(IFILTER_SRCS:%.c=$(IFILTER_BUILDDIR)/%.d)
-IFILTER_CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_15.png -g 1 -a baldwin -S 100 -I 25 -k 10000 -l cocolog
+IFILTER_CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_15.png -g 10000 -a baldwin -S 100 -I 50 -k 10000 -l cocolog --log-pred-file cocolog/predictors.log
 
 SYMREG_CFLAGS=$(CFLAGS) -DSYMREG -DCGP_COLS=32 -DCGP_ROWS=1 -DCGP_LBACK=32
 SYMREG_EXECUTABLE=coco_symreg
@@ -74,7 +75,15 @@ APPLY_OBJS=$(IFILTER_BUILDDIR)/ifilter/image.o $(IFILTER_BUILDDIR)/ga.o \
 	$(IFILTER_BUILDDIR)/ifilter/main_apply.o
 APPLY_DEPS = $(APPLY_OBJS:%.o=%.d)
 
-EXECUTABLES=$(IFILTER_EXECUTABLE) $(APPLY_EXECUTABLE) $(SYMREG_EXECUTABLE)
+PREDVIS_CFLAGS=$(CFLAGS)
+PREDVIS_EXECUTABLE=coco_predvis
+PREDVIS_BUILDDIR=$(IFILTER_BUILDDIR)
+PREDVIS_OBJS=$(IFILTER_BUILDDIR)/ifilter/image.o \
+	$(IFILTER_BUILDDIR)/utils.o $(IFILTER_BUILDDIR)/cpu.o \
+	$(IFILTER_BUILDDIR)/ifilter/main_predvis.o
+PREDVIS_DEPS = $(PREDVIS_OBJS:%.o=%.d)
+
+EXECUTABLES=$(IFILTER_EXECUTABLE) $(APPLY_EXECUTABLE) $(SYMREG_EXECUTABLE) $(PREDVIS_EXECUTABLE)
 
 ANSELM_HOST=anselm
 ANSELM_PATH=~/xwigla00
@@ -90,6 +99,7 @@ clean:
 	rm -rf cocolog/*
 	rm -f $(IFILTER_EXECUTABLE) $(IFILTER_EXECUTABLE).exe $(IFILTER_EXECUTABLE).exe.stackdump
 	rm -f $(APPLY_EXECUTABLE) $(APPLY_EXECUTABLE).exe $(APPLY_EXECUTABLE).exe.stackdump
+	rm -f $(PREDVIS_EXECUTABLE) $(PREDVIS_EXECUTABLE).exe $(PREDVIS_EXECUTABLE).exe.stackdump
 	rm -f $(SYMREG_EXECUTABLE) $(SYMREG_EXECUTABLE).exe $(SYMREG_EXECUTABLE).exe.stackdump
 	rm -f xwigla00.zip xwigla00.tar.gz
 	find -name '*.expand' | xargs rm -f
@@ -104,6 +114,9 @@ $(SYMREG_EXECUTABLE): $(SYMREG_OBJS)
 
 $(APPLY_EXECUTABLE): $(APPLY_OBJS)
 	$(CC) $(APPLY_CFLAGS) -o $(APPLY_EXECUTABLE) $(APPLY_OBJS) $(LIBS)
+
+$(PREDVIS_EXECUTABLE): $(PREDVIS_OBJS)
+	$(CC) $(PREDVIS_CFLAGS) -o $(PREDVIS_EXECUTABLE) $(PREDVIS_OBJS) $(LIBS)
 
 run: $(IFILTER_EXECUTABLE)
 	rm -rf cocolog/*
@@ -183,6 +196,7 @@ $(IFILTER_BUILDDIR)/%.d: %.c
 
 -include $(IFILTER_DEPS)
 -include $(APPLY_DEPS)
+-include $(PREDVIS_DEPS)
 
 # rules to build symbolic regression
 

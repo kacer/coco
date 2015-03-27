@@ -293,7 +293,8 @@ void pred_main(algo_data_t *wd)
                     pred_calculate_phenotype(arc_get(wd->pred_archive, 0)->genome);
                 }
 
-                new_used_length = ((pred_genome_t) arc_get(wd->pred_archive, 0)->genome)->used_pixels;
+                ga_chr_t active_predictor = arc_get(wd->pred_archive, 0);
+                new_used_length = ((pred_genome_t)active_predictor->genome)->used_pixels;
 
                 // reevaluate predictors
                 #pragma omp critical (CGP_ARCHIVE__PRED_POP)
@@ -311,7 +312,8 @@ void pred_main(algo_data_t *wd)
                     old_length,
                     new_length,
                     old_used_length,
-                    new_used_length);
+                    new_used_length,
+                    active_predictor);
 
                 // no lock on CGP population here, it should not matter
                 wd->baldwin_state.last_applied_generation = generation;
@@ -328,8 +330,10 @@ void pred_main(algo_data_t *wd)
 
             logger_fire(&wd->loggers,
                 better_pred,
+                wd->cgp_population->generation,
                 arc_get(wd->pred_archive, 0)->fitness,
-                wd->pred_population->best_fitness
+                wd->pred_population->best_fitness,
+                wd->pred_population->best_chromosome
             );
 
             // store and invalidate CGP fitness

@@ -96,6 +96,21 @@ img_image_t img_load_stream(FILE *file) {
 
 
 /**
+ * Copy image
+ * @param  dest
+ * @param  src
+ * @return
+ */
+void img_copy(img_image_t dest, img_image_t src)
+{
+    assert(dest->width == src->width);
+    assert(dest->height == src->height);
+    assert(dest->comp == src->comp);
+    memcpy(dest->data, src->data, sizeof(img_pixel_t) * src->width * src->height);
+}
+
+
+/**
  * Store image to BMP file
  * @param  img
  * @return 0 on failure, non-zero on success

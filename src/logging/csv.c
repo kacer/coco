@@ -39,8 +39,11 @@ static void handle_finished(logger_t logger, finish_reason_t reason, history_ent
 static void handle_baldwin_triggered(logger_t logger, history_entry_t *state);
 static void handle_log_tick(logger_t logger, history_entry_t *state);
 static void handle_signal(logger_t logger, int signal, history_entry_t *state);
-static void handle_better_pred(logger_t logger, ga_fitness_t old_fitness, ga_fitness_t new_fitness);
-static void handle_pred_length_change_applied(logger_t logger, int cgp_generation, unsigned int old_length, unsigned int new_length, unsigned int old_used_length, unsigned int new_used_length);
+static void handle_better_pred(logger_t logger, int cgp_generation, ga_fitness_t old_fitness, ga_fitness_t new_fitness, ga_chr_t active_predictor);
+static void handle_pred_length_change_applied(logger_t logger, int cgp_generation,
+    unsigned int old_length, unsigned int new_length,
+    unsigned int old_used_length, unsigned int new_used_length,
+    ga_chr_t active_predictor);
 
 /* "destructor" */
 static void logger_csv_destruct(logger_t logger);
@@ -213,14 +216,15 @@ static void handle_signal(logger_t logger, int signal, history_entry_t *state)
 }
 
 
-static void handle_better_pred(logger_t logger, ga_fitness_t old_fitness, ga_fitness_t new_fitness)
+static void handle_better_pred(logger_t logger, int cgp_generation, ga_fitness_t old_fitness, ga_fitness_t new_fitness, ga_chr_t active_predictor)
 {
 }
 
 
 static void handle_pred_length_change_applied(logger_t logger, int cgp_generation,
     unsigned int old_length, unsigned int new_length,
-    unsigned int old_used_length, unsigned int new_used_length)
+    unsigned int old_used_length, unsigned int new_used_length,
+    ga_chr_t active_predictor)
 {
     history_entry_t *last = _get_last_entry(logger);
     last->pred_length = new_length;

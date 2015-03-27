@@ -38,6 +38,7 @@
 #include "fitness.h"
 #include "archive.h"
 #include "predictors.h"
+#include "logging/logging.h"
 
 #include <limits.h>
 
@@ -87,6 +88,7 @@ static config_t config = {
 
     .log_interval = 10000,
     .log_dir = "",
+    .predictor_dump_file = "",
 };
 
 
@@ -123,6 +125,8 @@ int main(int argc, char *argv[])
     // log files (used in the case of default logging enabled)
     FILE *log_progress_file = NULL;
     FILE *log_csv_file = NULL;
+    // used when --log-pred-file is specified
+    FILE *log_pred_dump_file = NULL;
 
 
     // application exit code
@@ -176,6 +180,22 @@ int main(int argc, char *argv[])
             logger_csv_create(work_data.config, log_csv_file));
         logger_add(&work_data.loggers,
             logger_summary_create(work_data.config, config.log_dir, true));
+    }
+
+    if (strlen(config.predictor_dump_file)) {
+        if (strcmp(config.predictor_dump_file, "-") == 0) {
+            logger_add(&work_data.loggers,
+                logger_predictor_create(work_data.config, stdout));
+
+        } else {
+            if ((log_pred_dump_file = fopen(config.predictor_dump_file, "wt")) == NULL) {
+                fprintf(stderr, "Failed to open predictor log file for writing.\n");
+                config_ok = false;
+            }
+
+            logger_add(&work_data.loggers,
+                logger_predictor_create(work_data.config, log_pred_dump_file));
+        }
     }
 
     if (!config_ok) {
@@ -342,6 +362,14 @@ int main(int argc, char *argv[])
         arc_insert(work_data.pred_archive, work_data.pred_population->best_chromosome);
     }
 
+    logger_fire(&work_data.loggers,
+        better_pred,
+        work_data.cgp_population->generation,
+        arc_get(work_data.pred_archive, 0)->fitness,
+        work_data.pred_population->best_fitness,
+        work_data.pred_population->best_chromosome
+    );
+
     /*
         Evolution itself
      */
@@ -397,6 +425,7 @@ int main(int argc, char *argv[])
 
     if (log_progress_file) fclose(log_progress_file);
     if (log_csv_file) fclose(log_csv_file);
+    if (log_pred_dump_file) fclose(log_pred_dump_file);
 
     return retval;
 }

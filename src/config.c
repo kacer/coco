@@ -53,6 +53,7 @@
 
 #define OPT_LOG_DIR 'l'
 #define OPT_LOG_INTERVAL 'k'
+#define OPT_LOG_PRED_DUMP_FILE 2000
 
 #define OPT_CGP_MUTATE 'm'
 #define OPT_CGP_POPSIZE 'p'
@@ -116,6 +117,7 @@ static struct option long_options[] =
     /* Logging */
     {"log-dir", required_argument, 0, OPT_LOG_DIR},
     {"log-interval", required_argument, 0, OPT_LOG_INTERVAL},
+    {"log-pred-file", required_argument, 0, OPT_LOG_PRED_DUMP_FILE},
 
     /* CGP */
     {"cgp-mutate", required_argument, 0, OPT_CGP_MUTATE},
@@ -307,6 +309,11 @@ config_retval_t config_load_args(int argc, char **argv, config_t *cfg)
             case OPT_LOG_DIR:
                 CHECK_FILENAME_LENGTH;
                 strncpy(cfg->log_dir, optarg, MAX_FILENAME_LENGTH);
+                break;
+
+            case OPT_LOG_PRED_DUMP_FILE:
+                CHECK_FILENAME_LENGTH;
+                strncpy(cfg->predictor_dump_file, optarg, MAX_FILENAME_LENGTH);
                 break;
 
             case OPT_CGP_MUTATE:

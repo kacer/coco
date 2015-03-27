@@ -50,11 +50,12 @@ typedef void (*handler_better_cgp_t)(logger_t logger, history_entry_t *state);
 typedef void (*handler_baldwin_triggered_t)(logger_t logger, history_entry_t *state);
 typedef void (*handler_log_tick_t)(logger_t logger, history_entry_t *state);
 typedef void (*handler_signal_t)(logger_t logger, int signal, history_entry_t *state);
-typedef void (*handler_better_pred_t)(logger_t logger, ga_fitness_t old_fitness, ga_fitness_t new_fitness);
+typedef void (*handler_better_pred_t)(logger_t logger, int cgp_generation, ga_fitness_t old_fitness, ga_fitness_t new_fitness, ga_chr_t active_predictor);
 typedef void (*handler_pred_length_change_scheduled_t)(logger_t logger, int new_predictor_length, history_entry_t *state);
 typedef void (*handler_pred_length_change_applied_t)(logger_t logger, int cgp_generation,
     unsigned int old_length, unsigned int new_length,
-    unsigned int old_used_length, unsigned int new_used_length);
+    unsigned int old_used_length, unsigned int new_used_length,
+    ga_chr_t active_predictor);
 
 /* "destructor" */
 typedef void (*logger_destructor_t)(logger_t logger);

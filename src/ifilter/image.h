@@ -70,6 +70,15 @@ img_image_t img_load(char const *filename);
 
 
 /**
+ * Copy image
+ * @param  dest
+ * @param  src
+ * @return
+ */
+void img_copy(img_image_t dest, img_image_t src);
+
+
+/**
  * Loads image from stream
  * @param  filename
  * @return

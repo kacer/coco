@@ -54,10 +54,12 @@ static void handle_better_cgp(logger_t logger, history_entry_t *state);
 static void handle_baldwin_triggered(logger_t logger, history_entry_t *state);
 static void handle_log_tick(logger_t logger, history_entry_t *state);
 static void handle_signal(logger_t logger, int signal, history_entry_t *state);
-static void handle_better_pred(logger_t logger, ga_fitness_t old_fitness, ga_fitness_t new_fitness);
+static void handle_better_pred(logger_t logger, int cgp_generation, ga_fitness_t old_fitness, ga_fitness_t new_fitness, ga_chr_t active_predictor);
 static void handle_pred_length_change_scheduled(logger_t logger, int new_predictor_length, history_entry_t *state);
-static void handle_pred_length_change_applied(logger_t logger, int cgp_generation, unsigned int old_length, unsigned int new_length,
-    unsigned int old_used_length, unsigned int new_used_length);
+static void handle_pred_length_change_applied(logger_t logger, int cgp_generation,
+    unsigned int old_length, unsigned int new_length,
+    unsigned int old_used_length, unsigned int new_used_length,
+    ga_chr_t active_predictor);
 
 /* "destructor" */
 static void logger_text_destruct(logger_t logger);
@@ -157,7 +159,7 @@ static void handle_signal(logger_t logger, int signal, history_entry_t *state)
 }
 
 
-static void handle_better_pred(logger_t logger, ga_fitness_t old_fitness, ga_fitness_t new_fitness)
+static void handle_better_pred(logger_t logger, int cgp_generation, ga_fitness_t old_fitness, ga_fitness_t new_fitness, ga_chr_t active_predictor)
 {
     fprintf(_get_fp(logger),
         "Predictor's fitness changed " FITNESS_FMT " --> " FITNESS_FMT "\n",
@@ -175,7 +177,8 @@ static void handle_pred_length_change_scheduled(logger_t logger, int new_predict
 
 static void handle_pred_length_change_applied(logger_t logger, int cgp_generation,
     unsigned int old_length, unsigned int new_length,
-    unsigned int old_used_length, unsigned int new_used_length)
+    unsigned int old_used_length, unsigned int new_used_length,
+    ga_chr_t active_predictor)
 {
     fprintf(_get_fp(logger),
         "Generation %d: Predictor's length change applied   %d --> %d\n",

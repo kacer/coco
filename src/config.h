@@ -90,6 +90,7 @@ typedef struct
 
     int log_interval;
     char log_dir[MAX_FILENAME_LENGTH + 1];
+    char predictor_dump_file[MAX_FILENAME_LENGTH + 1];
 
 } config_t;
 
@@ -179,6 +180,10 @@ static inline void print_help() {
         "    --log-interval NUM, -k NUM\n"
         "          Logging interval (in generations), default is 0.\n"
         "          If zero, only fitness changes are logged.\n"
+        "\n"
+        "    --log-pred-file FILE\n"
+        "          Dump active predictor genome to file on each change.\n"
+        "          By default turned off, use \"-\" for stdout."
         "\n"
         "    --cgp-mutate NUM, -m NUM\n"
         "          Number of (max) mutated genes in CGP, default is 5.\n"
