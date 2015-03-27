@@ -24,6 +24,7 @@
 coco
 coco_apply
 coco_symreg
+coco_predvis
 
 # Build files
 build/
@@ -33,6 +34,7 @@ build/
 
 # Log files
 src/cocolog
+src/images
 src/*.bmp
 
 # Archives
@@ -41,6 +43,7 @@ src/*.bmp
 # Junk
 Thumbs.db
 callgraph.png
+gnuplot-colorbrewer-master
 
 # Experimental results
 results/*

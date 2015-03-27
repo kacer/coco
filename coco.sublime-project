@@ -7,5 +7,5 @@
 			"folder_exclude_patterns": ["anselm"]
 		}
 	],
-	"index_exclude_patterns": ["*.log", "*.csv"],
+	"index_exclude_patterns": ["*.log", "*.csv", "predictors.log"],
 }
