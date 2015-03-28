@@ -5,6 +5,7 @@
 \usepackage{multirow}
 \usepackage{multicol}
 \usepackage{dblfloatfix}
+\newcommand{\uv}[1]{\quotedblbase #1\textquotedblleft}
 
 \colorlet{fixme}{green!50!black}
 \newcommand{\fixme}[1]{{\color{fixme} {{\textbf{[FIXME]}} #1} }}
@@ -14,7 +15,20 @@
 
 \colorlet{grayintable}{black!50}
 
-\newcommand{\uv}[1]{\quotedblbase #1\textquotedblleft}
+%\newcommand*{\@rowstyle}{}
+\newcommand*{\rowstyle}[1]{% sets the style of the next row
+  \gdef\@rowstyle{#1}%
+  \@rowstyle\ignorespaces%
+}
+
+\newcolumntype{=}{% resets the row style
+  >{\gdef\@rowstyle{}}%
+}
+
+\newcolumntype{+}{% adds the current row style to the next column
+  >{\@rowstyle}%
+}
+
 
 %--------------------------------------------------------
 %--------------------------------------------------------
@@ -230,7 +244,7 @@ Tato pravidla jsou uplatněna vždy, když je do archivu vložen nový kandidát
 \section{Experimentální vyhodnocení}
 \label{sec:Experimental}
 
-Navržený algoritmus byl experimentálně ověřen na třech úlohách z oblasti zpracování obrazu. V prvním případě je cílem nalézt vhodný obrazový filtr pro rekonstrukci obrázků poškozených šumem typu sůl a pepř. U tohoto šumu mají poškozené pixely buď minimální nebo maximální možnou hodnotu. Příčinou mohou být vadné body ve snímači v kameře, nefunkční paměťové buňky, k poškození může dojít také během přenosu dat. Druhým typem šumu použitém během experimentování je impulzní šum. V tomto případě mají poškozené pixely zcela náhodnou hodnotu. V obou případech je šum charakterizován svou intenzitou -- poměrným počtem poškozených pixelů. Poslední testovací úloha spočívá v nalezení detektoru hran. Výstupem detektoru je jednobitový černobílý obrázek, ve kterém jsou hrany označeny bílou barvou.
+Navržený algoritmus byl experimentálně ověřen na třech úlohách z oblasti zpracování obrazu. V prvním případě je cílem nalézt vhodný obrazový filtr pro rekonstrukci obrázků poškozených šumem typu sůl a pepř. U tohoto šumu mají poškozené pixely buď minimální nebo maximální možnou hodnotu. Příčinou mohou být vadné body ve snímači v kameře, nefunkční paměťové buňky, k poškození může dojít také během přenosu dat. Druhým typem šumu použitém během experimentování je impulzní šum. V tomto případě mají poškozené pixely zcela náhodnou hodnotu. V obou případech je šum charakterizován svou intenzitou -- poměrným počtem poškozených pixelů. Experimenty byly provedeny na obrázcích se šumem o intenzitě 5 až 80\,\% s krokem po 5\,\%. Poslední testovací úloha spočívá v nalezení detektoru hran. Výstupem detektoru je jednobitový černobílý obrázek, ve kterém jsou hrany označeny bílou barvou.
 
 \subsection{Nastavení experimentů}
 
@@ -238,9 +252,7 @@ Nastavení CGP a genetického algoritmu vychází z článku \cite{SikuPPSN}. CG
 
 Parametry pro adaptaci velikost prediktorů byly určeny experimentálně. Celkem bylo spuštěno přes 170~000 nezávislých běhů programu, na jejichž základě byly zvoleny parametry pravidel změny velikosti uvedené v tabulce \ref{table:rules}. Počáteční velikost prediktorů je 3\,\% případů fitness, maximální a minimální velikost je bez omezení.
 
-Dosažené výsledky byly porovnány se standardním CGP a také s koevolučním CGP s prediktory fitness o délce 0,5\,\%, 1\,\%, 2\,\%, 3\,\%, 4\,\%, 5\,\%, 10\,\%, 15\,\%, 20\,\% a 25\,\%. Výsledky všech experimentů jsou souhrnem ze 100 nezávislých běhů. Evoluce byla ukončena vždy po uplynutí 100~000 generací CGP.
-
-\begin{table}[htb]
+\begin{table}[hbt]
     \vskip6pt
     \caption{Pravidla pro změnu proměnné \textit{UsedGenes}.}
     \label{table:rules}
@@ -259,147 +271,361 @@ Dosažené výsledky byly porovnány se standardním CGP a také s koevolučním
     \end{tabular}
 \end{table}
 
+Dosažené výsledky byly porovnány se standardním CGP a také s koevolučním CGP s prediktory fitness o délce 0,5\,\%, 1\,\%, 2\,\%, 3\,\%, 4\,\%, 5\,\%, 10\,\%, 15\,\%, 20\,\% a 25\,\%. Výsledky všech experimentů jsou souhrnem ze 100 nezávislých běhů. Evoluce byla ukončena vždy po uplynutí 30~000 generací CGP.
+
+Výpočty probíhaly na superpočítači Anselm, každý jeho uzel obsahuje dva osmijádrové procesory Intel Xeon E5-2665 (2,4 až 3,1\,GHz s technologií Turbo Boost) nebo Intel Xeon E5-2470 (2,3 až 3,1\,GHz s technologií Turbo Boost) a alespoň 64 GB operační paměti.
+
 \subsection{Schopnost adaptace velikosti prediktoru}
 
-Ukazuje se, že nezávisle na jejím počátečním nastavení, velikost prediktoru konverguje ke stejné hodnotě, jak je vidět na grafech na obrázku \ref{fig:InitialSize}, přičemž fitness nalezených řešení je srovnatelná. Rychlost konvergence i konečná velikost závisí řešené úloze.
-
-% \begin{figure}[h]
-%     \centering
-%     \subfloat[5\% šum sůl a pepř]{
-%         \centering
-%             \includegraphics[width=0.9\linewidth]{images/initial-size-5-30kg.pdf}
-%     }\\
-%     \subfloat[50\% šum sůl a pepř]{
-%         \centering
-%             \includegraphics[width=0.9\linewidth]{images/initial-size-50-30kg.pdf}
-%     }
-%     \caption{Vývoj velikosti prediktorů fitness při různé počáteční velikosti.}
-%     \label{fig:InitialSize}
-% \end{figure}
+Ukazuje se, že nezávisle na jejím počátečním nastavení, velikost prediktoru konverguje ke stejné hodnotě (která se u různých úloh liší), jak je vidět na příkladech 5\% a 50\% šumu typu sůl a pepř na obrázku \ref{fig:InitialSize}. Fitness nalezených řešení je srovnatelná při každém nastavení. Je tedy vhodné na začátku pracovat s menšími prediktory, protože výpočet $f_\mathit{predicted}$ je pak rychlejší.
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.95\linewidth]{images/initial-size-5-30kg.pdf}
-    \caption{Vývoj velikosti prediktorů fitness při různé počáteční velikosti u 5\% šumu sůl a pepř.}
+    \subfloat[5\% šum sůl a pepř]{
+        \centering
+            \includegraphics[width=\linewidth]{images/initial-size-5-30kg.pdf}
+    }\\
+    \subfloat[50\% šum sůl a pepř]{
+        \centering
+            \includegraphics[width=\linewidth]{images/initial-size-50-30kg.pdf}
+    }
+    \caption{Vývoj velikosti prediktorů fitness při různé počáteční velikosti.}
     \label{fig:InitialSize}
 \end{figure}
 
-\subsection{Kvalita filtrů a doba běhu}
-
-Cílem experimentů bylo srovnání koevolučního CGP s adaptivními prediktory fitness ($\mathit{FP_{ADAPT}}$) s koevolučním CGP s prediktory pevné délky ($\mathit{FP_{FIX}}$) a se standardním CGP bez koevoluce ($\mathit{CGP_{STD}}$) s ohledem na kvalitu nalezených obrazových filtrů a na délku běhu programu.
-
-Jak je vidět z výsledků v tabulce \ref{table:quality}, obecně je kvalita filtrů nalezených pomocí $\mathit{FP_{ADAPT}}$ srovnatelná s $\mathit{CGP_{STD}}$ i s nejlepšími výsledky $\mathit{FP_{FIX}}$.
-
-% \begin{figure}[b]
+% \begin{figure}[htb]
 %     \centering
-%     \subfloat[Kvalita filtrů]{
-%         \centering
-%             \includegraphics[width=0.85\linewidth]{images/impulse15-30kg-psnr-median.pdf}
-%     }\\
-%     \subfloat[Čas běhu programu]{
-%         \centering
-%             \includegraphics[width=0.85\linewidth]{images/impulse15-30kg-usertime.pdf}
-%     }
-%     \caption{Srovnání standardního CGP, CGP s koevolucí s prediktory fitness různých délek a koevoluce CGP s prediktory s adaptivní velikostí (A) pro 15\% impulsní šum.}
-%     \label{fig:Impulse15}
+%     \includegraphics[width=\linewidth]{images/initial-size-5-30kg.pdf}
+%     \caption{Vývoj velikosti prediktorů fitness při různé počáteční velikosti u 5\% šumu sůl a pepř.}
+%     \label{fig:InitialSize}
 % \end{figure}
 
+\subsection{Kvalita filtrů a doba běhu}
 
-\begin{table*}[t!]
+Cílem experimentů bylo srovnání navrženého algoritmu CGP s adaptivními prediktory fitness ($\mathit{FP_{ADAPT}}$) s koevolučním CGP s prediktory pevné délky ($\mathit{FP_{FIX}}$) a s CGP bez koevoluce ($\mathit{CGP_{STD}}$) s ohledem na kvalitu nalezených obrazových filtrů a na délku běhu evoluce.
+
+%filtr pro impulzní šum a šum typu sůl a pepř o intenzitách 5 až 80\,\% (s krokem po 5\,\%) a detektor hran.
+
+Jak je vidět na příkladu impulzního šumu na obrázku \ref{fig:ImpulseBoxplot}, je kvalita filtrů nalezená pomocí $\mathit{FP_{ADAPT}}$ srovnatelná s filtry získanými $\mathit{CGP_{STD}}$ a $\mathit{FP_{FIX}}$ s prediktory o velikosti 10\,\% a více. Co se týče potřebného času, je algoritmus v tomto případě $\mathit{FP_{ADAPT}}$ v průměru 6,26krát rychlejší než $\mathit{CGP_{STD}}$ a srovnatelně rychlý jako $\mathit{FP_{FIX}}$ s 3--5\% prediktorem.
+
+Podobné výsledky byly dosaženy i pro jiné intenzity impulzního šumu a také u šumu typu sůl a pepř. Konkrétní hodnoty jsou uvedeny v tabulce \ref{table:results}. Ve všech případech je kvalita filtrů $\mathit{FP_{ADAPT}}$ srovnatelná při kratší nebo přinejhorším podobné době běhu.
+
+%Výsledky pro další zbylé testované šumy jsou v tabulce \ref{table:results}. Obecně se dá říci, že filtry jsou srovnatelně kvalitní
+
+%Výsledky se různí podle intenzity šumu. U šumu typu sůl a pepř je kvalita filtrů filtrů získaných $\mathit{FP_{ADAPT}}$ srovnatelná nebo vyšší až do intenzity šumu 55\,\%. Při vyšších intenzitách je sice kvalita o trochu nižší, ale rychlostně odpovídá $\mathit{FP_{FIX}}$ s 1\% prediktorem. U impulzního šumu je kvalita srovnatelná jen do intenzity 35\,\%.
+
+%Jak je vidět z výsledků pro 15\% impulzní šum na obrázku \ref{fig:Impulse15}, u $\mathit{FP_{FIX}}$ má velikost prediktorů zásadní vliv na kvalitu filtrů i potřebný čas. Nejlepší výsledky byly dosaženy při použití 10\,\% případů fitness, kdy je kvalita filtrů srovnatelná s $\mathit{CGP_{STD}}$ a výpočet trvá v průměru jen čtvrtinu času. V případě $\mathit{FP_{ADAPT}}$ je medián kvality filtrů je o 0,38~dB nižší než u $\mathit{FP_{FIX}}$, ale o 0,13~dB vyšší než u CGP. Co se týče průměrné doby běhu, je u $\mathit{FP_{ADAPT}}$ 7krát nižší než u $\mathit{CGP_{STD}}$ a srovnatelná s $\mathit{FP_{FIX}}$ s 3\% prediktorem.
+
+%Jak je vidět z výsledků v tabulce \ref{table:quality}, obecně je kvalita filtrů nalezených pomocí $\mathit{FP_{ADAPT}}$ srovnatelná s $\mathit{CGP_{STD}}$ i s nejlepšími výsledky $\mathit{FP_{FIX}}$.
+
+\begin{figure}[htb]
+    \centering
+    \subfloat[Kvalita filtrů (červeně průměr PSNR všech filtrů)]{
+        \centering
+            \includegraphics[width=\linewidth]{images/impulse10-30kg-psnr-median.pdf}
+    }\\
+    \subfloat[Čas běhu (součet všech vláken)]{
+        \centering
+            \includegraphics[width=\linewidth]{images/impulse10-30kg-usertime.pdf}
+    }
+    \caption{Srovnání CGP, CGP s koevolucí s prediktory fitness různých délek a koevoluce CGP s prediktory s adaptivní velikostí (A) pro 10\% impulzní šum po 30 tisících generacích.}
+    \label{fig:ImpulseBoxplot}
+\end{figure}
+
+
+\begin{table*}[hb]
 \centering
-    \caption{Srovnání kvality nalezených obrazových filtrů pro různé intenzity šumu sůl a pepř pomocí standardního CGP, CGP s koevolucí s prediktory fitness různých délek a s prediktory s adaptivní velikostí (A).}
-    \label{table:quality}
+    \caption{Srovnání standardního CGP, CGP s koevolucí s prediktory fitness různých délek a s prediktory s adaptivní velikostí po 30 tisících generacích. U $\mathit{FP_{FIX}}$ byly testovány délky 0,5, 1, 2, 3, 4, 5, 10, 15, 20 a 25 procent, v tabulce je jen výsledek s nejlepším průměrným PSNR. U $\mathit{FP_{ADAPT}}$ je uvedena průměrná délka prediktoru.}
+    \label{table:results}
+    \renewcommand{\arraystretch}{1}
+    \scriptsize
+    \subfloat[Šum typu sůl a pepř]{
+        \begin{tabular}{=c +l +c +c +c +c}
+            \toprule
+
+                \multirow{2}{1cm}{\centering{}Intenzita} & \multirow{2}{*}{} & \multirow{2}{*}{} &
+                \multirow{2}{*}{$\mathit{CGP_{STD}}$} & \multirow{2}{*}{$\mathit{FP_{FIX}}$} & \multirow{2}{*}{$\mathit{FP_{ADAPT}}$} \\
+                \\
+
+            \midrule
+            \multirow{8}{*}{10\,\%}
+            & Prediktor [\%] && -- & 15 & 12,11 \\
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}PSNR\,[dB]}
+            & Min.   & 20,74 & 20,74 & 20,74 \\
+            && Průměr & 28,04 & 28,22 & 27,41 \\
+            \rowstyle{\color{grayintable}}
+            && Max.   & 35,85 & 35,84 & 35,12 \\
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}Čas\,[min]}
+            & Min.      &   15,37   &   5,40    &   1,08    \\
+            && Průměr    &   19,32   &   8,96    &   4,34    \\
+            \rowstyle{\color{grayintable}}
+            && Max.      &   20,63   &   16,75   &   10,08   \\
+
+            \midrule
+            \multirow{8}{*}{20\,\%}
+            & Prediktor [\%] && -- & 3 & 4,96 \\ %3,4
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}PSNR\,[dB]}
+            & Min.   & 17,59 & 17,61 & 17,84 \\
+            && Průměr & 22,64 & 22,96 & 22,99 \\
+            \rowstyle{\color{grayintable}}
+            && Max.   & 27,56 & 30,37 & 28,81 \\
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}Čas\,[min]}
+            & Min.      &   17,82   &   2,15    &   1,27    \\
+            && Průměr   &   19,38   &   3,13    &   2,92    \\  \rowstyle{\color{grayintable}}
+            && Max.     &   20,50   &   5,15    &   6,20    \\
+
+            \midrule
+            \multirow{8}{*}{30\,\%}
+            & Prediktor [\%]   &&   --  &   1   &   1,44 \\  %1,2
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}PSNR\,[dB]}
+            & Min.      &   16,08   &   16,01   &   16,08   \\
+            && Průměr    &   18,97   &   19,76   &   19,44   \\
+            \rowstyle{\color{grayintable}}
+            && Max.      &   25,47   &   25,03   &   24,64   \\
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}Čas\,[min]}
+            & Min.      &   17,67   &   1,25    &   1,18    \\
+            && Průměr   &   19,34   &   1,74    &   2,34    \\  \rowstyle{\color{grayintable}}
+            && Max.     &   20,53   &   2,42    &   3,92    \\
+
+            \midrule
+            \multirow{8}{*}{40\,\%}
+            & Prediktor [\%]   &&   --  &   1   &   1,12 \\ %0,9
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}PSNR\,[dB]}
+            & Min.      &   14,79   &   14,79   &   14,79   \\
+            && Průměr    &   18,09   &   18,17   &   18,17   \\
+            \rowstyle{\color{grayintable}}
+            && Max.      &   23,37   &   22,54   &   24,08   \\
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}Čas\,[min]}
+            & Min.      &   16,98   &   1,27    &   1,22    \\
+            && Průměr   &   19,17   &   1,79    &   2,28    \\  \rowstyle{\color{grayintable}}
+            && Max.     &   20,57   &   2,43    &   3,43    \\
+
+            \midrule
+            \multirow{8}{*}{50\,\%}
+            & Prediktor [\%]   &&   --  &   1   &   0,86 \\ %0,7
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}PSNR\,[dB]}
+            & Min.      &   14,52   &   15,12   &   15,17   \\
+            && Průměr    &   16,99   &   17,18   &   17,00   \\
+            \rowstyle{\color{grayintable}}
+            && Max.      &   20,89   &   20,33   &   19,89   \\
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}Čas\,[min]}
+            & Min.      &   18,02   &   1,33    &   1,02    \\
+            && Průměr   &   19,37   &   2,03    &   2,04    \\  \rowstyle{\color{grayintable}}
+            && Max.     &   20,47   &   3,32    &   4,10    \\
+
+            \midrule
+            \multirow{8}{*}{60\,\%}
+            & Prediktor [\%]    &&  --  &   10  &   0,98 \\
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}PSNR\,[dB]}
+            & Min.      &   14,52   &   14,52   &   14,52   \\
+            && Průměr    &   16,33   &   16,32   &   16,16   \\  \rowstyle{\color{grayintable}}
+            && Max.      &   17,96   &   18,68   &   19,29   \\
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}Čas\,[min]}
+            & Min.      &   14,93   &   4,07    &   0,83    \\
+            && Průměr   &   19,09   &   8,88    &   1,66    \\  \rowstyle{\color{grayintable}}
+            && Max.     &   20,25   &   20,52   &   3,63    \\
+
+            \midrule
+            \multirow{8}{*}{70\,\%}
+            & Prediktor [\%]    &&  --  &   3   &   0,82 \\
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}PSNR\,[dB]}
+            & Min.      &   14,52   &   14,53   &   14,52   \\
+            && Průměr   &   15,65   &   15,94   &   15,62   \\  \rowstyle{\color{grayintable}}
+            && Max.     &   17,86   &   18,12   &   16,95   \\
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}Čas\,[min]}
+            & Min.      &   17,45   &   2,13    &   0,83    \\
+            && Průměr   &   19,27   &   3,93    &   1,51    \\  \rowstyle{\color{grayintable}}
+            && Max.     &   20,30   &   9,03    &   3,07    \\
+
+            \midrule
+            \multirow{8}{*}{80\,\%}
+            & Prediktor [\%]    &&  --  &   3   &   0,78 \\
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}PSNR\,[dB]}
+            & Min.      &   14,52   &   14,75   &   14,52   \\
+            && Průměr   &   15,37   &   15,41   &   15,24   \\  \rowstyle{\color{grayintable}}
+            && Max.     &   16,39   &   16,35   &   15,96   \\
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}Čas\,[min]}
+            & Min.      &   16,92   &   1,93    &   0,83    \\
+            && Průměr   &   19,39   &   4,10    &   1,49    \\  \rowstyle{\color{grayintable}}
+            && Max.     &   20,68   &   12,97   &   2,82    \\
 
 
-    \renewcommand{\arraystretch}{1.1}
-    \small
-    \color{fixme}
-    \begin{tabular}{| c | c | c| c | c | c | c | c | c | c | c | c | c |}
-            \hline
 
-                \multirow{3}{1.6cm}{\centering{}Intenzita šumu} & \multirow{3}{*}{} & \multicolumn{11}{c|}{Velikost prediktoru [\% případů fitness]}\\
-                \cline{3-13}
-                && 0,5 & 1 & 2 & 3 & 4 & 5 & 10 & 15 & 20 & 25 & A \\
-                \cline{3-13}
-                &&\multicolumn{11}{c|}{PSNR\,[dB]}\\
-
-            \hline\hline
-
-
-
-         \multirow{3}{*}{10\,\%}&\textcolor{grayintable}{Min}& \textcolor{grayintable}{15.4} & \textcolor{grayintable}{17.8}  & \textcolor{grayintable}{17.0}
-         & \textcolor{grayintable}{15.3} & {\bf \textcolor{grayintable}{20.1}} & \textcolor{grayintable}{15.1}& \textcolor{grayintable}{18.2}\\ %\cline{2-9}
-
-         &Mean& 31.2 & 33.0  & 32.8
-         & 32.9 & {\bf 33.2} & 31.0 & 31.7 & 32.9 & {\bf 33.2} & 31.0 & 31.7\\ %\cline{2-9}
-
-         &\textcolor{grayintable}{Max}& \textcolor{grayintable}{36.9} & \textcolor{grayintable}{38.7}  & \textcolor{grayintable}{37.6}
-         & \textcolor{grayintable}{38.4} & \textcolor{grayintable}{{\bf 38.9}} & \textcolor{grayintable}{35.6}& \textcolor{grayintable}{37.2}\\ \hline \hline
-
-         \multirow{3}{*}{20\,\%}&\textcolor{grayintable}{Min}& \textcolor{grayintable}{{\bf 18.9}} & \textcolor{grayintable}{15.4}
-         & \textcolor{grayintable}{14.5} & \textcolor{grayintable}{14.6} & \textcolor{grayintable}{17.9} & \textcolor{grayintable}{13.9}& \textcolor{grayintable}{17.9} \\ %\cline{2-9}
-
-         &Mean& 25.4 & 26.2  & 25.9
-         & 26.1 & {\bf 26.5}& 25.3& 26.2 \\ %\cline{2-9}
-
-         &\textcolor{grayintable}{Max}& \textcolor{grayintable}{30.7} & \textcolor{grayintable}{31.2}  & \textcolor{grayintable}{30.8}
-         & \textcolor{grayintable}{31.1} & \textcolor{grayintable}{{\bf 31.5}} & \textcolor{grayintable}{30.6}& \textcolor{grayintable}{30.6} \\ \hline \hline
-
-         \multirow{3}{*}{30\,\%}&\textcolor{grayintable}{Min}& \textcolor{grayintable}{17.7} & \textcolor{grayintable}{13.1}
-         & \textcolor{grayintable}{12.6} & \textcolor{grayintable}{13.7} & \textcolor{grayintable}{{\bf 18.8}} & \textcolor{grayintable}{13.0}& \textcolor{grayintable}{18.2} \\ %\cline{2-9}
-
-         &Mean& 22.3 & {\bf 24.9}  & 24.7
-         & 24.8 & {\bf 24.9} & 23.7& 24.0 \\ %\cline{2-9}
-
-         &\textcolor{grayintable}{Max}& \textcolor{grayintable}{27.8} & \textcolor{grayintable}{{\bf 28.6}}  & \textcolor{grayintable}{28.5}
-         & \textcolor{grayintable}{28.0} & \textcolor{grayintable}{28.0} & \textcolor{grayintable}{28.1}& \textcolor{grayintable}{28.2} \\ \hline \hline
-
-        \multirow{3}{*}{40\,\%} &\textcolor{grayintable}{Min}& \textcolor{grayintable}{16.9} & \textcolor{grayintable}{12.0}  & \textcolor{grayintable}{12.2}
-        & \textcolor{grayintable}{11.7} & \textcolor{grayintable}{17.4} & \textcolor{grayintable}{13.3}& \textcolor{grayintable}{{\bf 18.4}} \\ %\cline{2-9}
-
-         &Mean& 20.0 & 20.1  & 20.6
-         & 20.8 & {\bf 21.9} & 21.5 & {\bf 21.9} \\ %\cline{2-9}
-
-         &\textcolor{grayintable}{Max}& \textcolor{grayintable}{25.5} & \textcolor{grayintable}{{\bf 27.7}}  & \textcolor{grayintable}{27.2}
-         & \textcolor{grayintable}{26.8} & \textcolor{grayintable}{26.9} & \textcolor{grayintable}{26.6}& \textcolor{grayintable}{26.6} \\ \hline\hline
-
-         \multirow{3}{*}{50\,\%} &\textcolor{grayintable}{Min}& \textcolor{grayintable}{16.9} & \textcolor{grayintable}{12.0}  & \textcolor{grayintable}{12.2}
-        & \textcolor{grayintable}{11.7} & \textcolor{grayintable}{17.4} & \textcolor{grayintable}{13.3}& \textcolor{grayintable}{{\bf 18.4}} \\ %\cline{2-9}
-
-         &Mean& 20.0 & 20.1  & 20.6
-         & 20.8 & {\bf 21.9} & 21.5 & {\bf 21.9} \\ %\cline{2-9}
-
-         &\textcolor{grayintable}{Max}& \textcolor{grayintable}{25.5} & \textcolor{grayintable}{{\bf 27.7}}  & \textcolor{grayintable}{27.2}
-         & \textcolor{grayintable}{26.8} & \textcolor{grayintable}{26.9} & \textcolor{grayintable}{26.6}& \textcolor{grayintable}{26.6} \\ \hline\hline
-
-         \multirow{3}{*}{60\,\%} &\textcolor{grayintable}{Min}& \textcolor{grayintable}{16.9} & \textcolor{grayintable}{12.0}  & \textcolor{grayintable}{12.2}
-        & \textcolor{grayintable}{11.7} & \textcolor{grayintable}{17.4} & \textcolor{grayintable}{13.3}& \textcolor{grayintable}{{\bf 18.4}} \\ %\cline{2-9}
-
-         &Mean& 20.0 & 20.1  & 20.6
-         & 20.8 & {\bf 21.9} & 21.5 & {\bf 21.9} \\ %\cline{2-9}
-
-         &\textcolor{grayintable}{Max}& \textcolor{grayintable}{25.5} & \textcolor{grayintable}{{\bf 27.7}}  & \textcolor{grayintable}{27.2}
-         & \textcolor{grayintable}{26.8} & \textcolor{grayintable}{26.9} & \textcolor{grayintable}{26.6}& \textcolor{grayintable}{26.6} \\ \hline\hline
-
-         \multirow{3}{*}{70\,\%} &\textcolor{grayintable}{Min}& \textcolor{grayintable}{16.9} & \textcolor{grayintable}{12.0}  & \textcolor{grayintable}{12.2}
-        & \textcolor{grayintable}{11.7} & \textcolor{grayintable}{17.4} & \textcolor{grayintable}{13.3}& \textcolor{grayintable}{{\bf 18.4}} \\ %\cline{2-9}
-
-         &Mean& 20.0 & 20.1  & 20.6
-         & 20.8 & {\bf 21.9} & 21.5 & {\bf 21.9} \\ %\cline{2-9}
-
-         &\textcolor{grayintable}{Max}& \textcolor{grayintable}{25.5} & \textcolor{grayintable}{{\bf 27.7}}  & \textcolor{grayintable}{27.2}
-         & \textcolor{grayintable}{26.8} & \textcolor{grayintable}{26.9} & \textcolor{grayintable}{26.6}& \textcolor{grayintable}{26.6} \\ \hline\hline
-
-         \multirow{3}{*}{80\,\%} &\textcolor{grayintable}{Min}& \textcolor{grayintable}{16.9} & \textcolor{grayintable}{12.0}  & \textcolor{grayintable}{12.2}
-        & \textcolor{grayintable}{11.7} & \textcolor{grayintable}{17.4} & \textcolor{grayintable}{13.3}& \textcolor{grayintable}{{\bf 18.4}} \\ %\cline{2-9}
-
-         &Mean& 20.0 & 20.1  & 20.6
-         & 20.8 & {\bf 21.9} & 21.5 & {\bf 21.9} \\ %\cline{2-9}
-
-         &\textcolor{grayintable}{Max}& \textcolor{grayintable}{25.5} & \textcolor{grayintable}{{\bf 27.7}}  & \textcolor{grayintable}{27.2}
-         & \textcolor{grayintable}{26.8} & \textcolor{grayintable}{26.9} & \textcolor{grayintable}{26.6}& \textcolor{grayintable}{26.6} \\ \hline
-
+            \bottomrule
         \end{tabular}
+    }
+    \hskip1cm
+    \subfloat[Impulzní šum]{
+        \begin{tabular}{=c +l +c +c +c +c}
+            \toprule
+
+                \multirow{2}{1cm}{\centering{}Intenzita} & \multirow{2}{*}{} & \multirow{2}{*}{} &
+                \multirow{2}{*}{$\mathit{CGP_{STD}}$} & \multirow{2}{*}{$\mathit{FP_{FIX}}$} & \multirow{2}{*}{$\mathit{FP_{ADAPT}}$} \\
+                \\
+
+            \midrule
+            \multirow{8}{*}{10\,\%}
+            & Prediktor [\%]    &&  --  &   15  &   7,59    \\
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}PSNR\,[dB]}
+            & Min.      &   23,76   &   28,61   &   23,76   \\
+            && Průměr   &   27,91   &   30,72   &   28,20   \\  \rowstyle{\color{grayintable}}
+            && Max.     &   30,75   &   29,11   &   30,43   \\
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}Čas\,[min]}
+            & Min.      &   17,73   &   2,85    &   1,10    \\
+            && Průměr   &   19,46   &   4,72    &   3,11    \\  \rowstyle{\color{grayintable}}
+            && Max.     &   20,55   &   11,28   &   6,15    \\
+
+            \midrule
+            \multirow{8}{*}{20\,\%}
+            & Prediktor [\%]    &&  --  &   25  &   4,08 \\
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}PSNR\,[dB]}
+            & Min.      &   20,91   &   20,91   &   20,91   \\
+            && Průměr   &   24,80   &   25,18   &   24,82   \\  \rowstyle{\color{grayintable}}
+            && Max.     &   27,31   &   27,57   &   27,07   \\
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}Čas\,[min]}
+            & Min.      &   16,97   &   3,67    &   1,18    \\
+            && Průměr   &   19,42   &   9,30    &   2,66    \\  \rowstyle{\color{grayintable}}
+            && Max.     &   20,73   &   24,80   &   4,00    \\
+
+            \midrule
+            \multirow{8}{*}{30\,\%}
+            & Prediktor [\%]    &&  --  &   15  &   2,94 \\
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}PSNR\,[dB]}
+            & Min.      &   19,11   &   19,11   &   18,98   \\
+            && Průměr   &   22,37   &   22,56   &   22,35   \\  \rowstyle{\color{grayintable}}
+            && Max.     &   24,54   &   24,42   &   24,15   \\
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}Čas\,[min]}
+            & Min.      &   14,83   &   5,28    &   1,12    \\
+            && Průměr   &   19,33   &   9,49    &   2,49    \\  \rowstyle{\color{grayintable}}
+            && Max.     &   20,72   &   23,78   &   4,22    \\
+
+            \midrule
+            \multirow{8}{*}{40\,\%}
+            & Prediktor [\%]    &&  --  &   15  &   1,65 \\
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}PSNR\,[dB]}
+            & Min.      &   17,66   &   17,38   &   17,22   \\
+            && Průměr   &   20,11   &   20,21   &   19,79   \\  \rowstyle{\color{grayintable}}
+            && Max.     &   22,25   &   21,81   &   21,53   \\
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}Čas\,[min]}
+            & Min.      &   17,43   &   2,58    &   1,02    \\
+            && Průměr   &   19,31   &   6,53    &   2,45    \\  \rowstyle{\color{grayintable}}
+            && Max.     &   20,62   &   22,32   &   3,80    \\
+
+            \midrule
+            \multirow{8}{*}{50\,\%}
+            & Prediktor [\%]    &&  --  &   4   &   1,22 \\
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}PSNR\,[dB]}
+            & Min.      &   16,49   &   16,48   &   15,75   \\
+            && Průměr   &   18,20   &   18,35   &   18,04   \\  \rowstyle{\color{grayintable}}
+            && Max.     &   19,40   &   19,55   &   19,02   \\
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}Čas\,[min]}
+            & Min.      &   18,00   &   2,13    &   1,53    \\
+            && Průměr   &   19,49   &   4,54    &   2,64    \\  \rowstyle{\color{grayintable}}
+            && Max.     &   20,62   &   7,53    &   4,12    \\
+
+            \midrule
+            \multirow{8}{*}{60\,\%}
+            & Prediktor [\%]    &&  --  &   20   &   0,80 \\
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}PSNR\,[dB]}
+            & Min.      &   15,08   &   15,48   &   15,47   \\
+            && Průměr   &   16,71   &   16,81   &   16,52   \\  \rowstyle{\color{grayintable}}
+            && Max.     &   17,45   &   17,48   &   17,04   \\
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}Čas\,[min]}
+            & Min.      &   17,50   &   5,00    &   0,85    \\
+            && Průměr   &   19,44   &   11,98   &   2,92    \\  \rowstyle{\color{grayintable}}
+            && Max.     &   20,43   &   47,73   &   5,27    \\
+
+            \midrule
+            \multirow{8}{*}{70\,\%}
+            & Prediktor [\%]    &&  --  &   20  &   0,62    \\
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}PSNR\,[dB]}
+            & Min.      &   14,66   &   14,64   &   14,52   \\
+            && Průměr   &   15,64   &   15,65   &   15,43   \\  \rowstyle{\color{grayintable}}
+            && Max.     &   16,08   &   16,04   &   15,86   \\
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}Čas\,[min]}
+            & Min.      &   17,00   &   5,28    &   0,85    \\
+            && Průměr   &   19,41   &   18,22   &   3,01    \\  \rowstyle{\color{grayintable}}
+            && Max.     &   20,43   &   56,27   &   4,98    \\
+
+            \midrule
+            \multirow{8}{*}{80\,\%}
+            & Prediktor [\%]    &&  --  &   10  &   0,65    \\
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}PSNR\,[dB]}
+            & Min.      &   14,52   &   14,52   &   14,52   \\
+            && Průměr   &   14,85   &   14,85   &   14,70   \\  \rowstyle{\color{grayintable}}
+            && Max.     &   15,11   &   15,15   &   15,06   \\
+            \cmidrule{2-6}
+            \rowstyle{\color{grayintable}}
+            & \multirow{3}{*}{\color{black}Čas\,[min]}
+            & Min.      &   16,52   &   4,72    &   0,80    \\
+            && Průměr   &   19,41   &   11,24   &   1,96    \\  \rowstyle{\color{grayintable}}
+            && Max.     &   20,57   &   24,85   &   3,40    \\
+
+            \bottomrule
+        \end{tabular}
+    }
 \end{table*}
 
 

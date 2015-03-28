@@ -1080,8 +1080,9 @@ FUNCTION {article}
       "journal" bibinfo.check
       emphasize
       "journal" output.check
-      format.vol.num.pages output
+      new.sentence
       format.date "year" output.check
+      format.vol.num.pages output
     }
     { format.article.crossref output.nonnull
     }
