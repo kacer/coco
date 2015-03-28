@@ -214,7 +214,7 @@ int main(int argc, char *argv[])
         char output_filename[MAX_OUTFILE_LENGTH];
 
         count = fscanf(log_file, "Generation %d: Predictor phenotype length %d [ ", &generation, &length);
-        if (count < 2) return 0;
+        if (count < 2) break;
 
         printf("Generation %d, length %d\n", generation, length);
 
