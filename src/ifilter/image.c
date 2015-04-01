@@ -32,6 +32,9 @@
 #include "stb/stb_image_write.h"
 
 
+#define SIMD_ALIGNMENT 32
+
+
 const int COMP = 1;
 
 
@@ -248,7 +251,7 @@ int img_split_windows_simd(img_image_t img, img_pixel_t *out[WINDOW_SIZE])
     int padding = SIMD_PADDING_BYTES - (size % SIMD_PADDING_BYTES);
 
     for (int i = 0; i < WINDOW_SIZE; i++) {
-        out[i] = (img_pixel_t*) malloc(sizeof(img_pixel_t) * (size + padding));
+        out[i] = (img_pixel_t*) aligned_alloc(SIMD_ALIGNMENT, sizeof(img_pixel_t) * (size + padding));
         if (out[i] == NULL) {
             // TODO: dealloc
             return -1;

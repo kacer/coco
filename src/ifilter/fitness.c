@@ -183,17 +183,17 @@ double _fitness_get_sqdiffsum_simd(ga_chr_t chr, img_pixel_t *original, img_pixe
     int block_size = 0;
     double sum = 0;
 
-    #ifdef AVX2
-        if(can_use_intel_core_4th_gen_features()) {
-            func = _fitness_get_sqdiffsum_avx;
-            block_size = FITNESS_AVX2_STEP;
-        }
-    #endif
-
     #ifdef SSE2
         if(can_use_sse2()) {
             func = _fitness_get_sqdiffsum_sse;
             block_size = FITNESS_SSE2_STEP;
+        }
+    #endif
+
+    #ifdef AVX2
+        if(can_use_intel_core_4th_gen_features()) {
+            func = _fitness_get_sqdiffsum_avx;
+            block_size = FITNESS_AVX2_STEP;
         }
     #endif
 
