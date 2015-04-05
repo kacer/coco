@@ -48,6 +48,7 @@ const char* help =
     "\n"
     "Usage:\n"
     "    ./coco_predhist --log predictors.log --width 256 --height 256\n"
+    "                    --generations 100000\n"
     "\n"
     "Prints pixel index and number of uses in predictors.\n"
     "\n"

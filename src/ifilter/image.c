@@ -34,6 +34,21 @@
 
 #define SIMD_ALIGNMENT 32
 
+#if defined(_ISOC11_SOURCE)
+    #define simd_alloc(size) aligned_alloc(SIMD_ALIGNMENT, (size));
+#elif _POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600
+    static inline void *simd_alloc(size_t size) {
+        void *ptr;
+        if (!posix_memalign(&ptr, SIMD_ALIGNMENT, size)) {
+            return ptr;
+        } else {
+            return NULL;
+        }
+    }
+#else
+    #warning "Cannot allocate aligned memory for SIMD - neither aligned_alloc nor posix_memalign available."
+#endif
+
 
 const int COMP = 1;
 
@@ -251,7 +266,7 @@ int img_split_windows_simd(img_image_t img, img_pixel_t *out[WINDOW_SIZE])
     int padding = SIMD_PADDING_BYTES - (size % SIMD_PADDING_BYTES);
 
     for (int i = 0; i < WINDOW_SIZE; i++) {
-        out[i] = (img_pixel_t*) aligned_alloc(SIMD_ALIGNMENT, sizeof(img_pixel_t) * (size + padding));
+        out[i] = (img_pixel_t*) simd_alloc(sizeof(img_pixel_t) * (size + padding));
         if (out[i] == NULL) {
             // TODO: dealloc
             return -1;

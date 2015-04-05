@@ -173,7 +173,9 @@ bool can_use_intel_core_4th_gen_features()
  */
 bool can_use_sse4_1()
 {
-    return check_sse4_1();
+    static int available = -1;
+    if (available < 0) available = check_sse4_1();
+    return available;
 }
 
 
@@ -182,5 +184,7 @@ bool can_use_sse4_1()
  */
 bool can_use_sse2()
 {
-    return check_sse2();
+    static int available = -1;
+    if (available < 0) available = check_sse2();
+    return available;
 }

@@ -137,9 +137,9 @@ static inline void print_help() {
         "          Input data file.\n"
     #else
         "    --original FILE, -i FILE\n"
-        "          Original image filename.\n"
+        "          Original (target) image filename.\n"
         "    --noisy FILE, -n FILE\n"
-        "          Noisy image filename.\n"
+        "          Noisy (source) image filename.\n"
     #endif
         "\n"
         "Optional:\n"
