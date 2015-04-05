@@ -3,6 +3,7 @@
 % ---------------------------------------------------------------------
 %  HISTORY:
 %    2015-02-04 - Herout: intial version for Excel@FIT 2015
+%    2015-04-03 - Herout: works with [czech] and [slovak] options
 % ---------------------------------------------------------------------
 
 \NeedsTeXFormat{LaTeX2e}
@@ -12,18 +13,18 @@
 \AtEndOfClass{\RequirePackage{microtype}}
 \DeclareOption*{\PassOptionsToClass{\CurrentOption}{article}}
 \ProcessOptions*
-\LoadClass{article}
+\LoadClass[fleqn,11pt]{article}
 \RequirePackage{ifpdf}      % Needed to pick between latex and pdflatex
 
 %----------------------------------------------------------------------
-%	FONTS
+% FONTS
 %----------------------------------------------------------------------
 
 \RequirePackage{times}      % Loads the Times-Roman Fonts
 \RequirePackage{mathptmx}   % Loads the Times-Roman Math Fonts
 
 %----------------------------------------------------------------------
-%	VARIOUS USEFUL PACKAGES
+% VARIOUS USEFUL PACKAGES
 %----------------------------------------------------------------------
 
 \RequirePackage[utf8]{inputenc}
@@ -33,18 +34,18 @@
 \RequirePackage{booktabs}
 
 %----------------------------------------------------------------------
-%	MARGINS	
+% MARGINS
 %----------------------------------------------------------------------
-	  	  
+
 \RequirePackage[left=2cm,%
                 right=2cm,%
-				top=2.25cm,%
-				bottom=2.25cm,%
-				headheight=11pt,%
-				a4paper]{geometry}%
-				
+        top=2.25cm,%
+        bottom=2.25cm,%
+        headheight=11pt,%
+        a4paper]{geometry}%
+
 %----------------------------------------------------------------------
-%	FIGURES AND TABLES CAPTIONS
+% FIGURES AND TABLES CAPTIONS
 %----------------------------------------------------------------------
 
 \RequirePackage[labelfont={bf,sf,small},%
@@ -52,9 +53,9 @@
                 justification=raggedright]{caption}
 \setlength{\abovecaptionskip}{4pt}
 \setlength{\belowcaptionskip}{-10pt}
-				
+
 %----------------------------------------------------------------------
-%	PAGE HEADER
+% PAGE HEADER
 %----------------------------------------------------------------------
 
 \RequirePackage{fancyhdr}  % Needed to define custom headers/footers
@@ -72,7 +73,7 @@
 \renewcommand{\footrulewidth}{0pt}% % No footer rule
 
 %----------------------------------------------------------------------
-%	SECTION/SUBSECTION/PARAGRAPH SET-UP
+% SECTION/SUBSECTION/PARAGRAPH SET-UP
 %----------------------------------------------------------------------
 
 \RequirePackage[explicit]{titlesec}
@@ -87,7 +88,7 @@
   {}
   {0em}
   {\colorbox{color-orange!100}{\parbox{\dimexpr\linewidth-2\fboxsep\relax}{#1}}}
-  []  
+  []
 \titleformat{\subsection}
   {\color{color-sections}\sffamily\bfseries}
   {\thesubsection}
@@ -99,21 +100,21 @@
   {\thesubsubsection}
   {0.5em}
   {#1}
-  []    
+  []
 \titleformat{\paragraph}[runin]
   {\sffamily\small\bfseries}
   {}
   {0em}
-  {#1} 
+  {#1}
 \titlespacing*{\section}{0pc}{3ex \@plus4pt \@minus3pt}{5pt}
 \titlespacing*{\subsection}{0pc}{2.5ex \@plus3pt \@minus2pt}{1pt}
 \titlespacing*{\subsubsection}{0pc}{2ex \@plus2.5pt \@minus1.5pt}{0pt}
 \titlespacing*{\paragraph}{0pc}{1.5ex \@plus2pt \@minus1pt}{10pt}
 
 %----------------------------------------------------------------------
-%	TABLEOFCONTENTS SET-UP
+% TABLEOFCONTENTS SET-UP
 %----------------------------------------------------------------------
-\newlength{\tocsep} 
+\newlength{\tocsep}
 \setlength\tocsep{1.5pc} % Sets the indentation of the sections in the table of contents
 \setcounter{tocdepth}{3} % Three levels in the table of contents section: sections, subsections and subsubsections
 
@@ -136,12 +137,12 @@
   {}
   {}
   {}
-  [\ \textbullet\ ]  
+  [\ \textbullet\ ]
 
 %----------------------------------------------------------------------
-%	MULTIPLE AUTHOR SET
-%----------------------------------------------------------------------  
-  
+% MULTIPLE AUTHOR SET
+%----------------------------------------------------------------------
+
 \newcount\@authcnt
 \newcount\@tmpcnt\@tmpcnt\z@
 
@@ -154,24 +155,24 @@
    \let\next\relax
   \fi
 \next}
-	 
+
 \newcommand{\affiliation}[1]{%
     \global\advance\@authcnt1
     \expandafter\gdef\csname @auth\romannumeral\the\@authcnt\endcsname
     {#1}}
 
-	
+
 %----------------------------------------------------------------------
-%	LIST CONTROL
-%----------------------------------------------------------------------  
+% LIST CONTROL
+%----------------------------------------------------------------------
 
 \RequirePackage{enumitem}
 %\setlist{nolistsep} % Uncomment to remove spacing between items in lists (enumerate, itemize)
 \setlist{noitemsep}
 
 %----------------------------------------------------------------------
-%	ABSTRACT+AUTHOR FRAME
-%----------------------------------------------------------------------  
+% ABSTRACT+AUTHOR FRAME
+%----------------------------------------------------------------------
 
 \newcommand{\PaperTitle}[1]{\def\@PaperTitle{#1}}
 \newcommand{\Archive}[1]{\def\@Archive{#1}}
@@ -228,8 +229,8 @@
 }%
 
 %----------------------------------------------------------------------
-%	REFERENCES
-%----------------------------------------------------------------------  
+% REFERENCES
+%----------------------------------------------------------------------
 
 % Remove brackets from numbering in List of References
 \renewcommand{\@biblabel}[1]{[{\color{color-ref}#1}]}
@@ -261,8 +262,8 @@
 
 
 %----------------------------------------------------------------------
-%	ADDED STUFF FOR Excel@FIT
-%----------------------------------------------------------------------  
+% ADDED STUFF FOR Excel@FIT
+%----------------------------------------------------------------------
 \setlength{\columnsep}{0.55cm} % Distance between the two columns of text
 \setlength{\fboxrule}{0.75pt} % Width of the border around the abstract
 
@@ -289,35 +290,35 @@
 \pagestyle{empty} % Removes page numbering from the first page
 
 \newcommand{\setslovaknames}{%
-	\renewcommand{\abstractname}{Abstrakt}%
-	\renewcommand{\keywordname}{Kľúčové slová}%
-	\renewcommand{\supplementaryname}{Priložené materiály}%
-	\renewcommand{\figurename}{Obrázok}%
-	\renewcommand{\tablename}{Tabuľka}%
-	\renewcommand{\refname}{Literatúra}%
+  \renewcommand{\abstractname}{Abstrakt}%
+  \renewcommand{\keywordname}{Kľúčové slová}%
+  \renewcommand{\supplementaryname}{Priložené materiály}%
+  \renewcommand{\figurename}{Obrázok}%
+  \renewcommand{\tablename}{Tabuľka}%
+  \renewcommand{\refname}{Literatúra}%
 }
 
 \newcommand{\setczechnames}{%
-	\renewcommand{\abstractname}{Abstrakt}%
-	\renewcommand{\keywordname}{Klíčová slova}%
-	\renewcommand{\supplementaryname}{Přiložené materiály}%
-	\renewcommand{\figurename}{Obrázek}%
-	\renewcommand{\tablename}{Tabulka}%
-	\renewcommand{\refname}{Literatura}%
-	}
+  \renewcommand{\abstractname}{Abstrakt}%
+  \renewcommand{\keywordname}{Klíčová slova}%
+  \renewcommand{\supplementaryname}{Přiložené materiály}%
+  \renewcommand{\figurename}{Obrázek}%
+  \renewcommand{\tablename}{Tabulka}%
+  \renewcommand{\refname}{Literatura}%
+  }
 
 \newif\ifHaveSupplementary
 \HaveSupplementaryfalse
 
 \newcommand{\startdocument}{%
-	\ifExcelSlovak\setslovaknames\fi%
-	\ifExcelCzech\setczechnames\fi%
-	\flushbottom%	
-	\maketitle%	
-%	\tableofcontents%
-	\thispagestyle{empty}%
-	\ifExcelFinal\else\setpagewiselinenumbers\linenumbers\renewcommand\linenumberfont{\scriptsize\color{color-lineno}}\fi%
-	}
+  \ifExcelSlovak\setslovaknames\fi%
+  \ifExcelCzech\setczechnames\fi%
+  \flushbottom%
+  \maketitle%
+% \tableofcontents%
+  \thispagestyle{empty}%
+  \ifExcelFinal\else\setpagewiselinenumbers\linenumbers\renewcommand\linenumberfont{\scriptsize\color{color-lineno}}\fi%
+  }
 
 \renewcommand{\tabcolsep}{1.0mm}
 \renewcommand\arraystretch{0.90}
@@ -334,16 +335,29 @@
 \ExcelSlovakfalse
 \def\ExcelSlovakLabels{\global\ExcelSlovaktrue}
 
-\ifExcelCzech
-\RequirePackage[czech]{babel}
-\fi
-\ifExcelSlovak
-\RequirePackage[slovak]{babel}
-\fi
+
+\@ifclasswith{ExcelAtFIT}{czech}{\global\ExcelCzechtrue}{}
+\@ifclasswith{ExcelAtFIT}{slovak}{\global\ExcelSlovaktrue}{}
 
 
 %--------------------------------------------------------
-%	USEFUL PREPARATIONS
+% Fix for CZECH and SLOVAK -- needs up to date packages!
+%--------------------------------------------------------
+\usepackage{regexpatch}
+% Change the `-` delimiter to an active character
+\@ifclasswith{ExcelAtFIT}{czech}{
+  \xpatchparametertext\@@@cmidrule{-}{\cA-}{}{}
+  \xpatchparametertext\@cline{-}{\cA-}{}{}
+}{}
+\@ifclasswith{ExcelAtFIT}{slovak}{
+  \xpatchparametertext\@@@cmidrule{-}{\cA-}{}{}
+  \xpatchparametertext\@cline{-}{\cA-}{}{}
+}{}
+
+
+
+%--------------------------------------------------------
+% USEFUL PREPARATIONS
 %--------------------------------------------------------
 
 \graphicspath{{images/}{plots/}}
@@ -360,3 +374,4 @@
 \newcommand{\blind}[1]{\textcolor{gray}{\Blindtext[#1]}}
 
 \usepackage[switch]{lineno}
+
