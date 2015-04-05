@@ -62,6 +62,8 @@ const char* help =
     "          Training image height\n"
     "    --width N, -y N\n"
     "          Training image width\n"
+    "    --generations N, -g N\n"
+    "          Stop after N generations\n"
     "\n"
     "Optional:\n"
     "    --output-image FILE, -o FILE\n"
@@ -81,21 +83,24 @@ int main(int argc, char *argv[])
         {"height", required_argument, 0, 'y'},
         {"width", required_argument, 0, 'x'},
         {"output-image", required_argument, 0, 'o'},
+        {"generations", required_argument, 0, 'g'},
 
         {0, 0, 0, 0}
     };
 
-    static const char *short_options = "hl:x:y:o:";
+    static const char *short_options = "hl:x:y:o:g:";
 
     img_image_t output_image = NULL;
     char output_filename[MAX_FILENAME_LENGTH];
     FILE *log_file = NULL;
     bool render = false;
     long *histogram;
+    bool *included;
     long max_count = 0;
     int image_size;
     int image_width = -1;
-    int image_height = -1;;
+    int image_height = -1;
+    int max_generations = 0;
 
     /*
         Parse command line
@@ -122,6 +127,10 @@ int main(int argc, char *argv[])
 
             case 'y':
                 image_height = atoi(optarg);
+                break;
+
+            case 'g':
+                max_generations = atoi(optarg);
                 break;
 
             case 'o':
@@ -169,27 +178,50 @@ int main(int argc, char *argv[])
 
     image_size = image_height * image_width;
     histogram = (long*) calloc(image_size, sizeof(long));
+    included = (bool*) malloc(image_size * sizeof(bool));
 
     /*
         Iterate over log file
      */
 
+    bool first_entry = true;
+    int generation, length;
+    int last_generation = 0;
+    int delta_generation;
+    int count;
+
     do {
-        int generation, length;
-        int count;
 
         count = fscanf(log_file, "Generation %d: Predictor phenotype length %d [ ", &generation, &length);
         if (count < 2) break;
 
+        if (generation > max_generations) {
+            generation = max_generations;
+        }
+
+        delta_generation = generation - last_generation;
+
+        if (!first_entry) {
+            for (int i = 0; i < image_size; i++) {
+                if (included[i]) {
+                    histogram[i] += delta_generation;
+                }
+            }
+        } else {
+            first_entry = false;
+        }
+
+        if (generation == max_generations) {
+            break;
+        }
+
         // update histogram data
+        memset(included, 0, sizeof(bool) * image_size);
         for (int i = 0; i < length; i++) {
             unsigned int index;
             count = fscanf(log_file, "%u", &index);
             if (count == 1) {
-                histogram[index]++;
-                if (histogram[index] > max_count) {
-                    max_count = histogram[index];
-                }
+                included[index] = true;
             } else {
                 fprintf(stderr, "Invalid log file.\n");
                 return 1;
@@ -198,8 +230,30 @@ int main(int argc, char *argv[])
 
         count = fscanf(log_file, " ] ");
 
+        if (generation == max_generations) {
+            break;
+        }
+
+        last_generation = generation;
+
     } while(true);
 
+    if (generation != max_generations) {
+        delta_generation = max_generations - last_generation;
+        for (int i = 0; i < image_size; i++) {
+            if (included[i]) {
+                histogram[i] += delta_generation;
+            }
+        }
+    }
+
+    if (render) {
+        for (int i = 0; i < image_size; i++) {
+            if (histogram[i] > max_count) {
+                max_count = histogram[i];
+            }
+        }
+    }
 
     printf("index,usage\n");
     for (int i = 0; i < image_size; i++) {
