@@ -59,6 +59,7 @@
 
 \usepackage{pdflscape}
 \usepackage{afterpage}
+\usepackage{booktabs}
 
 \usepackage[
     backend=biber,      % if we want unicode
@@ -81,6 +82,10 @@
 
 \colorlet{todo}{red}
 \newcommand{\todo}[1]{{\color{todo} {[[#1]]} }}
+
+\colorlet{fixme}{green!50!black}
+\newcommand{\fixme}[1]{{\color{fixme} {{\textbf{[FIXME]}} #1} }}
+
 \newcommand\crule[3][black]{\textcolor{#1}{\rule{#2}{#3}}}
 \newcommand\placeholder[1]{{\crule[blind]{\textwidth}{#1}}}
 
@@ -147,7 +152,7 @@
 \acknowledgment{Rád bych poděkoval Ing. Michaele Šikulové za cenné rady, zajímavé nápady, podnětné konzultace a odbornou pomoc při řešení této práce.
 
 \vskip\baselineskip
-\noindent{}Dále bych rád poděkoval Ing. Radku Hrbáčkovi, který mnou připravené výpočty spouštěl na superpočítači Anselm.
+\noindent{}Dále děkuji Ing. Radku Hrbáčkovi, který mnou připravené výpočty spouštěl na superpočítači Anselm.
 
 \vskip\baselineskip
 \noindent{}This work was supported by the IT4Innovations Centre of Excellence project\\(CZ.1.05/1.1.00/02.0070), funded by the European Regional Development Fund and the national budget of the Czech Republic via the Research and Development for Innovations Operational Programme, as well as Czech Ministry of Education, Youth and Sports via the project Large Research, Development and Innovations Infrastructures (LM2011033).}
