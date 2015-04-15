@@ -9,9 +9,9 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="220.2691mm"
-   height="82.523323mm"
-   viewBox="0 0 780.48107 292.40546"
+   width="214.2691mm"
+   height="68.53215mm"
+   viewBox="0 0 759.22123 242.83044"
    id="svg17647"
    version="1.1"
    inkscape:version="0.91pre3 r13670"
@@ -188,8 +188,8 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="0.98994949"
-     inkscape:cx="463.88901"
-     inkscape:cy="162.7574"
+     inkscape:cx="281.02808"
+     inkscape:cy="137.96988"
      inkscape:document-units="px"
      inkscape:current-layer="g19537"
      showgrid="false"
@@ -198,10 +198,10 @@
      inkscape:window-x="1272"
      inkscape:window-y="-8"
      inkscape:window-maximized="1"
-     fit-margin-top="1"
-     fit-margin-left="3"
-     fit-margin-right="3"
-     fit-margin-bottom="1" />
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0" />
   <metadata
      id="metadata17652">
     <rdf:RDF>
@@ -218,7 +218,7 @@
      inkscape:label="Vrstva 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(21.908549,-330.08807)">
+     transform="translate(11.278627,-354.87559)">
     <g
        id="g19537">
       <g
@@ -496,10 +496,10 @@
            inkscape:connector-curvature="0" />
       </g>
       <rect
-         y="335.21936"
-         x="59.285713"
-         height="282.14285"
-         width="641.42859"
+         y="356.46359"
+         x="61.723091"
+         height="239.65445"
+         width="638.99121"
          id="rect18383"
          style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:3.17600012;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
       <text
