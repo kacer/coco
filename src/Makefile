@@ -17,10 +17,11 @@
 
 
 # _XOPEN_SOURCE=700 required by scandir and alphasort from vault.c
+# _XOPEN_SOURCE>=600 required by image.c for aligned allocation
 
 CC=gcc
 CFLAGS=-g -Wall -std=c11 -fopenmp -O2 -D_XOPEN_SOURCE=700 \
-	-DSSE2 -DxAVX2 -DDEBUG -DxVERBOSE -DxCGP_LIMIT_FUNCS
+	-DSSE2 -DAVX2 -DDEBUG -DxVERBOSE -DxCGP_LIMIT_FUNCS
 LIBS=-lm -lc
 
 SRCDIR=.
@@ -45,7 +46,7 @@ IFILTER_EXECUTABLE=coco
 IFILTER_BUILDDIR=$(BUILDDIR)/ifilter
 IFILTER_OBJS = $(IFILTER_SRCS:%.c=$(IFILTER_BUILDDIR)/%.o)
 IFILTER_DEPS = $(IFILTER_SRCS:%.c=$(IFILTER_BUILDDIR)/%.d)
-IFILTER_CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_15.png -g 30000 -a coev -S 0.005 -k 10000 -l cocolog --log-pred-file cocolog/predictors.log
+IFILTER_CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_15.png -g 30000 -a cgp -S 0.005 -k 10000 -l cocolog --log-pred-file cocolog/predictors.log
 
 SYMREG_CFLAGS=$(CFLAGS) -DSYMREG -DCGP_COLS=32 -DCGP_ROWS=1 -DCGP_LBACK=32
 SYMREG_EXECUTABLE=coco_symreg

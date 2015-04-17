@@ -25,8 +25,11 @@
 #include "../cgp/cgp_core.h"
 
 
-typedef __m256i __m256i_aligned __attribute__ ((aligned (32)));
-
+#if defined(_ISOC11_SOURCE)
+    typedef __m256i __m256i_aligned alignas(32);
+#elif __GNUC__ || __IBMC__ || __IBMCPP__ || 0x5110 <= __SUNPRO_C
+    typedef __m256i __m256i_aligned __attribute__ ((aligned (32)));
+#endif
 
 /**
  * Calculate output of given chromosome and inputs using AVX instructions

@@ -78,11 +78,14 @@ img_image_t img_create(int width, int height, int comp) {
  */
 img_image_t img_load(char const *filename) {
     img_image_t img = (img_image_t) malloc(sizeof(struct img_image));
-    if (img == NULL) return NULL;
+    if (img == NULL) {
+        fprintf(stderr, "img_load: cannot malloc");
+        return NULL;
+    }
 
     img->data = stbi_load(filename, &(img->width), &(img->height), &(img->comp), COMP);
     if (img->data == NULL) {
-        printf("%s", stbi__g_failure_reason);
+        fprintf(stderr, "%s", stbi__g_failure_reason);
         free(img);
         return NULL;
     }

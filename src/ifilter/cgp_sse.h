@@ -25,7 +25,11 @@
 #include "../cgp/cgp_core.h"
 
 
-typedef __m128i __m128i_aligned __attribute__ ((aligned (16)));
+#if defined(_ISOC11_SOURCE)
+    typedef __m128i __m128i_aligned alignas(16);
+#elif __GNUC__ || __IBMC__ || __IBMCPP__ || 0x5110 <= __SUNPRO_C
+    typedef __m128i __m128i_aligned __attribute__ ((aligned (16)));
+#endif
 
 
 /**
