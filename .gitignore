@@ -25,6 +25,7 @@ coco
 coco_apply
 coco_symreg
 coco_predvis
+coco_predhist
 
 # Build files
 build/
@@ -44,6 +45,9 @@ src/*.bmp
 Thumbs.db
 callgraph.png
 gnuplot-colorbrewer-master
+video/vid
+junk
+src/_*.sh
 
 # Experimental results
 results/*
