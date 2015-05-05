@@ -90,6 +90,25 @@ p_i = \frac{f_i}{\sum_{j=1}^N{f_j}}
 Jiným přístupem k~výběru rodičů je \emph{turnajová selekce}. Do turnajového kola jsou náhodně vybráni dva nebo více jedinců. Vítězem kola se stává jedinec s~nejvyšší fitness a ten se stává rodičem. Turnaj se opakuje tolikrát, kolik rodičů je potřeba zvolit. Může se stát, že mezi rodiči se bude některý jedinec opakovat \cite{Modra}.
 
 
+\begin{figure}[htb]
+    \centering
+    \subfigure[Ruleta podle fitness]{
+        \centering
+            \includegraphics[width=0.31\textwidth]{fig/ruleta1.pdf}
+    }
+    \subfigure[Ruleta podle pořadí]{
+        \centering
+            \includegraphics[width=0.31\textwidth]{fig/ruleta2.pdf}
+    }
+    \subfigure[Turnajová selekce]{
+        \centering
+            \includegraphics[width=0.31\textwidth]{fig/turnaj.pdf}
+    }
+    \caption{Mechanismy selekce v~genetickém algoritmu.}
+    \label{obrSelekce}
+\end{figure}
+
+
 
 \subsection{Křížení}
 
@@ -393,14 +412,12 @@ Tyto nedostatky lze obejít použitím jiného kódování prediktorů, kdy nek�
 
 Tato práce se zabývá novým přímým kódováním prediktorů, jehož cílem je zmírnit současné nedostatky koevoluce pomocí souběžného učení. Pokud umožníme tvorbu různě velkých prediktorů z~jednoho genotypu, mohou jedinci získanou plasticitu využít pro adaptaci na složitost právě řešené úlohy i na aktuální průběh evoluce.
 
-Tato kapitola se nejprve v~části \ref{secDesignIF} zabývá genotypem a fenotypem obrazových filtrů, následující část \ref{secDesignEvoSimple} pak samotným průběhem evoluce bez použití koevoluce. Kapitola \ref{secDesignPred} uvádí nový druh genotypu prediktorů fitness a způsob odvozování fenotypu. Poslední část \ref{secDesignCoev} popisuje průběh koevoluce obrazových filtrů a prediktorů fitness ať už pevně dané či adaptivní velikosti.
+Tato kapitola se nejprve v~části \ref{secDesignIF} zabývá genotypem a fenotypem obrazových filtrů, následující část \ref{secDesignEvoSimple} pak samotným průběhem evoluce bez použití koevoluce. Kapitola \ref{secDesignCoev} popisuje koevoluci CGP a prediktorů fitness. Poslední část \ref{secDesignColearn} uvádí nové kódování prediktorů fitness s~plastickým fenotypem a možnostmi, jak lze získanou plasticitu využít pro adaptaci prediktorů na průběh evoluce.
 
 \section{Kandidátní obrazové filtry}
 \label{secDesignIF}
 
-Obrazové filtry jsou vyvíjeny pomocí kartézského genetického programování, popsaného v~kapitole \ref{secCGP}. Chromozom tvoří vektor celých čísel kódující acyklický orientovaný graf. Jednotlivé funkční bloky jsou tvořeny trojicí genů -- první z~nich označuje prováděnou funkci, druhý a třetí gen pak určují, kam jsou připojeny jeho vstupy. Seznam funkcí, které mohou výpočetní uzly realizovat je v~tabulce \ref{tabCGPFunctions}. Programy mají devět primárních vstupů a jeden primární výstup. Na vstupy jsou přiváděny hodnoty pixelů z~devítiokolí právě zpracovávaného pixelu, výstup udává novou hodnotu pixelu, jak je popsáno v~kapitole \ref{secIF}.
-
-\todo{jak se resi okrajove pixely}
+Obrazové filtry jsou vyvíjeny pomocí kartézského genetického programování, popsaného v~kapitole \ref{secCGP}. Chromozom tvoří vektor celých čísel kódující acyklický orientovaný graf. Jednotlivé funkční bloky jsou tvořeny trojicí genů -- první z~nich označuje prováděnou funkci, druhý a třetí gen pak určují, kam jsou připojeny jeho vstupy. Seznam funkcí, které mohou výpočetní uzly realizovat je v~tabulce \ref{tabCGPFunctions}. Programy mají devět primárních vstupů a jeden primární výstup. Na vstupy jsou přiváděny hodnoty pixelů z~devítiokolí právě zpracovávaného pixelu, výstup udává novou hodnotu pixelu, jak je popsáno v~kapitole \ref{secIF}. V~devítiokolích pixelů na okraji obrázku se na pozicích mimo obrázek používá hodnota nejbližšího okrajového pixelu.
 
 \begin{table}[htb]
     \caption{Seznam funkcí výpočetních uzlů. Převzato z~článku \cite{SikuPPSN}.}
@@ -460,28 +477,57 @@ Na začátku je náhodně vytvořena počáteční populace a vypočtena fitness
 
 Evoluce je ukončena po dosažení předem specifikovaného počtu generací. Volitelně je možné i určit cílovou hodnotu PSNR, po jejímž dosažení bude výpočet ukončen.
 
+
+
 \section{Koevoluce obrazových filtrů a prediktorů fitness}
 \label{secDesignCoev}
 
-Navrhovaný program pracuje na principech koevoluce popsané v~části \ref{secCoevIF}. Jeho součástí je populace obrazových filtrů, populace prediktorů fitness a archivy s~kandidátními filtry a prediktorem, který se používá k~ohodnocení filtrů.
+Koevoluce obrazových filtrů a prediktorů pracuje dle principů popsaných v~části \ref{secCoevIF}. Součástí algoritmu je kromě populace obrazových filtrů také populace prediktorů fitness, která se vyvíjí pomocí genetického algoritmu (viz část \ref{secGA}). Obě populace interagují prostřednictvím dvou archivů, které obsahují jednak kandidátní filtry a jednak prediktor, který se používá pro ohodnocení filtrů.
 
 \subsection{Fitness kandidátních filtrů}
 
 U~populace obrazových filtrů jsou použity dvě různé fitness funkce. \emph{Skutečná fitness} $f_{\mathit{exact}}$ je určena pomocí celé množiny případů fitness a slouží pro výpočet fitness prediktorů a také pro posuzování průběhu evoluce při modifikaci proměnné \emph{UsedGenes}. Oproti tomu \emph{predikovaná fitness} $f_{\mathit{predicted}}$ používá při výpočtu pouze případy fitness určené prediktorem. Používá se pro ohodnocení jak obrazových filtrů, tak prediktorů. V~obou případech je jako fitness použita hodnota PSNR dle rovnice \ref{eqDesignFilterFitness}.
 
-\subsection{Plastické prediktory fitness}
-\label{secDesignPred}
+\subsection{Prediktory fitness pevné délky}
 
-Tato část se zabývá prediktory fitness s~novým plastickým fenotypem, u~kterých lze z~jednoho genotypu odvodit různé fenotypy.
-
-Chromozom je reprezentován jako vektor číselných ukazatelů do množiny případů fitness o~předem stanovené délce. Ačkoliv není žádoucí, aby prediktor obsahoval některé případy fitness vícekrát, jsou v~genotypu povoleny duplicitní hodnoty. Zamezit by jim šlo použitím například permutačního kódování, ale to je pro chromozomy o~tisících genech, jenž se dají u~návrhu obrazových filtrů očekávat, už poměrně neefektivní. Evoluce probíhá pomocí genetického algoritmu popsaného v~částí \ref{secGA} s~použitím jednobodového křížení a mutačního operátoru, který nahrazuje malé množství genů náhodnými hodnotami. Fitness funkce pro prediktor vypadá následovně:
+Chromozom prediktorů je reprezentován jako celočíselný vektor, kdy každý gen je ukazatelem do množiny případů fitness o~konstantní délce, přičemž žádné dva geny nemají stejnou hodnotu. Cílem evoluce je nalézt takové prediktory, u~kterých je odchylka mezi skutečnou fitness $f_{\mathit{exact}}$ a predikovanou fitness $f_{\mathit{predicted}}$ u~všech kandidátních programů v~archivu co nejmenší. Fitness funkci lze zapsat následovně:
 
 \begin{equation}
     \label{eqDesignPredFitness}
     f \left( p \right) = \frac{1}{u} \sum\limits_{i=1}^{u} \left| f_{\mathit{exact}} \left( s\left( i \right) \right) - f_{\mathit{predicted}} \left( s\left( i \right) \right) \right|
 \end{equation}
 
-\noindent{}kde $f \left( p \right)$ je fitness prediktoru, $u$ počet filtrů použitých k~ohodnocení prediktoru, $f_{\mathit{exact}}$ označuje skutečnou fitness filtru $s_i$ a $f_{\mathit{predicted}}$ predikovanou fitness filtru $s_i$.
+\noindent{}kde $f \left( p \right)$ je fitness prediktoru, $u$ počet filtrů použitých k~ohodnocení prediktoru, $f_{\mathit{exact}}$ označuje skutečnou fitness filtru $s\left( i \right)$ a $f_{\mathit{predicted}}$ predikovanou fitness filtru $s\left( i \right)$.
+
+\subsection{Archivy}
+
+Archiv kandidátních filtrů je reprezentován polem o~pevné délce. Pokud je zaplněn, jsou nejstarší položky přepisovány novými (kruhový buffer). Každý záznam obsahuje chromozom kandidátního filtru a jeho skutečnou fitness. Filtry obsažené v~archivu slouží k~výpočtu fitness prediktorů dle rovnice \ref{eqDesignPredFitness}.
+
+Archiv prediktorů je tvořen jedinou položkou -- nejlepším nalezeným prediktorem. Ten slouží k~výpočtu predikované fitness při evoluci obrazových filtrů.
+
+\subsection{Průběh evoluce}
+
+Na začátku běhu programu jsou náhodně vytvořeny počáteční populace filtrů a prediktorů fitness. Poté je vypočtena skutečná fitness filtrů a nejlepší jedinec je umístěn do archivu. Pomocí něj jsou ohodnoceny prediktory fitness a je určen nejlepší ten, který bude zpočátku sloužit pro výpočet predikované fitness. Po této inicializaci archivů pokračuje běh programu ve dvou oddělených vláknech, kde každé obsluhuje jednu populaci.
+
+Evoluce kandidátních filtrů probíhá stejně jako v~případě bez koevoluce (viz část \ref{secDesignEvoSimple}). Rozdíl je v~tom, že pokud je predikovaná fitness nejlepšího potomka vyšší než fitness jeho rodiče (a stává se tak novým rodičem), je umístěn do sdíleného archivu.
+
+V~populaci prediktorů fitness je nová populace tvořena třemi druhy potomků. Jednu čtvrtinu celkového počtu jedinců tvoří nejlepší jedinci (elitismus). Druhá čtvrtina potomků je vygenerována zcela náhodně, aby se zachovala diverzita populace. Zbývající dvě čtvrtiny potomků jsou tvořeni pomocí jednobodového křížení a mutace, která nahrazuje malé množství genů náhodnými hodnotami. Jejich rodiče jsou voleni pomocí turnaje, ve kterém se každého kola účastní dva náhodně zvolení jedinci. V~případě, že má některý potomek vyšší fitness, než má prediktor v~archivu, nahradí jej.
+
+Evoluce je stejně jako v~případě bez koevoluce ukončena po dosažení stanoveného počtu generací nebo požadované hodnoty PSNR.
+
+\todo{Presny algoritmus (pseudokod) kazde populace}
+
+
+
+\section{Souběžné učení v~koevoluci filtrů a prediktorů fitness}
+\label{secDesignColearn}
+
+V~případě souběžného učení v~koevolučním CGP se používá mírně odlišné kódování prediktorů, které se vyznačuje plastickým fenotypem, což znamená, že lze z~jednoho genotypu odvodit různé fenotypy. V~této části je popsáno, jak toto kódování vypadá a jakým způsobem lze získanou plasticitu využít pro adaptaci prediktorů na složitost řešeného problému v~průběhu evoluce.
+
+\subsection{Plastické prediktory fitness}
+\label{secDesignPred}
+
+Chromozom je stejně jako v~případě prediktorů pevné délky reprezentován jako vektor číselných ukazatelů do množiny případů fitness. Rozdíl je v~počtu genů, který zde odpovídá celkovému počtu případů fitness. Ačkoliv ani zde není žádoucí, aby prediktor obsahoval některé ukazatele vícekrát, jsou v~genotypu povoleny duplicitní hodnoty. Zamezit by jim šlo použitím například permutačního kódování, ale to je pro chromozomy o~tisících genech, jenž se dají u~návrhu obrazových filtrů očekávat, už poměrně neefektivní.
 
 Plasticita je dosažena tím, že fenotyp netvoří všechny ukazatele obsažené v~genotypu, ale pouze jejich část. Fenotyp je z~genotypu tvořen postupným čtením genů od zvolené pozice (\emph{offsetu}). Pokud hodnota právě čteného genu není obsažena ve fenotypu, je do něj vložena, v~opačném případě se gen ignoruje. Poté je přečten další gen a proces se opakuje. Během tvorby fenotypu nejsou čteny úplně všechny geny -- jejich počet je určen hodnotou \emph{UsedGenes}, která je součástí prostředí. Pokud je při čtení dosaženo konce genotypu, ale nebyl ještě přečten potřebný počet genů, pokračuje se od jeho začátku. Příklad tvorby fenotypu při použití šesti genů z~deseti ukazuje obrázek \ref{obrFenotyp}.
 
@@ -609,35 +655,33 @@ Nová položka je do paměti vložena vždy, když je predikovaná fitness nejle
 %     \right.
 % \end{equation}
 
-\subsection{Archivy}
 
-Archiv kandidátních filtrů je reprezentován polem o~pevné délce. Pokud je zaplněn, jsou nejstarší položky přepisovány novými (kruhový buffer). Každý záznam obsahuje chromozom kandidátního filtru a jeho skutečnou fitness. Filtry obsažené v~archivu slouží k~výpočtu fitness prediktorů dle rovnice \ref{eqDesignPredFitness}.
-
-Archiv prediktorů je tvořen jedinou položkou -- nejlepším nalezeným prediktorem. Ten slouží k~výpočtu predikované fitness při evoluci obrazových filtrů.
 
 \subsection{Průběh evoluce}
 
-Na začátku běhu programu jsou náhodně vytvořeny počáteční populace filtrů a prediktorů fitness. Poté je vypočtena skutečná fitness filtrů a nejlepší jedinec je umístěn do archivu. Pomocí něj jsou ohodnoceny prediktory fitness a je určen nejlepší ten, který bude zpočátku sloužit pro výpočet predikované fitness. Po této inicializaci archivů pokračuje běh programu ve dvou oddělených vláknech, každé obsluhuje jednu populaci.
+V~případě souběžného učení probíhá evoluce stejně, jako u~koevolučního CGP. Hlavní rozdíl je v~prováděných akcích po nalezení filtru s~lepší predikovanou fitness, než měl jeho rodič. V~takovém případě je navíc do paměti průběhu evoluce vložen nový záznam a upraví se hodnota \emph{UsedGenes}, čímž se změní velikost fenotypu prediktorů. K~úpravě hodnoty \emph{UsedGenes} může dojít také po stanoveném počtu generací CGP, během kterých nebyl lepší jedinec nalezen.
 
-Evoluce kandidátních filtrů probíhá stejně jako v~případě bez koevoluce (viz část \ref{secDesignEvoSimple}). Odlišné jsou akce prováděné po vytvoření a ohodnocení potomků: pokud je predikovaná fitness nejlepšího potomka vyšší, než fitness jeho rodiče, je umístěn do sdíleného archivu, do paměti průběhu evoluce je vložen nový záznam a zároveň je upravena hodnota \emph{UsedGenes}, která ovlivňuje velikost fenotypu prediktorů. V~nejjednodušším případě je úprava provedena na základě aktuální změny skutečné fitness pomocí jednoduchých pravidel. Lze ale použít i pokročilejší metody pracující s~delším časovým úsekem.
 
-%\fixme{Navíc je zahrnut modul, který ukládá informace o~průběhu evoluce, na základě kterých rozhoduje o~změnách v~počtu genů, používaných pro tvorbu fenotypů prediktorů fitness (hodnota \emph{UsedGenes}).}
 
-Evoluce je stejně jako v~případě bez koevoluce ukončena po dosažení stanoveného počtu generací nebo požadované hodnoty PSNR.
-
-\todo{Presny algoritmus (pseudokod) kazde populace}
-
-\chapter{Implementace}
+\chapter{Implementace navrženého algoritmu}
 \label{chImplementation}
 
-Kvůli velkému množství plánovaných experimentů byl kladen důraz především na co nejrychlejší běh programu. Implementován byl proto v~jazyce C, ve kterém lze snadno pracovat i s~assemblerem a rozšiřujícími instrukčními sadami procesoru.
+Kvůli velkému množství plánovaných experimentů byl kladen důraz především na co nejrychlejší běh programu. Implementován byl proto v~jazyce C, ve kterém lze snadno pracovat i s~assemblerem a rozšiřujícími instrukčními sadami procesoru. U některých částí algoritmu se nabízí využít nějakou formu paralelizace, jde například o souběžný běh obou populací, ohodnocování a tvorbu jedinců nebo výpočet výstupu kandidátního filtru.
 
-\todo{Jazyk, překladač, std=c11}
-\todo{nějaký úvod, co v~této kapitole je? nejprve X, poté paralelizace}
+V implementaci se využívá některých vlastností normy C11 (například podpora zarovnání dat v paměti), ale většina využitých vlastností je definována i ve standardu POSIX, i když někdy trochu jiným způsobem. Dle použitého překladače se pak pomocí maker preprocesoru vybere dostupná implementace.
+
+Tato kapitola se nejprve v části \ref{secImplParalelization} zabývá paralelizací evoluce na úrovni populací a jedinců. Část \ref{secImplVectorization} popisuje optimalizací výpočtu výstupů filtrů pomocí vektorových (SIMD) instrukcí a úpravy, které jsou potřeba pro efektivní vektorizaci. Následující část \ref{secImplImages} se zabývá práci s obrázky a poslední část \ref{secImplExperimental} programovou podporou pro experimentální vyhodnocení.
 
 \section{Paralelizace evoluce}
+\label{secImplParalelization}
 
-\fixme{Paralelizace je řešena pomocí standardu OpenMP\footnote{\url{http://openmp.org/}}. Evoluce obou populací probíhá paralelně ve dvou vlák\-nech. Interakce je řešena přes sdílenou paměť, ve~které se nachází především nejlepší prediktor a archiv kandidátních programů. Paralelizace se využívá také při ohodnocování populací -- fitness každého je\-din\-ce lze počítat v~samostatném vlákně.}
+V navrženém programu lze vytipovat několik míst, kde lze výpočet paralelizovat. Na výběr je několik možností, jak paralelní zpracování implementovat. Lze využít prostředků operačního systému a běh programu rozdělit na vlákna nebo podprocesy, ale je to poměrně pracné. Existují knihovny, pomocí kterých lze pracovat na vyšší úrovni abstrakce. Zejména jde o standardy \emph{Message Passing Interface} (MPI)\footnote{Implementovaný například v knihovně OpenMPI (\url{http://www.open-mpi.org/}).} a \emph{OpenMP}\footnote{\url{http://openmp.org/}}. Zatímco MPI je založeno na zasílání zpráv mezi výpočetními uzly (např. v počítačovém clusteru), OpenMP je zaměřeno na paralelizaci se sdílenou pamětí. Lze je i mezi sebou kombinovat, například MPI může sloužit pro rozdělení výpočtu mezi jednotlivé uzly a OpenMP pro paralelizaci v rámci jednoho uzlu \cite{Quinn}.
+
+%Rozhodl jsem se použít pouze OpenMP.
+
+\subsection{Standard OpenMP}
+
+\fixme{Paralelizace je řešena pomocí standardu OpenMP. Evoluce obou populací probíhá paralelně ve dvou vlák\-nech. Interakce je řešena přes sdílenou paměť, ve~které se nachází především nejlepší prediktor a archiv kandidátních programů. Paralelizace se využívá také při ohodnocování populací -- fitness každého je\-din\-ce lze počítat v~samostatném vlákně.}
 
 
 \todo{OpenMP}
@@ -647,8 +691,16 @@ Kvůli velkému množství plánovaných experimentů byl kladen důraz předev�
 \todo{Kde všude je třeba strkat zámky}
 \todo{Skoro čtenář/písař}
 
+\begin{figure}[hb]
+    \centering
+    \includegraphics[width=0.8\textwidth]{fig/openmp}
+    \caption{\todo{Rozdělení programu na vlákna.}}
+    \label{obrParalelizace}
+\end{figure}
+
 
 \section{Vektorizace výpočtu CGP}
+\label{secImplVectorization}
 
 Největší důraz byl kladen na optimalizaci rychlosti výpočtu výstupních hodnot kartézských programů, což je časově nejnáročnější část výpočtu. Jako výhodné se ukázalo použití  instrukcí typu SIMD (Single Instruction, Multiple Data), pomocí kterých lze počítat s~vektory několika desetinných či celých čísel najednou.
 
@@ -673,23 +725,21 @@ Při použití první verze SSE měl programátor k~dispozici osm 128bitových v
 
 %\todo{oproti sse umi instrukce se tremi operandy}
 
-Instrukční sada \emph{Advanced Vector Extensions} (AVX) je zatím nejnovější rozšíření pro výpočty s~vektory čísel. AVX byla poprvé obsažena v~procesorech Intel architektury Sandy Bridge uvedených na trh v~roce 2011. Nově jsou k~dispozici 256bitové registry a odpovídající instrukce pro vektorové operace. Dle požadované přesnosti tak lze pracovat s~vektorem šestnácti nebo osmi čísel s~plovoucí desetinnou čárkou. Mezi novými instrukcemi ale chybí podpora pro 256bitové vektory celých čísel \cite{IntelAvx}.
+Instrukční sada \emph{Advanced Vector Extensions} (AVX) je zatím nejnovější rozšíření pro výpočty s~vektory čísel. AVX byla poprvé obsažena v~procesorech Intel architektury Sandy Bridge uvedených na trh v~roce 2011. Nově jsou k~dispozici 256bitové registry a odpovídající instrukce pro vektorové operace. Dle požadované přesnosti tak lze pracovat s~vektorem šestnácti nebo osmi čísel s~plovoucí desetinnou čárkou. Mezi novými instrukcemi ale chybí podpora pro 256bitové vektory celých čísel.
 
-Později bylo uvedeno rozšíření nazvané AVX2, jehož podpora se poprvé objevila v~procesorech Intel architektury Haswell v~roce 2013. Zde už je podpora nových 256bitových registrů rozšířena na všechny instrukce původně pocházející z~instrukčních sad SSE, včetně instrukcí pro výpočty nad vektory celých čísel. V~případě osmibitových celých čísel tak lze pracovat s~32 hodnotami najednou \cite{IntelAvx2}.
+Později bylo uvedeno rozšíření nazvané AVX2, jehož podpora se poprvé objevila v~procesorech Intel architektury Haswell v~roce 2013. Zde už je podpora nových 256bitových registrů rozšířena na všechny instrukce původně pocházející z~instrukčních sad SSE, včetně instrukcí pro výpočty nad vektory celých čísel. V~případě osmibitových celých čísel tak lze pracovat s~32 hodnotami najednou \cite{IntelAVXReference}.
 
-Intel již představil další instrukční sadu AVX-512, ve které se zdvojnásobí počet registrů AVX na 32 a zároveň se jejich velikost zvětší na 512 bitů. První procesory s~tímto rozšířením by měly být k~dispozici v~roce 2015 \cite{IntelAvx512}.
+Intel již představil další instrukční sadu AVX-512, ve které se zdvojnásobí počet registrů AVX na 32 a zároveň se jejich velikost zvětší na 512 bitů. První procesory s~tímto rozšířením by měly být dostupné v~roce 2015 \cite{IntelAvx512}.
 
-\subsection{\fixme{Memory layout}}
+\subsection{Zarovnání dat v~paměti}
 
-\todo{nutnost zarovnavat, funkce posix\_memalign a aligned\_alloc}
-
-\todo{jak se cpou rozhazene pixely z~prediktoru do souvislych registru}
+Při kopírování dat z~paměti do registrů SSE či AVX je vhodné mít data v~paměti zarovnaná na násobek 16, resp. 32~bajtů. Sice existují i instrukce pro přesun nezarovnaných dat, jejich použití ale může vést k~nižší rychlosti programu. Standard C11 pro tyto účely zavádí klíčové slovo \texttt{alignas(N)} pro deklarace proměnných a datových typů a funkci \texttt{aligned\_alloc} pro dynamickou alokaci paměti. Pro starší verze překladačů lze využít funkci \texttt{posix\_memalign} definovanou v normě POSIX a pro deklarace proměnných a datových typů použít jiné klíčové slovo, který podporuje použitý překladač, například pro GCC to je zápis \texttt{\_\_attribute\_\_~((aligned~(N)))}.
 
 \subsection{Implementace pomocí SIMD instrukcí}
 
 Výpočet výstupů CGP byl implementován sériově i vektorově pomocí instrukcí SSE2 a AVX2. Starší a v~současnosti více rozšířenou instrukční sadu AVX bohužel nelze použít, protože neobsahuje instrukce pro práci s~8bitovými celými čísly. V~základní sériové implementaci se každý výstupní pixel počítá zvlášť a pro zpracování celého obrázku o~rozměrech $256\times256$~pixelů je třeba 65~536 průchodů filtrem. U~vektorové implementace pomocí SSE2 lze spočítat výstup pro 16~pixelů zároveň a v~případě AVX2 dokonce 32~pixelů. Pro zpracování zmíněného obrázku s~použitím instrukcí AVX2 pak stačí jen 2~048 průchodů filtrem.
 
-Vektorová implementace využívá tzv. \emph{intrinsic} funkcí, jejichž volání překladač přeloží jako jednu instrukci (například volání intrinsic funkce \texttt{\_mm\_srli\_epi16} se přeloží jako instrukce \texttt{PSRLW}). Protože v~plánovaných experimentech má mřížka CGP vždy 8 sloupců a 4 řádky, lze kód ručně optimalizovat tak, aby se co nejlépe využívalo registrů SSE (resp. AVX) a přístupů do paměti bylo co nejméně. Počítá se po sloupcích, přičemž 4 registry vždy obsahují výstupní hodnoty sloupců předchozího sloupce a do dalších 4 registrů se ukládají hodnoty právě používaného sloupce. Další registry slouží pro různé pomocné hodnoty. K~tomu bylo v~deklaracích příslušných proměnných použito klíčové slovo jazyka C \texttt{register}.
+Vektorová implementace využívá tzv. \emph{intrinsic} funkcí, jejichž volání překladač přeloží jako jednu instrukci (například volání intrinsic funkce \texttt{\_mm\_srli\_epi16} se přeloží jako instrukce \texttt{PSRLW}). Protože v~plánovaných experimentech měla mřížka CGP vždy 8 sloupců a 4 řádky, bylo možné kód ručně optimalizovat tak, aby se co nejlépe využívalo registrů SSE (resp. AVX) a přístupů do paměti bylo co nejméně. Počítá se po sloupcích, přičemž 4 registry vždy obsahují výstupní hodnoty sloupců předchozího sloupce a do dalších 4 registrů se ukládají hodnoty právě používaného sloupce. Další registry slouží pro různé pomocné hodnoty. K~tomu bylo v~deklaracích příslušných proměnných použito klíčové slovo jazyka C \texttt{register}.
 
 Přeložený program obsahuje všechny tři zmíněné implementace výpočtu CGP. Která implementace se použije při výpočtu, závisí na tom, jaké instrukční sady podporuje počítač a operační systém, na kterém je program spuštěn. To se zjišťuje pomocí instrukce \texttt{CPUID}. Přednost má implementace s~instrukcemi AVX2, kdy je naměřené zrychlení oproti sériové implementaci u~standardního CGP přibližně šestnáctinásobné. Další v~pořadí je implementace pomocí SSE2, u~níž je zrychlení zhruba desetinásobné. Pokud ani tuto instrukční sadu procesor nebo operační systém nepodporuje, použije se základní sériová implementace.
 
@@ -700,15 +750,26 @@ V~budoucnu je možné přidat další implementaci výpočtu CGP. Nabízí se na
 \todo{zmínit vašíčkovo \uv{just-in-time} překladač CGP do binárky}
 
 \section{Načítání a ukládání obrázků}
+\label{secImplImages}
 
-Protože jazyk C ani standardní knihovny neposkytují podporu pro práci s~obrazovými soubory, je třeba použít buď vlastní implementaci nebo sáhnout po nějaké volně dostupné knihovně. Pro načítání vstupních obrázků se využívá knihovna \texttt{stb\_image.h} od Seana T. Barretta. Ten ji vydal jako součást tzv. \emph{public domain} k~volnému využití. Její výhodou je přímočará integrace do vlastních programů (jeden soubor s~jednoduchým API) a podpora načítání všech běžně používaných formátů (zejména BMP, JPG, PNG, GIF). Od stejného autora je i knihovna \texttt{stb\_image\_write.h}, která obsahuje funkce pro ukládání obrázků ve formátech BMP, PNG nebo TGA.
+Protože jazyk C ani standardní knihovny neposkytují podporu pro práci s~obrazovými soubory, je třeba použít buď vlastní implementaci nebo sáhnout po nějaké volně dostupné knihovně. Pro načítání vstupních obrázků se využívá knihovna \texttt{stb\_image.h} od Seana T. Barretta. Její výhodou je přímočará integrace do vlastních programů (jeden soubor s~jednoduchým API) a podpora načítání všech běžně používaných formátů (zejména BMP, JPG, PNG, GIF). Od stejného autora je i knihovna \texttt{stb\_image\_write.h}, která obsahuje funkce pro ukládání obrázků ve formátech BMP, PNG nebo TGA. Obě knihovny jsou dostupné k volnému využití jako součást tzv. \emph{public domain}\footnote{Lze je stáhnout na adrese \url{https://github.com/nothings/stb}.}.
 
-\todo{predzpracovani obrazku - devitiokoli}
-\todo{citace / url ke stazeni}
+Načtený obrázek, který se bude používat na vstupech filtru, se ihned rozdělí na devítiokolí. Pro sériové zpracování je kvůli lepší lokalitě dat výhodnější trénovací data uchovávat jako pole struktur, skládající se z devítiokolí a požadovaného výstupu. To je ale nevýhodné pro zpracování SIMD instrukcemi, kdy je potřeba do jednoho registru načíst několik pixelů ze stejné pozice v~devítiokolí, které ale v~paměti nejsou uloženy za sebou. Proto jsou devítiokolí v~paměti uložena i jako struktura polí, kde jsou pixely z jedné pozice uloženy v samostatném poli a jedno pole obsahuje odpovídající požadované výstupní hodnoty. Oba způsoby uložení do paměti znázorňuje obrázek \ref{obrDevitiokoli}.
 
-\section{Generování náhodných čísel}
+\todo{dtto o~prediktorech}
+
+\begin{figure}[hb]
+    \centering
+    \includegraphics[width=0.8\textwidth]{fig/windows}
+    \caption{\todo{Uložení devítiokolí obrázku pro (a) sériové (b) vektorové zpracování}}
+    \label{obrDevitiokoli}
+\end{figure}
+
 
 \section{Logování, možnost napojení na GUI}
+\label{secImplExperimental}
+
+\subsection{Generování náhodných čísel}
 
 \chapter{Experimentální vyhodnocení}
 \label{chExperiments}
@@ -954,7 +1015,7 @@ Na základě provedených experimentů byly pro souběžné učení zvoleny hodn
         \cline{1-2}\cline{4-5}
         $I_\mathit{threshold}$ & 1,2   & & $v_\mathit{zero}$ & 0,001 \\
         $c_I$ & 2                      & & $v_\mathit{slow}$ & 0,1 \\
-        $c_0$ & 0,93                   & & počáteční velikost prediktorů & 3\,\% \\
+        $c_0$ & 0,90                   & & počáteční velikost prediktorů & 3\,\% \\
         $c_{-1}$ & 0,96                & & inicializace prediktorů & zcela náhodně \\
         $c_{+1}$ & 1,07                & & změna velikosti & jen při změně rodiče \\
         $c_{+2}$ & 1                   & & &\\

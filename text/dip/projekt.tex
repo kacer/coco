@@ -61,6 +61,21 @@
 \usepackage{afterpage}
 \usepackage{booktabs}
 
+\usepackage{listings}
+\lstdefinestyle{customc}{
+   belowcaptionskip=1\baselineskip,
+   breaklines=true,
+   xleftmargin=\parindent,
+   language=C,
+   showstringspaces=false,
+   basicstyle=\footnotesize\ttfamily,
+   keywordstyle=\bfseries\color{green!40!black},
+   commentstyle=\itshape\color{purple!40!black},
+   identifierstyle=\color{blue},
+   stringstyle=\color{orange},
+}
+\lstset{language=C,style=customc}
+
 \usepackage[
     backend=biber,      % if we want unicode
     style=iso-numeric, % or iso-numeric for numeric citation method
@@ -84,7 +99,7 @@
 \newcommand{\todo}[1]{{\color{todo} {[[#1]]} }}
 
 \colorlet{fixme}{green!50!black}
-\newcommand{\fixme}[1]{{\color{fixme} {{\textbf{[FIXME]}} #1} }}
+\newcommand{\fixme}[1]{{\color{fixme} {[[#1]]} }}
 
 \newcommand\crule[3][black]{\textcolor{#1}{\rule{#2}{#3}}}
 \newcommand\placeholder[1]{{\crule[blind]{\textwidth}{#1}}}
@@ -149,10 +164,15 @@
 \declaration{Prohlašuji, že jsem tuto diplomovou práci vypracoval samostatně pod vedením Ing. Michaely Šikulové. Uvedl jsem všechny literární prameny a publikace, ze kterých jsem čerpal.}
 
 %Podekovani (nepovinne)
-\acknowledgment{Rád bych poděkoval Ing. Michaele Šikulové za cenné rady, zajímavé nápady, podnětné konzultace a odbornou pomoc při řešení této práce.
+\acknowledgment{Děkuji Ing. Michaele Šikulové nejen za cenné rady, náměty a nápady, ale především za její trpělivost a za veškerý čas, který mi věnovala v~souvislosti s~řešením této diplomové práce.
+
+%Rád bych poděkoval Ing. Michaele Šikulové za cenné rady, zajímavé nápady, podnětné konzultace a odbornou pomoc při řešení této práce.
 
 \vskip\baselineskip
 \noindent{}Dále děkuji Ing. Radku Hrbáčkovi, který mnou připravené výpočty spouštěl na superpočítači Anselm.
+
+\vskip\baselineskip
+\noindent{}Tato práce byla podporována projektem Centra excelence IT4Innovations CZ.1.05/1.1.00/02.0070, který je financován Evropským fondem pro regionální rozvoj a státním rozpočtem České republiky prostřednictvím Operačního programu Výzkum a vývoj pro inovace a také Ministerstvem školství, mládeže a tělovýchovy prostřednictvím projektu Velkých infrastruktur pro výzkum, vývoj a inovace (LM2011033).
 
 \vskip\baselineskip
 \noindent{}This work was supported by the IT4Innovations Centre of Excellence project\\(CZ.1.05/1.1.00/02.0070), funded by the European Regional Development Fund and the national budget of the Czech Republic via the Research and Development for Innovations Operational Programme, as well as Czech Ministry of Education, Youth and Sports via the project Large Research, Development and Innovations Infrastructures (LM2011033).}
