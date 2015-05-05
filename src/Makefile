@@ -21,7 +21,7 @@
 
 CC=gcc
 CFLAGS=-g -Wall -std=c11 -fopenmp -O2 -D_XOPEN_SOURCE=700 \
-	-DSSE2 -DAVX2 -DDEBUG -DxVERBOSE -DxCGP_LIMIT_FUNCS
+	-DSSE2 -DxAVX2 -DDEBUG -DxVERBOSE -DxCGP_LIMIT_FUNCS
 LIBS=-lm -lc
 
 SRCDIR=.
@@ -46,7 +46,10 @@ IFILTER_EXECUTABLE=coco
 IFILTER_BUILDDIR=$(BUILDDIR)/ifilter
 IFILTER_OBJS = $(IFILTER_SRCS:%.c=$(IFILTER_BUILDDIR)/%.o)
 IFILTER_DEPS = $(IFILTER_SRCS:%.c=$(IFILTER_BUILDDIR)/%.d)
-IFILTER_CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_15.png -g 30000 -a cgp -S 0.005 -k 10000 -l cocolog --log-pred-file cocolog/predictors.log
+IFILTER_CMDLINE=-i ../images/lena_gray_256.png -n ../images/lena_gray_256_saltpepper_25.png -g 100000 -a baldwin \
+	-S 100 -I 0.05 -k 10000 -l cocolog --log-pred-file cocolog/predictors.log \
+	--bw-inac-tol 1.2 --bw-inac-coef 2 --bw-zero-eps 0.001 --bw-zero-coef 0.9 --bw-decr-coef 0.96 --bw-slow-thr 0.1 --bw-slow-coef 1.07 --bw-fast-coef 1 --bw-interval 0 \
+	--pred-type repeated
 
 SYMREG_CFLAGS=$(CFLAGS) -DSYMREG -DCGP_COLS=32 -DCGP_ROWS=1 -DCGP_LBACK=32
 SYMREG_EXECUTABLE=coco_symreg
