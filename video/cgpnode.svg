@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="12.324598mm"
+   height="8.3765163mm"
+   viewBox="0 0 43.669837 29.68057"
+   id="svg7315"
+   version="1.1"
+   inkscape:version="0.91pre3 r13670"
+   sodipodi:docname="cgpnode.svg">
+  <defs
+     id="defs7317" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="11.2"
+     inkscape:cx="18.814298"
+     inkscape:cy="5.9812724"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0" />
+  <metadata
+     id="metadata7320">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Vrstva 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-222.62199,-210.20698)">
+    <rect
+       y="210.90295"
+       x="232.70825"
+       height="28.28862"
+       width="22.297619"
+       id="rect17655-48"
+       style="fill:none;fill-opacity:1;stroke:#cacaca;stroke-width:1.3919493;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path18197-41"
+       d="m 222.62199,217.15826 9.85067,0"
+       style="fill:none;fill-rule:evenodd;stroke:#cacaca;stroke-width:1.39141715;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path18197-6-12"
+       d="m 222.62199,232.93602 9.85067,0"
+       style="fill:none;fill-rule:evenodd;stroke:#cacaca;stroke-width:1.3919493;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path18197-2-6"
+       d="m 255.00587,225.04727 9.85033,0"
+       style="fill:none;fill-rule:evenodd;stroke:#cacaca;stroke-width:1.3919493;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text19071-8-6-3-90"
+       y="221.87704"
+       x="262.1199"
+       style="font-style:normal;font-weight:normal;font-size:7.66974545px;line-height:125%;font-family:sans-serif;text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#cacaca;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"><tspan
+         y="221.87704"
+         x="262.1199"
+         id="tspan19073-6-6-2-72"
+         sodipodi:role="line"
+         style="text-align:center;text-anchor:middle">21</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text19071-8-6-6-4"
+       y="227.8429"
+       x="244.0518"
+       style="font-style:normal;font-weight:normal;font-size:7.66974545px;line-height:125%;font-family:sans-serif;text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#cacaca;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"><tspan
+         y="227.8429"
+         x="244.0518"
+         id="tspan19073-6-6-6-5"
+         sodipodi:role="line">AND</tspan></text>
+  </g>
+</svg>
