@@ -140,6 +140,17 @@ int cgp_main(algo_data_t *wd)
                     }
                 }
 
+                // dump to file
+                /*
+                char name[100];
+                snprintf(name, 100, "cocolog/cgp_%06d.chr", wd->cgp_population->generation);
+                FILE *f = fopen(name, "w");
+                if (f) {
+                    cgp_dump_chr_compat(wd->cgp_population->best_chromosome, f);
+                    fclose(f);
+                }
+                */
+
             } else if (need_history_entry_calc) {
                 real_fitness = fitness_eval_cgp(wd->cgp_population->best_chromosome);
             }
