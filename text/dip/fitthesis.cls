@@ -127,6 +127,7 @@ Práce je chráněna autorským zákonem a její užití bez udělení oprávně
 
 %Nazev prace (v jazyce prace)
 \def\@title{\ifczech\@title@CS\else\@title@EN\fi}
+\def\@titleB{\ifczech\@title@CSB\else\@title@EN\fi}
 
 %Jmeno, prijmeni, tituly autora
 \def\get@author{\ifx\undefined\@author@tp\else%
@@ -140,6 +141,7 @@ Práce je chráněna autorským zákonem a její užití bez udělení oprávně
 %-----------------------------------------------------------------------------
 %Parametry
 \define@key{projinfo}{title.cs}{\global\def\@title@CS{#1}}
+\define@key{projinfo}{title.csb}{\global\def\@title@CSB{#1}}
 \define@key{projinfo}{title.en}{\global\def\@title@EN{#1}}
 \define@key{projinfo}{department}{\set@department{#1}}
 \define@key{projinfo}{project}{\set@project{#1}}
@@ -273,7 +275,7 @@ Práce je chráněna autorským zákonem a její užití bez udělení oprávně
 %-----------------------------------------------------------------------------
 \newcommand\makedeclaration{
 \thispagestyle{empty}%
-\mktxt@b{18}{\@title}
+\mktxt@b{18}{\@titleB}
 
 \vspace{10mm}
 \mktxt@b{16}{\@tdecl@CS}

@@ -226,30 +226,27 @@ Většina hardwarových i softwarových implementací obrazových filtrů pracuj
 
 Obrazové filtry lze rozdělit na lineární a nelineární. U~lineárních platí princip superpozice a lze je charakterizovat pomocí impulzní odezvy. Výsledný obraz je dán konvolucí vstupního obrazu a impulzní odezvy -- na konvoluci lze nahlížet jako vážený součet zvoleného okolí pixelu. Nevýhodou lineárních filtrů je ztráta detailů. V~jejich případě není výsledný obraz dán konvolucí, ale nějakou nelineární funkcí, například mediánem hodnot okolních pixelů.
 
-Existují různé typy šumů, pro které jsou vhodné různé typy obrazových filtrů. Poměrně častý je impulzní šum, který vzniká kvůli nefunkčním pixelům v~kameře, chybným paměťovým buňkám nebo chybám při přenosu dat. Poškozené body mají buď mají vždy minimální nebo maximální možnou hodnotu (šum typu sůl a pepř) nebo mají náhodnou hodnotu (výstřelový šum). Pro impulzní šum je vhodný nelineární mediánový filtr, ale při intenzivnějším šumu je kvalita nedostatečná a také dochází ke ztrátě detailů.
+Existují různé typy šumů, pro které jsou vhodné různé typy obrazových filtrů. Poměrně častý je impulzní šum, který vzniká kvůli nefunkčním pixelům v~kameře, chybným paměťovým buňkám nebo chybám při přenosu dat. Poškozené body mají buď mají vždy minimální nebo maximální možnou hodnotu (šum typu sůl a pepř) nebo mají náhodnou hodnotu (výstřelový šum). Pro impulzní šum je vhodný nelineární mediánový filtr, ale při intenzivnějším šumu je kvalita nedostatečná a také dochází ke ztrátě detailů, jak je vidět na obrázcích \ref{obrMedian}.
 
 \begin{figure}[htb]
     \centering
     \subfigure[Vstupní obrázek]{
         \hskip0.75cm
         \includegraphics[width=0.21\textwidth]{fig/lena_gray_256_saltpepper_25.png}
-        \label{obrSobelIn}
         \hskip0.75cm
     }
     \subfigure[Mediánový filtr s~oknem 3×3]{
         \hskip0.75cm
         \includegraphics[width=0.21\textwidth]{fig/lena_gray_256_saltpepper_25_median1.png}
         \hskip0.75cm
-        \label{obrSobelOut}
     }
     \subfigure[Mediánový filtr s~oknem 5×5]{
         \hskip0.75cm
         \includegraphics[width=0.21\textwidth]{fig/lena_gray_256_saltpepper_25_median2.png}
         \hskip0.75cm
-        \label{obrSobelOut}
     }
-    \caption{Výstup mediánového filtru pro obrázek s 25\% šumem typu sůl a pepř.}
-    \label{obrDetektor}
+    \caption{Výstup mediánového filtru pro obrázek s~25\% šumem typu sůl a pepř.}
+    \label{obrMedian}
 \end{figure}
 
 Obrazové filtry se uplatňují i v~jiných úlohách než filtrování šumu. Jedním z~kroků některých algoritmů zpracování obrazu bývá detekce hran. Obrazový filtr má nyní za úkol označit pixely, které jsou ve vstupním obrázku součástí nějaké hrany. Mezi běžně používané detektory hran patří Sobelův nebo Cannyho detektor.
@@ -259,20 +256,17 @@ Obrazové filtry se uplatňují i v~jiných úlohách než filtrování šumu. J
     \subfigure[Vstupní obrázek]{
         \hskip0.75cm
         \includegraphics[width=0.21\textwidth]{fig/cameraman_256.png}
-        \label{obrSobelIn}
         \hskip0.75cm
     }
     \subfigure[Sobelův detektor]{
         \hskip0.75cm
         \includegraphics[width=0.21\textwidth]{fig/cameraman_256_sobel.png}
         \hskip0.75cm
-        \label{obrSobelOut}
     }
     \subfigure[Cannyho detektor]{
         \hskip0.75cm
         \includegraphics[width=0.21\textwidth]{fig/cameraman_256_canny.png}
         \hskip0.75cm
-        \label{obrSobelOut}
     }
     \caption{Výstup některých detektorů hran.}
     \label{obrDetektor}
@@ -612,7 +606,7 @@ U~příliš krátkých prediktorů (v~extrémním případě to může být i je
     \mathit{I} = \frac{f_{\mathit{predicted}}}{f_{\mathit{exact}}}
 \end{equation}
 
-Velikost prediktoru se upravuje vždy při změně rodiče v~populaci filtrů, což v~CGP znamená, že některý z~potomků má vyšší nebo stejnou predikovanou fitness jako jeho rodič. Také lze volitelně nastavit, že změna velikosti musí nastat minimálně jednou za určitý počet generací.
+Velikost prediktoru se upravuje vždy při změně rodiče v~populaci filtrů, což v~CGP znamená, že některý z~potomků má vyšší nebo stejnou predikovanou fitness jako jeho rodič. Také lze volitelně nastavit, že změna velikosti musí nastat přinejhorším po stanoveném počtu generací CGP.
 
 Vždy, když má dojít k~úpravě velikosti prediktoru, je zvolen koeficient, pomocí kterého se upraví současná hodnota proměnné \emph{UsedGenes}, čímž se změní velikost fenotypů prediktorů. Na výběr jsou dva způsoby. Při \emph{relativní} změně se nová hodnota \emph{UsedGenes} získá prostým vynásobením současné hodnoty koeficientem. Ve druhém případě je koeficientem vynásoben celkový počet případů fitness a výsledná hodnota je přičtena k~současné hodnotě \emph{UsedGenes}. Hodnoty koeficientů jsou určeny experimentálně, nicméně základní předpoklady jsou:
 
@@ -643,6 +637,7 @@ Všechna pravidla použitá v~algoritmu shrnuje tabulka~\ref{tabBaldwinRules}. P
             5. &  $v > v_\mathit{slow}$                 & $\mathit{UsedGenes} \cdot c_{+2}$ & fitness rychle stoupá \\
             \bottomrule
         \end{tabular}
+        \label{tabBaldwinRulesRel}
     }
     \vskip0.5\baselineskip
     \subtable[Podle celkového počtu případů fitness $N$]{
@@ -657,6 +652,7 @@ Všechna pravidla použitá v~algoritmu shrnuje tabulka~\ref{tabBaldwinRules}. P
             5. &  $v > v_\mathit{slow}$                 & $\mathit{UsedGenes} + \left(N \cdot c_{+2}\right)$ & fitness rychle stoupá \\
             \bottomrule
         \end{tabular}
+        \label{tabBaldwinRulesAbs}
     }
     %Hodnoty $c_I$, $c_0$, $c_{-1}$, $c_{+1}$, $c_{+2}$, $v_\mathit{zero}$ a $v_\mathit{slow}$ jsou parametry algoritmu.
     \label{tabBaldwinRules}
@@ -725,7 +721,7 @@ V~případě koevoluce (a souběžného učení) se program po inicializaci rozd
 
 Přístup ke sdíleným proměnným musí být ošetřen vhodným synchronizačním mechanismem, aby nedocházelo k~nežádoucím chybám (\emph{race-conditions}). V~případě, že je do archivů kopírován nový kandidátní filtr nebo prediktor, nemůže druhé vlákno ohodnocovat potomky. Při použití souběžného učení navíc nelze během změny velikosti prediktorů a následném přepočtu jejich fitness s~novým fenotypem ohodnocovat obrazové filtry ani vkládat nové kandidátní filtry do archivu.
 
-Koevoluci lze implementovat také pseudo-paralelně, kdy se obě populace periodicky střídají~-- po uplynutí stanoveného počtu generací populace filtrů se provede několik generací populace prediktorů. Sice odpadá nutnost ošetřování přístupu ke sdíleným proměnným, program by ale byl pomalejší.
+Koevoluci lze implementovat také pseudoparalelně, kdy se obě populace periodicky střídají~-- po uplynutí stanoveného počtu generací populace filtrů se provede několik generací populace prediktorů. Sice odpadá nutnost ošetřování přístupu ke sdíleným proměnným, program by ale byl pomalejší.
 
 Rozhodl jsem se výpočet skutečné fitness nevyčleňovat do samostatného vlákna, probíhá tedy v~rámci vlákna zpracovávající evoluci filtrů ihned po uložení programu do archivu.
 
@@ -765,7 +761,7 @@ Při spuštění programu lze parametry příkazové řádky určit, zda se má 
 
 V~případě souběžného učení se nová délka prediktoru počítá ve vlákně populace CGP, ačkoliv samotná změna velikosti se provádí ve vlákně prediktorů (ihned po vytvoření nové generace prediktorů). Je to z~toho důvodu, že během jedné generace prediktorů může proběhnout i několik generací CGP, a v~případě, že by se nová velikost počítala ve vlákně prediktorů, nebyly by zahrnuty některé změny nejlepší fitness filtrů.
 
-V~případě, že na cílové platformě není dostupný překladač s~podporou OpenMP, nelze spustit koevoluci. Toto by bylo možné obejít pseudo-paralelní implementací, touto variantou jsem se ale nezabýval. Program tak lze používat jen se standardním CGP, ale ohodnocování jedinců a tvorba potomků bude probíhat sekvenčně.
+V~případě, že na cílové platformě není dostupný překladač s~podporou OpenMP, nelze spustit koevoluci. Toto by bylo možné obejít pseudoparalelní implementací, touto variantou jsem se ale nezabýval. Program tak lze používat jen se standardním CGP, ale ohodnocování jedinců a tvorba potomků bude probíhat sekvenčně.
 
 
 \section{Vektorizace výpočtu CGP}
@@ -804,20 +800,19 @@ Intel již představil další instrukční sadu AVX-512, ve které se zdvojnás
 
 Při kopírování dat z~paměti do registrů SSE či AVX je vhodné mít data v~paměti zarovnaná na násobek 16, resp. 32~bajtů. Sice existují i instrukce pro přesun nezarovnaných dat, jejich použití ale může vést k~nižší rychlosti programu. Standard C11 pro tyto účely zavádí klíčové slovo \texttt{alignas(N)} pro deklarace proměnných a datových typů a funkci \texttt{aligned\_alloc} pro dynamickou alokaci paměti. Pro starší verze překladačů lze využít funkci \texttt{posix\_memalign} definovanou v~normě POSIX a pro deklarace proměnných a datových typů použít klíčová slova, které podporuje použitý překladač, například pro GCC to je zápis \texttt{\_\_attribute\_\_~((aligned~(N)))}.
 
-\subsection{Implementace pomocí SIMD instrukcí}
+\subsection{Výpočet CGP pomocí SIMD instrukcí}
 
 Výpočet výstupů CGP byl implementován sériově i vektorově pomocí instrukcí SSE2 a AVX2. Starší a v~současnosti více rozšířenou instrukční sadu AVX bohužel nelze použít, protože neobsahuje instrukce pro práci s~8bitovými celými čísly. V~základní sériové implementaci se každý výstupní pixel počítá zvlášť a pro zpracování celého obrázku o~rozměrech $256\times256$~pixelů je třeba 65~536 průchodů filtrem. U~vektorové implementace pomocí SSE2 lze spočítat výstup pro 16~pixelů zároveň a v~případě AVX2 dokonce 32~pixelů. Pro zpracování zmíněného obrázku s~použitím instrukcí AVX2 pak stačí jen 2~048 průchodů filtrem.
 
 Vektorová implementace využívá tzv. \emph{intrinsic} funkcí, jejichž volání překladač přeloží jako jednu instrukci (například volání intrinsic funkce \texttt{\_mm\_srli\_epi16} se přeloží jako instrukce \texttt{PSRLW}). Protože v~plánovaných experimentech měla mřížka CGP vždy 8 sloupců a 4 řádky, bylo možné kód ručně optimalizovat tak, aby se co nejlépe využívalo registrů SSE (resp. AVX) a přístupů do paměti bylo co nejméně. Počítá se po sloupcích, přičemž 4 registry vždy obsahují výstupní hodnoty sloupců předchozího sloupce a do dalších 4 registrů se ukládají hodnoty právě používaného sloupce. Další registry slouží pro různé pomocné hodnoty. K~tomu bylo v~deklaracích příslušných proměnných použito klíčové slovo jazyka C \texttt{register}.
 
-Přeložený program obsahuje všechny tři zmíněné implementace výpočtu CGP. Která implementace se použije při výpočtu, závisí na tom, jaké instrukční sady podporuje počítač a operační systém, na kterém je program spuštěn. To se zjišťuje pomocí instrukce \texttt{CPUID}. Přednost má implementace s~instrukcemi AVX2, kdy je naměřené zrychlení oproti sériové implementaci u~standardního CGP přibližně šestnáctinásobné. Další v~pořadí je implementace pomocí SSE2, u~níž je zrychlení zhruba desetinásobné. Pokud ani tuto instrukční sadu procesor nebo operační systém nepodporuje, použije se základní sériová implementace.
+Přeložený program obsahuje všechny tři zmíněné implementace výpočtu CGP. Která implementace se použije při výpočtu, závisí na tom, jaké instrukční sady podporuje počítač a operační systém, na kterém je program spuštěn. To se zjišťuje pomocí instrukce \texttt{CPUID}. Přednost má implementace s~instrukcemi AVX2, kdy je naměřené zrychlení oproti sériové implementaci u~standardního CGP přibližně šestnáctinásobné. Další v~pořadí je implementace pomocí SSE2, u~níž je zrychlení zhruba desetinásobné. Pokud ani tuto instrukční sadu procesor nebo operační systém nepodporuje, použije se základní sekvenční implementace.
 
 \subsection{Další možnosti akcelerace}
 
 V~budoucnu je možné do progamu přidat další efektivnější implementace výpočtu CGP. Nabízí se například využití zmíněné připravované instrukční sady AVX-512, pomocí které by bylo možné zpracovávat 64~pixelů zároveň.
 
-Výpočet by bylo možné dále urychlit překladem kandidátních programů do nativního kódu. Při výpočtu se pro každý případ fitness a pro každý funkční blok v~kartézském programu opakovaně prochází blokem \texttt{switch}, jehož každá větev odpovídá jedné funkci, kterou blok může vykonávat. Toto vede na poměrně velké množství provedených skoků.
-Program přeložený do nativního kódu tyto skoky neobsahuje. Překlad lze provést pomocí externího překladače, ale ukázalo se, že je efektivnější použít jednoduchý překladač zabudovaný do vlastního programu \cite{VasicekCompiler}.
+Výpočet by bylo možné dále urychlit překladem kandidátních programů do nativního kódu. Při výpočtu se pro každý případ fitness a pro každý funkční blok v~kartézském programu opakovaně prochází blokem \texttt{switch}, jehož každá větev odpovídá jedné funkci, kterou může blok vykonávat. Toto vede na poměrně velké množství provedených skoků. Program přeložený do nativního kódu tyto skoky neobsahuje. Překlad lze provést pomocí externího překladače, ale ukázalo se, že je efektivnější použít jednoduchý překladač zabudovaný do vlastního programu \cite{VasicekCompiler}.
 
 \section{Načítání a ukládání obrázků}
 \label{secImplImages}
@@ -832,20 +827,20 @@ O~něco složitější je výpočet přibližné fitness pomocí prediktoru. Pro
 
 \begin{figure}[htb]
     \centering
-    \subfigure[Vstupní obrázky (zdrojový a cílový)]{
+    \subfigure[Zdrojový (zašuměný) a cílový (originální) obrázek)]{
         \hskip1cm
-        \centering\includegraphics[width=0.75\textwidth]{fig/simdlayout-window}
+        \centering\includegraphics[width=0.85\textwidth]{fig/simdlayout-window}
         \hskip1cm
     }
     \vskip1\baselineskip
     \subfigure[Struktura dat pro sekvenční zpracování]{
         \centering
-        \includegraphics[width=0.75\textwidth]{fig/simdlayout-seq}
+        \includegraphics[width=0.85\textwidth]{fig/simdlayout-seq}
     }
     \vskip1\baselineskip
     \subfigure[Struktura dat pro vektorové zpracování]{
         \centering
-        \includegraphics[width=0.75\textwidth]{fig/simdlayout-vect}
+        \includegraphics[width=0.85\textwidth]{fig/simdlayout-vect}
     }
     \caption{Uspořádání vstupních dat v~paměti pro sekvenční a vektorové zpracování. Žlutě je označen střed devítiokolí, modře požadovaný výstup filtru.}
     \label{obrDevitiokoli}
@@ -883,24 +878,27 @@ Protože genetické algoritmy jsou ze své povahy stochastické, je potřeba v~i
 
 Vhodnější je pro inicializaci použít funkci \texttt{gettimeofday}, která vrací aktuální čas od půlnoci s~přesností na mikrosekundy. Pravděpodobnost, že dva běhy použijí pro inicializaci totožnou hodnotu je pak velmi malá, přestože se čísla mohou každých 24 hodin opakovat.
 
+\section{Výpočet fitness}
+\label{secImplFitness}
+
+Ať už se jedná o~predikovanou nebo skutečnou fitness, její hodnota je určena jako špičková hodnota poměru signál/šum (Peak Signal to Noise Ratio) dle rovnice \ref{eqDesignFilterFitness}:
+
+\begin{equation*}
+    \label{eqImplFilterFitnessPSNR}
+    \mathit{f\left(cgp\right)} = 10 \log_{10} \frac{255^2}{\frac{1}{N} \sum\limits_i^N \left( v\left( i \right) - w\left( i \right)  \right)^2 }
+\end{equation*}
+
+Výpočet logaritmu je ale poměrně náročná operace. Jeho odstraněním je možné program urychlit, přičemž monotónnost funkce se nezmění. V~implementaci se proto používá upravený vzorec:
+
+\begin{equation}
+    \label{eqImplFilterFitnessModifiedo}
+    \mathit{f\left(cgp\right)} = \frac{255^2}{\frac{1}{MN} \sum\limits_{i,j} \left( v\left( i, j \right) - w\left( i, j \right)  \right)^2 }
+\end{equation}
+
 %\section{Podpůrné nástroje}
 %
 %Kromě samotného evolučního návrhu obrazových filtrů je součástí implementace i několik pomocných nástrojů pro další zpracování výstupních dat.
 %\todo{podpůrné nástroje - apply, predvis, predhist}
-
-
-\section{Překlad programu}
-
-Program je rozdělen do několika modulů. Jejich překlad a sestavení výsledného programu je definován v~Makefile a spouští se příkazem \texttt{make}. Je potřeba překladač GCC ve verzi alespoň 4.8, lépe ve verzi 4.9, která má dokonalejší podporu SIMD instrukcí, zejména umí využít všechny dostupné registry. Jednotlivé moduly programu se překládají samostatně do složky \texttt{build}. Při změnách ve zdrojovém kódu tak není nutné opakovaně překládat moduly, do kterých se nezasahovalo. Výstupem překladu je několik spustitelných souborů:
-
-\begin{itemize}
-    \item \texttt{coco}\footnote{Název \texttt{coco} je zkratka pro COlearning in COevolution.} -- hlavní program, samotný evoluční návrh obrazových filtrů,
-    \item \texttt{coco\_apply} -- aplikace filtru uloženého v~souboru \texttt{*.chr} na libovolný obrázek,
-    \item \texttt{coco\_predvis} -- vizualizace použitých prediktorů fitness,
-    \item \texttt{coco\_predhist} -- tvorba histogramu pixelů používaných v~prediktorech fitness.
-\end{itemize}
-
-Jejich použití popisuje uživatelská příručka v~příloze~\ref{apxManual}.
 
 \chapter{Experimentální vyhodnocení}
 \label{chExperiments}
@@ -920,18 +918,18 @@ Poslední testovací úloha spočívá v~nalezení filtru, který provádí dete
 \begin{figure}[htb]
     \centering
     \subfigure[Šum sůl a pepř a výstřelový šum]{
-        \hskip0.75cm
+        \hskip1cm
         \centering
             \includegraphics[width=0.3\textwidth]{fig/lena_gray_256.png}
         \label{obrTrenovaciLena}
-        \hskip0.75cm
+        \hskip1cm
     }
     \subfigure[Detekce hran]{
-        \hskip0.75cm
+        \hskip1cm
         \centering
             \includegraphics[width=0.3\textwidth]{fig/cameraman_256.png}
         \label{obrTrenovaciPan}
-        \hskip0.75cm
+        \hskip1cm
     }
     \caption{Obrázky používané pro evoluci filtrů.}
     \label{obrTrenovaci}
@@ -945,7 +943,7 @@ Populace prediktorů fitness obsahuje 32 jedinců, kteří se vyvíjejí genetic
 
 \section{Parametry souběžného učení}
 
-V~této práci je představen modifikovaný algoritmus koevoluce s~prediktory fitness, kdy je navíc možná průběžně adaptovat velikost prediktorů na průběh evoluce fitness kandidátních kartézských programů. Tato nová část algoritmu vyžaduje několik nových parametrů, jejichž optimální hodnotu je třeba určit experimentálně. Tato část se popisuje, jakým způsobem různá nastavení těchto parametrů ovlivňují kvalitu nacházených obrazových filtrů a také celkovou rychlost programu.
+V~této práci je představen modifikovaný algoritmus koevoluce s~prediktory fitness, kdy je navíc možná průběžně adaptovat velikost prediktorů na průběh evoluce fitness kandidátních kartézských programů. Tato nová část algoritmu vyžaduje několik nových parametrů, jejichž optimální hodnotu je třeba určit experimentálně. Tato část se popisuje, jakým způsobem různá nastavení těchto parametrů ovlivňují kvalitu nacházených obrazových filtrů a celkovou rychlost programu. Není-li uvedeno jinak, jsou použity pravidla změny velikosti prediktoru z~tabulky \ref{tabBaldwinRulesRel}, tedy nová velikost je relativní k~současné velikosti prediktoru.
 
 \subsection{Nepřesnost predikce}
 
@@ -953,29 +951,27 @@ Ukázalo se, že pokud má prediktor dostatečnou délku, bývá hodnota prediko
 
 \subsection{Změna velikosti prediktorů}
 
-Pro každý z~parametrů byly testovány hodnoty z~intervalu $0,8$ až $1,1$ (s~krokem $0,01$), přičemž ostatní parametry měly fixní hodnoty. Počáteční velikost prediktoru byla nastavena na 50\,\% všech případů fitness. Evoluce byla ukončena po dosažení 30 tisíc generací CGP.
+Pro každý z~parametrů byly testovány hodnoty z~intervalu $0,9$ až $1,1$ (s~krokem $0,01$), přičemž ostatní parametry měly fixní hodnoty. Počáteční velikost prediktoru byla nastavena na 50\,\% všech případů fitness. Evoluce byla ukončena po dosažení 30 tisíc generací CGP.
 
 \subsubsection*{Při neměnné fitness filtrů}
 
 Za stagnující vývoj je považován stav, kdy je absolutní hodnota rychlosti evoluce $|v|$ nižší než hodnota parametru $v_\mathit{zero}$, který byl ve všech případech nastaven na $0,001$. Velikost prediktorů se v~tomto případě upravuje pomocí koeficientu $c_0$. Pro každou testovanou hodnotu bylo spuštěno celkem 100 nezávislých běhů.
 
-Jak je vidět na grafech~\ref{plotZerocoef-30kg}, hodnota parametru $c_0$ neovlivňuje kvalitu nalezených filtrů. Ukazuje se ale, že tento parametr určuje trend změny velikosti prediktorů a tím i dobu výpočtu. U~nižších hodnot velikost prediktoru v~průběhu evoluce klesá. S~rostoucí hodnotou má křivka průběhu velikosti prediktorů stále menší sklon a od hodnoty 0,94 velikost prediktorů už spíše roste. Pokud se hodnota parametru $c_0$ dále zvyšuje, tak se pouze urychluje konvergence velikosti k~maximální hodnotě.
+Jak je vidět na grafech~\ref{plotZerocoef-30kg}, hodnota parametru $c_0$ neovlivňuje kvalitu nalezených filtrů. Ukazuje se ale, že tento parametr určuje trend směru změny velikosti prediktorů a tím i dobu výpočtu. U~nižších hodnot velikost prediktoru v~průběhu evoluce klesá. S~rostoucí hodnotou má křivka průběhu velikosti prediktorů stále menší sklon a od hodnoty 0,99 velikost prediktorů už spíše roste. Pokud se hodnota parametru $c_0$ dále zvyšuje, tak se pouze urychluje konvergence k~maximální možné velikosti prediktoru.
 
-\begin{figure}[tbp]
+\begin{figure}[htb]
+    \captionsetup{aboveskip=0pt}
     \centering
-    \subfigure[Kvalita nalezených filtrů]{
+    \subfigure[Kvalita nalezených filtrů a doba běhu programu (součet všech vláken)]{
         \centering
-           \includegraphics[width=0.95\textwidth]{fig/plot/tuning-zerocoef-30kg-psnr.pdf}
-    }
-    \subfigure[Doba běhu programu (součet všech vláken)]{
-        \centering
-            \includegraphics[width=0.95\textwidth]{fig/plot/tuning-zerocoef-30kg-utime.pdf}
+        \includegraphics[width=0.5\textwidth]{fig/plot/tuning-zerocoef-30kg-psnr.pdf}
+        \includegraphics[width=0.5\textwidth]{fig/plot/tuning-zerocoef-30kg-utime.pdf}
     }
     \subfigure[Průběh velikosti prediktorů (průměr ze 100 běhů)]{
         \centering
-            \includegraphics[width=0.95\textwidth]{fig/plot/tuning-zerocoef-30kg-predlen.pdf}
+        \includegraphics[width=0.8\textwidth]{fig/plot/tuning-zerocoef-30kg-predlen.pdf}
     }
-    \caption{Vliv parametru $c_0$ (změna velikosti prediktoru při neměnné fitness filtrů)}
+    \caption{Vliv parametru $c_0$ (pravidlo $\left|v\right| \leq v_\mathit{zero}: \mathit{UsedGenes} \leftarrow \mathit{UsedGenes} \cdot c_0$)}
     \label{plotZerocoef-30kg}
 \end{figure}
 
@@ -983,135 +979,136 @@ Jak je vidět na grafech~\ref{plotZerocoef-30kg}, hodnota parametru $c_0$ neovli
 
 Druhé z~pravidel se aplikuje v~případě, že skutečná fitness nejlepšího jedince v~populaci filtrů klesá ($v < -v_\mathit{zero}$). Velikost prediktoru se pak upraví dle parametru $c_{-1}$. U~tohoto parametru byly testovány hodnoty $0,8$ až $1,1$, dosažené výsledky z~24 nezávislých běhů znázorňují grafy na obrázku~\ref{plotDecrcoef-30kg}. Tento parametr má větší vliv na kvalitu filtrů než parametr $c_0$, i když není úplně zřejmá vazba mezi hodnotou $c_{-1}$ a dosaženou kvalitou. Jako optimální se z~tohoto pohledu jeví hodnoty $0,96$ a $0,97$. Také lze pozorovat, že s~vyšší hodnotou roste i počet evaluací CGP a tím i doba běhu programu, i když ne tak razantně, jako v~případě parametru $c_0$. Zajímavá je hodnota $c_{-1} = 1,00$, kdy se velikost prediktoru nijak nemění -- v~tomto případě je algoritmus výrazně pomalejší než v~případě jiných okolních hodnot. Zřejmě je pro evoluci výhodnější změna velikosti prediktoru jakýmkoliv směrem (a tím i změna predikované fitness filtrů), než pokud k~žádné úpravě nedojde.
 
-\begin{figure}[tbp]
+\begin{figure}[htb]
     \centering
-    \subfigure[Kvalita nalezených filtrů]{
-        \centering
-           \includegraphics[width=0.95\textwidth]{fig/plot/tuning-decrcoef-30kg-psnr.pdf}
+    \captionsetup{aboveskip=0pt}
+    \subfigure{
+        \includegraphics[width=0.5\textwidth]{fig/plot/tuning-decrcoef-30kg-psnr.pdf}
+        \includegraphics[width=0.5\textwidth]{fig/plot/tuning-decrcoef-30kg-utime.pdf}
     }
-    \vskip2\baselineskip
-    \subfigure[Doba běhu programu (součet všech vláken)]{
-        \centering
-            \includegraphics[width=0.95\textwidth]{fig/plot/tuning-decrcoef-30kg-utime.pdf}
-    }
-    \caption{Vliv parametru $c_{-1}$ (změna velikosti prediktoru při klesající fitness filtrů)}
+    \caption{Vliv parametru $c_{-1}$ (pravidlo $v < 0: \mathit{UsedGenes} \leftarrow \mathit{UsedGenes} \cdot c_{-1}$)}
     \label{plotDecrcoef-30kg}
 \end{figure}
 
-\subsection*{Při rostoucí fitness filtrů}
+\subsubsection*{Při rostoucí fitness filtrů}
 
 Pokud je rychlost $v$ vyšší než nula, rozlišuje se \uv{pomalý} a \uv{rychlý} nárůst fitness, čemuž odpovídají koeficienty $c_{+1}$ a $c_{+2}$. Jako práh byla zvolena hodnota $v_\mathit{slow} = 0,1$. Nejvhodnější hodnota obou parametrů byla hledána zvlášť, pro každé nastavení bylo spuštěno 100 běhů.
 
 V~případě, že fitness filtrů roste pomaleji, uplatní se parametr $c_{+1}$. Jak je vidět na grafech na obrázku~\ref{plotSlowcoef-30kg}, nemá jeho hodnota znatelný vliv na kvalitu filtrů. Podobně jako u~jiných parametrů ovlivňující práci s~velikostí prediktorů, má vyšší hodnota za následek pomalejší běh programu, ale rozdíl není natolik výrazný. Také zde je při nastavení $c_{+1}$ potřebný čas vyšší, než u~okolních hodnot.
 
-Také v~případě parametru $c_{+2}$ se ukazuje, že kvalita filtrů se příliš nemění, viz grafy na obrázku~\ref{plotFastcoef-30kg}. Při pohledu na čas běhu programu se zdá, že je výhodnější i v~tomto případě prediktory zkracovat. To je ale v~rozporu s~předpokladem (uvedeným v~části~\ref{secDesignAdaptation}), že pokud fitness filtrů roste, tak je vhodné prodlužovat prediktory a zpřesňovat predikovanou fitness. Ukazuje se, že je to způsobeno počáteční velikostí prediktorů (50\,\%), protože ta v~průběhu evoluce konverguje k~podstatně nižší hodnotě (jednotky procent), a proto je ve všech případech výhodnější zkracování. Pokud se počáteční velikost nastaví na 3\,\%, odpovídá chování předpokladům a vliv parametru $c_{+2}$ na čas běhu programu není tak výrazný, jak je vidět na grafu~\ref{plotFastcoef-30kg-utime-i3}.
+Také v~případě parametru $c_{+2}$ se ukazuje, že kvalita filtrů se příliš nemění, viz grafy na obrázku~\ref{plotFastcoef-30kg}. Při pohledu na čas běhu programu se zdá, že je výhodnější i v~tomto případě prediktory zkracovat. To je ale v~rozporu s~předpokladem (uvedeným v~části~\ref{secDesignAdaptation}), že pokud fitness filtrů roste, tak je vhodné prodlužovat prediktory a zpřesňovat predikovanou fitness. Ukazuje se, že je to způsobeno počáteční velikostí prediktorů (50\,\%), protože ta v~průběhu evoluce konverguje k~podstatně nižší hodnotě (jednotky procent), a proto je ve všech případech výhodnější zkracování. Pokud se počáteční velikost nastaví na 3\,\%, odpovídá chování předpokladům a vliv parametru $c_{+2}$ na čas běhu programu není tak výrazný, jak je vidět na grafu~\ref{plotFastcoef-30kg-i3}.
 
-\begin{figure}[p]
+\begin{figure}[htb]
     \centering
-    \subfigure[Kvalita nalezených filtrů]{
-        \centering
-           \includegraphics[width=0.95\textwidth]{fig/plot/tuning-slowcoef-30kg-psnr.pdf}
+    \captionsetup{aboveskip=0pt}
+    \subfigure{
+        \includegraphics[width=0.5\textwidth]{fig/plot/tuning-slowcoef-30kg-psnr.pdf}
+        \includegraphics[width=0.5\textwidth]{fig/plot/tuning-slowcoef-30kg-utime.pdf}
     }
-    \vskip2\baselineskip
-    \subfigure[Doba běhu programu (součet všech vláken)]{
-        \centering
-            \includegraphics[width=0.95\textwidth]{fig/plot/tuning-slowcoef-30kg-utime.pdf}
-    }
-    \caption{Vliv parametru $c_{+1}$ (změna velikosti prediktoru při pomalu rostoucí fitness filtrů)}
+    \caption{Vliv parametru $c_{+1}$ (pravidlo $0 < v~\leq v_\mathit{slow}: \mathit{UsedGenes} \leftarrow \mathit{UsedGenes} \cdot c_{+1}$)}
     \label{plotSlowcoef-30kg}
 \end{figure}
 
-\begin{figure}[p]
+\begin{figure}[htb]
     \centering
-    \subfigure[Kvalita nalezených filtrů, počáteční velikost 50\,\%]{
+    \captionsetup{aboveskip=0pt}
+    \subfigure[Při počáteční velikosti prediktoru 50\,\%]{
         \centering
-           \includegraphics[width=0.95\textwidth]{fig/plot/tuning-fastcoef-i50-30kg-psnr.pdf}
+        \includegraphics[width=0.5\textwidth]{fig/plot/tuning-fastcoef-i50-30kg-psnr.pdf}
+        \includegraphics[width=0.5\textwidth]{fig/plot/tuning-fastcoef-i50-30kg-utime.pdf}
     }
-    \subfigure[Doba běhu programu (součet všech vláken), počáteční velikost 50\,\%]{
+    \subfigure[Při počáteční velikosti prediktoru 3\,\%]{
         \centering
-            \includegraphics[width=0.95\textwidth]{fig/plot/tuning-fastcoef-i50-30kg-utime.pdf}
+        \includegraphics[width=0.5\textwidth]{fig/plot/tuning-fastcoef-i3-30kg-psnr.pdf}
+        \includegraphics[width=0.5\textwidth]{fig/plot/tuning-fastcoef-i3-30kg-utime.pdf}
+        \label{plotFastcoef-30kg-i3}
     }
-    \subfigure[Doba běhu programu (součet všech vláken), počáteční velikost 3\,\%]{
-        \centering
-            \includegraphics[width=0.95\textwidth]{fig/plot/tuning-fastcoef-i3-30kg-utime.pdf}
-        \label{plotFastcoef-30kg-utime-i3}
-    }
-    \caption{Vliv parametru $c_{+2}$ (změna velikosti prediktoru při rychle rostoucí fitness filtrů)}
+    \caption{Vliv parametru $c_{+2}$ (pravidlo $v > v_\mathit{slow}: \mathit{UsedGenes} \leftarrow \mathit{UsedGenes} \cdot c_{+2}$)}
     \label{plotFastcoef-30kg}
 \end{figure}
 
 
 \subsection{Četnost změny velikosti prediktoru}
 
-Jak bylo zmíněno v~kapitole~\ref{secDesignAdaptation}, ke změně velikosti prediktoru dochází při každé výměně rodiče v~populaci filtrů. Volitelným parametrem lze ale nastavit, aby ke změně velikosti došlo nejpozději po uběhnutí určitém počtu generací CGP od poslední změny. Testovány byly hodnoty 1~000, 2~500, 5~000 a 7~500 generací, přičemž evoluce byla ukončena po 30 tisících generacích. Po porovnání výsledků získaných ze sta nezávislých běhů se ukazuje, že tento parametr nemá příliš vliv ani na rychlost programu, ani na kvalitu filtrů.
+Jak bylo zmíněno v~kapitole~\ref{secDesignAdaptation}, ke změně velikosti prediktoru dochází při každé výměně rodiče v~populaci filtrů. Volitelným parametrem lze ale nastavit, aby ke změně velikosti došlo nejpozději po uběhnutí určitém počtu generací CGP od poslední změny. Testovány byly hodnoty 500, 1~000, 2~500, 5~000 a 7~500 generací, přičemž evoluce byla ukončena po 30 tisících generacích. Výsledky získané ze sta nezávislých běhů jsou na grafech \ref{plotInterval-30kg}. Ukazuje se, že tento parametr nemá příliš vliv ani na rychlost programu, ani na kvalitu filtrů.
 
-\todo{prepocitat - pocital jsem s~january15, kde 1k vypadal nadejne (+1\,dB), ale u~november15 nedelal nic moc}
+\begin{figure}[htb]
+    \centering
+    \captionsetup{aboveskip=0pt}
+    \subfigure{
+        \includegraphics[width=0.5\textwidth]{fig/plot/tuning-interval-30kg-psnr.pdf}
+        \includegraphics[width=0.5\textwidth]{fig/plot/tuning-interval-30kg-utime.pdf}
+    }
+    \caption{Vliv nastavení maximálního možného počtu generací mezi dvěma úpravami velikosti prediktoru.}
+    \label{plotInterval-30kg}
+\end{figure}
 
-\subsection{Inicializace prediktorů}
+\subsection{Způsob určení rychlosti evoluce}
 
-Při tvorbě nových prediktorů fitness je nejjednodušší vytvořit jejich genom zcela náhodně. \todo{nevyhody?} Genom lze ale také inicializovat pomocí permutace všech možných hodnot.
+Rychlost evoluce $v$, podle které se určuje, jakým způsobem se upraví velikost prediktoru, lze určit několika způsoby. V~předchozích experimentech záleželo jen na poslední změně fitness nejlepšího kandidátního filtru. Pro srovnání, zda lze jiným přístupem urychlit evoluci či zlepšit její výsledky, byly vybrány tyto varianty:
 
-Ukazuje se ovšem, že při inicializaci permutací, mají získané obrazové filtry v~průměru o~něco menší fitness. Zdá se, že větší náhodnost genů je pro evoluci výhodnější.
+\begin{itemize}
+    \item podle poslední změny (výchozí nastavení, dále jako \emph{last})
+    \item medián posledních 3 změn (\emph{med3})
+    \item aritmetický průměr posledních 3 změn (\emph{avg3}),
+    \item vážený průměr posledních 7 změn (\emph{avg7w}).
+\end{itemize}
 
-\todo{random, perm}
+Dosažené výsledky po 30 tisících generacích jsou na grafech \ref{plotBwalg-30kg}. Ukazuje se, že u~jiných variant, než je základní \emph{last}, je kvalita filtrů srovnatelná. Také potřebný čas běhu je podobný, s~výjimkou varianty \emph{avg7w}, u~které je evoluce v~průměru 2,2krát pomalejší než u~\emph{last}.
 
-\subsection{Výpočet rychlosti evoluce}
+\begin{figure}[htb]
+    \centering
+    \captionsetup{aboveskip=0pt}
+    \subfigure{
+        \includegraphics[width=0.5\textwidth]{fig/plot/bwalg-30kg-psnr.pdf}
+        \includegraphics[width=0.5\textwidth]{fig/plot/bwalg-30kg-utime.pdf}
+    }
+    \caption{Vliv různých způsobů výpočtu rychlosti evoluce $v$.}
+    \label{plotBwalg-30kg}
+\end{figure}
 
-\todo{last, avg7w, avg3, med3}
+\subsection{Způsob inicializace prediktorů}
 
-\subsection{Počáteční velikost prediktoru}
+Při tvorbě nových prediktorů fitness je nejjednodušší vytvořit jejich genom zcela náhodně. Takto ale může vzniknout relativně velké množství duplicitních genů, což znamená kratší fenotyp a horší schopnost predikce fitness. Genom lze ale také inicializovat pomocí permutace všech možných hodnot, kde žádné duplicity nevznikají. Objevit se mohou až v~dalším vývoji prediktoru buď křížením nebo mutacemi. Obě varianty byly testovány u~filtrů pro šum typu sůl a pepř o~intenzitě od 5 do 80 procent (s~krokem po pěti procentech). Evoluce byla ukončena po 100 tisících generacích. Na obrázku \ref{plotRndPerm-100kg} jsou grafy kvality získaných filtrů a doby běhu evoluce.
 
-%Hlavním cílem této práce je nalézt algoritmus,
+Ukazuje se, že při použití permutace ($\mathit{init}_\mathit{perm}$) je evoluce o~něco rychlejší než náhodná inicializace ($\mathit{init}_\mathit{rand}$), ale výsledné filtry jsou obecně méně kvalitní. S~rostoucí intenzitou šumu časový rozdíl klesá a od intenzity 55\% je už $\mathit{init}_\mathit{perm}$ pomalejší. V~případě $\mathit{init}_\mathit{perm}$ je u~procesorového času také více odlehlých hodnot. Některé běhy byly i několikanásobně pomalejší, než byl průměr (např. u~5\% šumu nejpomalejší běh spotřeboval 141 minut, přičemž průměr je 18,5 minut). Zdá se tedy, že náhodná inicializace prediktorů a je výhodnější z~pohledu kvality filtrů, i když evoluce trvá o~něco déle.
 
-%Cílem tohoto experimentu je ověřit chování algoritmu při různé počáteční velikosti prediktoru -- ostatní parametry jsou ve všech případech stejné. V ideálním případě bude velikost prediktoru konvergovat pokaždé ke stejné hodnotě.
+\begin{figure}[tbp]
+    \centering
+    \captionsetup{aboveskip=0pt}
+    \subfigure{
+        \includegraphics[width=\textwidth]{fig/plot/rndperm-100kg-psnr.pdf}
+    }
+    \subfigure{
+        \includegraphics[width=\textwidth]{fig/plot/rndperm-100kg-utime.pdf}
+    }
+    \caption{Vliv způsobu inicializace prediktorů fitness. Výsledky po 100~000 generacích u~šumu typu sůl a pepř různé intenzity.}
+    \label{plotRndPerm-100kg}
+\end{figure}
+
+\subsection{Pravidla pro změnu velikosti prediktoru podle celkového počtu případů fitness}
+
+Experimentovalo se také s~druhou sadou pravidel, uvedených v~tabulce \ref{tabBaldwinRulesAbs}, kdy je změna velikosti prediktoru vypočtena z~celkového počtu případů fitness. Byly testovány hodnoty od $-0.10$ po $+0.10$ s~krokem po $0.01$ pro koeficienty $c_0$, $c_{-1}$, $c_{+1}$ a $c_{+2}$. Ve všech případech platí, že různé hodnoty nemají vliv na kvalitu filtrů, ale jen na rychlost programu. Od určitého bodu s~rostoucí hodnotou koeficientů stoupá potřebný čas:
+
+\begin{itemize}
+    \item u~$c_0$ od hodnoty $0$,
+    \item u~$c_{-1}$ od hodnoty $-0,01$,
+    \item u~$c_{+1}$ od $+0,03$,
+    \item u~$c_{+2}$ od $+0,02$,
+\end{itemize}
+
+U~parametru $c_{-1}$ je pro nulovou hodnotu program skokově pomalejší než u~okolních hodnot. Při uplatnění tohoto pravidla je pravděpodobně jakákoliv změna velikosti prediktoru (a tím i změna predikované fitness filtrů) výhodnější, než pokud k~žádné úpravě nedojde.
+
+%Obecně se dá říci, že tato sada pravidel je citlivější na vyšší hodnoty koeficientů.
+Grafy kvality nalezených filtrů a potřebného času pro různé hodnoty uvedených koeficientů jsou uvedeny v~příloze \ref{apxExpAbs}.
+
+\section{Adaptace velikosti prediktoru na úlohu}
 
 Pro ověření schopnosti adaptace velikosti prediktoru na řešený problém byla provedena řada výpočtů s~různou počáteční velikostí prediktoru. Jako testovací problém byl zvolen šum typu sůl a pepř o~intenzitě 5, 10, 15, 25 a 50 procent. Počáteční délka prediktoru byla 3\,\% a od 5 do 100\,\% případů fitness s~krokem po pěti procentech. Tato velikost určuje počet genů použitých pro tvorbu fenotypu prediktoru, fenotyp pak je o~něco kratší kvůli duplicitám v~genomu. Ve všech případech byla sledována průměrná velikost ze 100 nezávislých běhů.
 
 Ukazuje se, že pokaždé velikost prediktoru konverguje ke stejné hodnotě, jak je vidět na grafech na obrázku~\ref{plotInitialSize-30kg}. Ta závisí na intenzitě šumu, při nejnižší intezitě 5\,\% je konečná velikost okolo 25\,\% celkového počtu pixelů, při nejvyšším 50\% šumu velikost konverguje ke 3 procentům. Také fitness nacházených filtrů je vždy přibližně stejná. Rychlost konvergence velikosti se liší podle typu šumu. U~5\,\% šumu už zhruba po šesti tisících generacích má prediktor přibližně 20\,\% případů fitness, zatímco v~případě 50\% šumu je potřeba asi 30 až 40 tisíc generací než velikost dosáhne zmíněná 3 procenta. Protože délka prediktoru má zásadní vliv na rychlost běhu programu, je výhodnější začínat s~menšími prediktory -- jako ideální se z~testovaných hodnot jeví počáteční velikost 3\,\% celkového počtu případů fitness.
 
-% \begin{table}[htbp]
-%     \renewcommand{\arraystretch}{1.2}
-%     \centering
-%     \begin{tabular}{|r|r|r|r|r|r|}
-%         \hline
-%         počáteční velikost & 5\,\% šum & 10\,\% šum & 15\,\% šum & 25\,\% šum & 50\,\% šum \\
-%         \hline
-%             3\,\%   & 20.6\,\% & 22.8\,\% & 9.5\,\%  & 7.0\,\% & 6.9\,\% \\
-%             5\,\%   & 21.2\,\% & 17.4\,\% & 10.1\,\% & 2.7\,\% & 0.7\,\% \\
-%             10\,\%  & 23.9\,\% & 19.0\,\% & 10.3\,\% & 3.7\,\% & 1.1\,\% \\
-%             15\,\%  & 19.6\,\% & 16.8\,\% & 9.4\,\%  & 3.4\,\% & 1.4\,\% \\
-%             20\,\%  & 20.7\,\% & 17.7\,\% & 7.9\,\%  & 3.4\,\% & 1.6\,\% \\
-%             25\,\%  & 22.1\,\% & 19.0\,\% & 8.7\,\%  & 3.9\,\% & 2.0\,\% \\
-%             30\,\%  & 22.6\,\% & 19.0\,\% & 8.0\,\%  & 3.6\,\% & 2.0\,\% \\
-%             35\,\%  & 20.3\,\% & 18.2\,\% & 9.5\,\%  & 2.9\,\% & 0.5\,\% \\
-%             40\,\%  & 20.9\,\% & 18.7\,\% & 9.7\,\%  & 4.4\,\% & 2.5\,\% \\
-%             45\,\%  & 19.6\,\% & 21.1\,\% & 9.9\,\%  & 5.1\,\% & 2.7\,\% \\
-%             50\,\%  & 21.8\,\% & 20.7\,\% & 8.7\,\%  & 4.4\,\% & 4.5\,\% \\
-%             55\,\%  & 19.2\,\% & 22.3\,\% & 10.3\,\% & 4.1\,\% & 4.0\,\% \\
-%             60\,\%  & 23.6\,\% & 18.6\,\% & 9.9\,\%  & 3.1\,\% & 0.6\,\% \\
-%             65\,\%  & 20.8\,\% & 18.9\,\% & 10.3\,\% & 5.9\,\% & 5.4\,\% \\
-%             70\,\%  & 24.4\,\% & 22.0\,\% & 8.6\,\%  & 5.7\,\% & 6.0\,\% \\
-%             75\,\%  & 21.6\,\% & 20.3\,\% & 9.6\,\%  & 6.0\,\% & 4.4\,\% \\
-%             80\,\%  & 21.5\,\% & 21.7\,\% & 10.4\,\% & 5.2\,\% & 6.7\,\% \\
-%             85\,\%  & 20.0\,\% & 20.7\,\% & 8.4\,\%  & 9.1\,\% & 7.3\,\% \\
-%             90\,\%  & 22.3\,\% & 24.7\,\% & 10.1\,\% & 6.6\,\% & 6.9\,\% \\
-%             95\,\%  & 24.4\,\% & 22.7\,\% & 8.3\,\%  & 6.5\,\% & 5.1\,\% \\
-%             100\,\% & 24.1\,\% & 26.1\,\% & 10.1\,\% & 6.6\,\% & 5.5\,\% \\
-%         \hline
-%     \end{tabular}
-
-%     \caption{Průměrná velikost prediktoru (ze 100 běhů) po 30~000 generacích.}
-%     \label{tabCGPFunctions}
-% \end{table}
-
-
-%\hline
-%šum / generace & 10~000 & 30~000 & 100~000 \\
-%\hline
-%5\,\% & 13,6 -- 19,4\,\% & 19,2 -- 24,4\,\% & 24,9 -- 31,9\,\% \\
-%\hline
-
-\begin{figure}[htbp]
+\begin{figure}[p]
     \centering
     \subfigure[5\% šum typu sůl a pepř]{
         \centering
@@ -1129,61 +1126,169 @@ Ukazuje se, že pokaždé velikost prediktoru konverguje ke stejné hodnotě, ja
     \label{plotInitialSize-30kg}
 \end{figure}
 
+\subsection{\todo{popis jednoho behu}}
 
-\subsection{Zvolené hodnoty parametrů}
-
-Na základě provedených experimentů byly pro souběžné učení zvoleny hodnoty parametrů, které jsou uvedeny v~tabulce~\ref{tabParams}.
-
-\todo{by-max}
-
-\begin{table}[h]
-    \caption{Zvolené hodnoty parametrů souběžného učení}
-    \renewcommand{\arraystretch}{1.2}
-    \catcode`\-=12
+\begin{figure}[htb]
     \centering
-    \begin{tabular}{|l|l|c|l|l|}
-        \cline{1-2}\cline{4-5}
-        parametr & hodnota & & parametr & hodnota \\
-        \cline{1-2}\cline{4-5}
-        $I_\mathit{threshold}$ & 1,2   & & $v_\mathit{zero}$ & 0,001 \\
-        $c_I$ & 2                      & & $v_\mathit{slow}$ & 0,1 \\
-        $c_0$ & 0,90                   & & počáteční velikost prediktorů & 3\,\% \\
-        $c_{-1}$ & 0,96                & & inicializace prediktorů & zcela náhodně \\
-        $c_{+1}$ & 1,07                & & změna velikosti & jen při změně rodiče \\
-        $c_{+2}$ & 1                   & & &\\
-        \cline{1-2}\cline{4-5}
-    \end{tabular}
-    \label{tabParams}
-\end{table}
+    \includegraphics[width=0.95\textwidth]{fig/plot/run-fitpred1.pdf}
+    \caption{Průběh predikované a skutečné fitness a velikosti prediktoru pro jeden konkrétní běh s~15\% šumem typu sůl a pepř.}
+    \label{plotFitPred}
+\end{figure}
 
-% \begin{itemize}
-%     \item $I_\mathit{threshold} = 1,2$,
-%     \item $c_I = 2$,
-%     \item $c_0 = 0,93$,
-%     \item $c_{-1} = 0,96$,
-%     \item $c_{+1} = 1,07$,
-%     \item $c_{+2} = 1$,
-%     \item $v_\mathit{zero} = 0.001$,
-%     \item $v_\mathit{slow} = 0.1$,
-%     \item počáteční velikost prediktoru: 3\,\% počtu případů fitness,
-%     \item inicializace prediktorů zcela náhodně.
-% \end{itemize}
-
-
-\section{Chování souběžného učení}
 \todo{chovani soubezneho uceni - vzit si jeden beh, vysvetlit ruzne pocatecni velikosti}
 \todo{Statistika pravidel: jak často které}
 \todo{Rychlost mezi populacemi}
 
 \todo{vizualizace prediktorů - červeně i histogramem, také pro částečně poškozenou lenu}
 
+\section{Četnost výskytu pixelů v~prediktorech}
+
+V~experimentech se zkoumalo i jaká devítiokolí jsou obsažená v~aktivních prediktorech a používají se při výpočtu predikované fitness -- zda se prediktory zaměřují více na poškozené či nepoškozené pixely, v~případě detektoru hran zda jsou častěji obsažené pixely v~blízkosti hran než ty, které jsou uprostřed ploch.
+
+K~testování byly použity tři obrázky poškozené šumem typu sůl a pepř, dva byly poškozené po celé ploše šumem s~intenzitou 15 a 50 procent, třetí obrázek byl částečně poškozen 25\% šumem. Pro úlohu detekce hran byl zvolen obrázek kameramana.
+
+Na obrázku \ref{obrPredhist} jsou nalevo použité testovací obrázky a napravo 2D histogramy výskytu devítiokolí v~prediktorech. Čím je bod v~histogramu světlejší, tím častěji bylo pro výpočet predikované fitness použito devítiokolí, jehož střed je pixel odpovídající pozici v~histogramu. Pokud je bod zcela bílý, bylo odpovídající devítiokolí používané po celou dobu evoluce, pokud je černý, nebylo použito vůbec.
+
+\todo{interpretace}
+
+\begin{figure}[p]
+    \centering
+    \subfigure[15\% šum typu sůl a pepř]{
+        \includegraphics[width=0.28\textwidth]{fig/predhist/sp15.png}
+        \hskip2cm
+        \includegraphics[width=0.28\textwidth]{fig/predhist/15.png}
+    }
+
+    \vskip0.5\baselineskip
+    \subfigure[Obrázek částečně poškozený 25\% šumem typu sůl a pepř]{
+        \includegraphics[width=0.28\textwidth]{fig/predhist/sp25part.png}
+        \hskip2cm
+        \includegraphics[width=0.28\textwidth]{fig/predhist/25part.png}
+    }
+
+    \vskip0.5\baselineskip
+    \subfigure[50\% šum typu sůl a pepř]{
+        \includegraphics[width=0.28\textwidth]{fig/predhist/sp50.png}
+        \hskip2cm
+        \includegraphics[width=0.28\textwidth]{fig/predhist/50.png}
+    }
+
+    \vskip0.5\baselineskip
+    \subfigure[Detektor hran]{
+        \includegraphics[width=0.28\textwidth]{fig/cameraman_256.png}
+        \hskip2cm
+        \includegraphics[width=0.28\textwidth]{fig/predhist/sobel.png}
+    }
+
+    \caption{Četnost výskytu pixelů v~aktivních prediktorech fitness při návrhu různých filtrů. Nalevo je obrázek, který byl na vstupu filtru, napravo 2D histogram výskytu pixelů, čím je pixel světlejší, tím častěji byl použit v~aktivních prediktorech. Vždy jde o~souhrn ze 100 nezávislých běhů.}
+    \label{obrPredhist}
+\end{figure}
+
 \section{Srovnání souběžného učení, koevoluce a CGP}
 
-\fixme{Cílem experimentů bylo srovnání navrženého algoritmu CGP s~adaptivními prediktory fitness ($\mathit{FP_{ADAPT}}$) s~koevolučním CGP s~prediktory pevné délky ($\mathit{FP_{FIX}}$) a s~CGP bez koevoluce ($\mathit{CGP_{STD}}$) s~ohledem na kvalitu nalezených obrazových filtrů a na délku běhu evoluce. Experimenty byly provedeny na obrázcích se šumem o~intenzitě 10 až 80\,\% s~krokem po 10\,\%.
+Navržený algoritmus se souběžným učením a adaptivními prediktory fitness byl porovnán s~koevolučním CGP s~prediktory fitness pevné délky ($\mathit{FP_{FIX}}$) a se standardním CGP bez koevoluce ($\mathit{CGP_{STD}}$). Experimentovalo se se dvěma nastaveními souběžného učení:
+
+\begin{itemize}
+    \item $\mathit{FP_{REL}}$ s~nastavením uvedeným v~tabulce \ref{tabParamsRel} a úpravou velikosti relativně k~současné,
+    \item $\mathit{FP_{ABS}}$ s~nastavením uvedeným v~tabulce \ref{tabParamsAbs} a úpravou velikosti dle celkového počtu případů fitness.
+\end{itemize}
+
+Ve všech případech byla použita stejná implementace. Stejně jako v~předchozích experimentech byla porovnávána kvalita nalezených obrazových filtrů a délku běhu evoluce. Experimenty byly provedeny na úloze návrhu obrazových filtrů pro obrázky poškozené šumy typu sůl a pepř a výstřelovým šumem o~intenzitách 5 až 80\,\% s~krokem po 5\,\% a také filtrů pro detekci hran.
+
+\begin{table}[h]
+    \caption{Zvolené hodnoty parametrů souběžného učení pro $\mathit{FP_{REL}}$}
+    \renewcommand{\arraystretch}{1.2}
+    \small
+
+    \begin{minipage}[t]{.3\textwidth}
+        \centering\begin{tabular}{ll}
+            \toprule
+            parametr & hodnota \\
+            \midrule
+            $I_\mathit{threshold}$ & 1,2 \\
+            $c_I$ & 2 \\
+            $c_0$ & 0,90 \\
+            $c_{-1}$ & 0,96 \\
+            $c_{+1}$ & 1,07 \\
+            $c_{+2}$ & 1 \\
+            \bottomrule
+        \end{tabular}
+    \end{minipage}
+    \begin{minipage}[t]{.7\textwidth}
+        \centering\begin{tabular}{ll}
+            \toprule
+            parametr & hodnota \\
+            \midrule
+            $v_\mathit{zero}$ & 0,001 \\
+            $v_\mathit{slow}$ & 0,1 \\
+            počáteční velikost prediktorů & 3\,\% \\
+            inicializace prediktorů & náhodně \\
+            četnosti změny velikosti & jen při zvýšení $f_\mathit{predicted}$ \\
+            výpočet rychlosti $v$ & podle poslední změny (\emph{last}) \\
+            \bottomrule
+        \end{tabular}
+    \end{minipage}
+    \label{tabParamsRel}
+\end{table}
+
+
+\begin{table}[h]
+    \caption{Zvolené hodnoty parametrů souběžného učení pro $\mathit{FP_{ABS}}$}
+    \renewcommand{\arraystretch}{1.2}
+    \small
+
+    \begin{minipage}[t]{.3\textwidth}
+        \centering\begin{tabular}{ll}
+            \toprule
+            parametr & hodnota \\
+            \midrule
+            $I_\mathit{threshold}$ & 1,2 \\
+            $c_I$ & 2 \\
+            $c_0$ & -0,01 \\
+            $c_{-1}$ & -0,07 \\
+            $c_{+1}$ & 0,01 \\
+            $c_{+2}$ & 0 \\
+            \bottomrule
+        \end{tabular}
+    \end{minipage}
+    \begin{minipage}[t]{.7\textwidth}
+        \centering\begin{tabular}{ll}
+            \toprule
+            parametr & hodnota \\
+            \midrule
+            $v_\mathit{zero}$ & 0,001 \\
+            $v_\mathit{slow}$ & 0,1 \\
+            počáteční velikost prediktorů & 3\,\% \\
+            inicializace prediktorů & náhodně \\
+            četnosti změny velikosti & max. po 1~000 generacích \\
+            výpočet rychlosti $v$ & podle poslední změny (\emph{last}) \\
+            \bottomrule
+        \end{tabular}
+    \end{minipage}
+    \label{tabParamsAbs}
+\end{table}
+
+
+\fixme{
 
 Jak je vidět na příkladu 10\% výstřelového šumu na obrázku~\ref{fig:ImpulseBoxplot}, je kvalita filtrů nalezená pomocí $\mathit{FP_{ADAPT}}$ srovnatelná s~filtry získanými $\mathit{CGP_{STD}}$ a $\mathit{FP_{FIX}}$ s~pre\-dik\-tory o~velikosti 10\,\% a více. Co se týče potřebného času, je v~tomto případě $\mathit{FP_{ADAPT}}$ v~průměru 6,26krát rychlejší než $\mathit{CGP_{STD}}$. Také je srovnatelně rychlý jako při použití $\mathit{FP_{FIX}}$ s~3--5\% pre\-dik\-to\-rem, kdy ale mají výsledné filtry nižší kvalitu než u~$\mathit{FP_{ADAPT}}$.
 
 Podobné výsledky byly dosaženy i pro jiné in\-ten\-zity šumu. Konkrétní hodnoty jsou uvedeny v~tabulce~\ref{table:results}. Ve všech případech je kvalita filtrů získaných pomocí $\mathit{FP_{ADAPT}}$ srovnatelná při kratší nebo přinejhorším podobné době běhu. V~průměru bylo dosaženo 8,39násobného zrychlení oproti $\mathit{CGP_{STD}}$.}
+
+
+
+% \begin{itemize}
+%     \item koeficienty změny velikosti $c_I = 2$, $c_0 = 0,9$, $c_{-1} = 0,96$, $c_{+1} = 1,07$, $c_{+2} = 1$
+%     \item změna velikosti prediktoru je relativní k současné velikosti,
+%     \item práh nepřesnosti predikce $I_\mathit{threshold} = 1,2$,
+%     \item práh nulové rychlosti $v_\mathit{zero} = 0,001$,
+%     \item práh pomalého a rychlého růstu fitness $v_\mathit{slow} = 0,1$,
+%     \item počáteční velikost prediktorů 3\,\% všech případů fitness,
+%     \item náhodná inicializace prediktorů,
+%     \item úprava velikosti prediktoru jen při změně rodiče v populaci CGP a na základě poslední změny (varianta \emph{last})
+% \end{itemize}
+
+
 
 \subsection{Šum sůl a pepř}
 
