@@ -265,7 +265,7 @@ Práce je chráněna autorským zákonem a její užití bez udělení oprávně
 \vfill
 
 \mktxt@b{16}{\@cite@CS}
-\noindent\@author: \@title, \MakeLowercase{\@projecttype@CS}, Brno, FIT VUT v~Brně, \@year
+\noindent\@author: \@titleB, \MakeLowercase{\@projecttype@CS}, Brno, FIT VUT v~Brně, \@year
 %===================================================
 \newpage
 }

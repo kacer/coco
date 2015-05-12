@@ -6,6 +6,20 @@
 %\chapter{RelaxNG Schéma konfiguračního soboru}
 %\chapter{Plakat}
 
+\newcommand\cmdarglist[1]{
+    \begin{description}#1\end{description}
+}
+
+\newcommand\cmdarg[2]{
+    \item[\texttt{#1}] \hfill \\
+    #2
+}
+
+\newcommand\cmdargdef[3]{
+    \item[\texttt{#1}] (výchozí: #2) \hfill \\
+    #3
+}
+
 \chapter{Uživatelská příručka}
 \label{apxManual}
 
@@ -22,7 +36,7 @@ Pokud překlad končí chybou a na výstupu jsou takovéto zprávy:
 /tmp/ccQ9hvQS.s:92: Error: suffix or operands invalid for `vpcmpeqd'
 \end{lstlisting}
 
-\noindent{}je třeba z Makefile odstranit z proměnné \texttt{CFLAGS} část \texttt{-DAVX2}, čímž se vypne kompilace kódu akcelerovaného pomocí instrukcí AVX2. Chyby jsou s největší pravděpodobností způsobeny tím, že použitý překladač je novější verze a generuje kód, kterému použitý assembler nerozumí\footnote{viz http://code.compeng.uni-frankfurt.de/issues/718}. Tento problém se vyskytl na Anselmu, jehož procesory instrukce AVX2 nepodporují.
+\noindent{}je třeba z Makefile odstranit z proměnné \texttt{CFLAGS} část \texttt{-DAVX2}, čímž se vypne kompilace kódu akcelerovaného pomocí instrukcí AVX2. Chyby jsou s největší pravděpodobností způsobeny tím, že použitý překladač je novější verze a generuje kód, kterému použitý assembler nerozumí\footnote{Zdroj: \url{http://code.compeng.uni-frankfurt.de/issues/718}}. Tento problém se vyskytl na Anselmu, který AVX2 nepodporuje.
 
 Jednotlivé moduly programu se překládají samostatně do složky \texttt{build}. Při změnách ve zdrojovém kódu tak není nutné opakovaně překládat moduly, do kterých se nezasahovalo. Výstupem překladu je několik spustitelných souborů:
 
@@ -41,7 +55,7 @@ Načítání trénovacích obrázků je řešeno pomocí knihovny \texttt{stb\_i
 
 \subsubsection*{Obrazové filtry}
 
-Chromozomy obrazových filtrů jsou ukládány do textového formátu, který je totožný s~formátem, který používá program CGP Viewer, který vypadá takto:
+Chromozomy obrazových filtrů jsou ukládány do textového formátu, který je totožný s~formátem, který používá program CGP Viewer od Zdeňka Vašíčka, který vypadá takto:
 
 \begin{lstlisting}
 {2, 2, 4, 1, 2, 1, 16}                                  %*\Comment{Konfigurace CGP}*
@@ -71,33 +85,19 @@ Kromě tohoto formátu jsou filtry ukládány také jako kód v~jazyce C a v~tex
 Povinné parametry jsou pouze dva, a sice:
 
 \begin{itemize}
-    \item \texttt{-{}-noisy SOUBOR} nebo \texttt{-n SOUBOR}
-    \item \texttt{-{}-original SOUBOR} nebo \texttt{-i SOUBOR}
+    \item \texttt{-{}-noisy FILE} nebo \texttt{-n FILE}
+    \item \texttt{-{}-original FILE} nebo \texttt{-i FILE}
 \end{itemize}
 
 Jména souborů se zdrojovým (poškozeným) a cílovým (nepoškozeným) obrázkem. V~případě detekce hran se u~parametru \texttt{-{}-noisy} uvede zdrojový obrázek a u~\texttt{-{}-original} obrázek s~vyznačenými hranami.
 
 Ostatní parametry jsou volitelné, pokud nejsou uvedeny, použije se výchozí hodnota.
 
-\subsection{Parametry evoluce}
-
-\newcommand\cmdarglist[1]{
-    \begin{description}#1\end{description}
-}
-
-\newcommand\cmdarg[2]{
-    \item[\texttt{#1}] \hfill \\
-    #2
-}
-
-\newcommand\cmdargdef[3]{
-    \item[\texttt{#1}] (výchozí: #2) \hfill \\
-    #3
-}
+\subsection*{Parametry evoluce}
 
 \cmdarglist{
     \cmdargdef{-{}-algorithm ALG, -a ALG}{\texttt{coev}}{
-        Algoritmus evoluce.
+        Algoritmus evoluce:
         \begin{itemize}
             \item \texttt{cgp} -- standardní CGP,
             \item \texttt{coev} -- koevoluce s~pevnými prediktory fitness,
@@ -118,7 +118,7 @@ Ostatní parametry jsou volitelné, pokud nejsou uvedeny, použije se výchozí 
     }
 }
 
-\subsection{Parametry sběru dat}
+\subsection*{Parametry sběru dat}
 
 \cmdarglist{
     \cmdarg{-{}-log-dir DIR, -l DIR}{
@@ -134,7 +134,7 @@ Ostatní parametry jsou volitelné, pokud nejsou uvedeny, použije se výchozí 
     }
 }
 
-\subsection{Parametry populace obrazových filtrů}
+\subsection*{Parametry populace obrazových filtrů}
 
 \cmdarglist{
     \cmdargdef{-{}-cgp-mutate N, -m N}{5}{
@@ -150,7 +150,7 @@ Ostatní parametry jsou volitelné, pokud nejsou uvedeny, použije se výchozí 
     }
 }
 
-\subsection{Parametry populace prediktorů fitness}
+\subsection*{Parametry populace prediktorů fitness}
 
 \cmdarglist{
     \cmdargdef{-{}-pred-size N, -S N}{0,25}{
@@ -175,47 +175,415 @@ Ostatní parametry jsou volitelné, pokud nejsou uvedeny, použije se výchozí 
     }
 }
 
-\subsection{Parametry souběžného učení}
+\subsection*{Parametry souběžného učení}
 
+\cmdarglist{
+    \cmdargdef{-{}-bw-pred-initial-size N, -I N}{hodnota \texttt{-{}-pred-size}}{
+        Počáteční velikost prediktoru (hodnota \emph{UsedGenes)} v procentech. Nesmí být vyšší než celková velikost prediktoru (daná parametrem \texttt{-{}-pred-size}).
+    }
 
+    \cmdargdef{-{}-bw-pred-min N, -N N}{0}{
+        Minimální velikost prediktoru (hodnota \emph{UsedGenes}) v procentech.
+    }
+
+    \cmdargdef{-{}-baldwin-interval NUM, -b NUM}{0}{
+        Maximální počet generací CGP mezi dvěma změnami velikost prediktoru. Hodnota 0 znamená, že se velikost upravuje jen při změně rodiče v populaci filtrů.
+    }
+
+    \cmdargdef{-{}-bw-inac-tol N}{1,2}{Parametr $I_\mathit{threshold}$}
+    \cmdargdef{-{}-bw-inac-coef N}{2}{Parametr $c_I$}
+    \cmdargdef{-{}-bw-zero-eps N}{0,001}{Parametr $v_\mathit{zero}$}
+    \cmdargdef{-{}-bw-slow-thr N}{0,1}{Parametr $v_\mathit{slow}$}
+
+    \cmdarg{-{}-bw-by-max-length}{
+        Změna velikost prediktoru je vypočtena z celkového počtu případů fitness a ne relativně k současné velikosti. Při použití této volby se namísto parametrů \texttt{-{}-bw-XXXX-coef} používají parametry \texttt{-{}-bw-XXXX-inc}
+    }
+
+    \cmdargdef{-{}-bw-zero-coef N}{0,9}{Parametr $c_{0}$ (pokud není použito \texttt{-{}-bw-by-max-length})}
+    \cmdargdef{-{}-bw-decr-coef N}{0,96}{Parametr $c_{-1}$ (pokud není použito \texttt{-{}-bw-by-max-length})}
+    \cmdargdef{-{}-bw-slow-coef N}{1,07}{Parametr $c_{+1}$ (pokud není použito \texttt{-{}-bw-by-max-length})}
+    \cmdargdef{-{}-bw-fast-coef N}{1}{Parametr $c_{+2}$ (pokud není použito \texttt{-{}-bw-by-max-length})}
+
+    \cmdargdef{-{}-bw-zero-inc N}{-0,01}{Parametr $c_{0}$ (při použití \texttt{-{}-bw-by-max-length})}
+    \cmdargdef{-{}-bw-decr-inc N}{-0,07}{Parametr $c_{-1}$ (při použití \texttt{-{}-bw-by-max-length})}
+    \cmdargdef{-{}-bw-slow-inc N}{0,01}{Parametr $c_{+1}$ (při použití \texttt{-{}-bw-by-max-length})}
+    \cmdargdef{-{}-bw-fast-inc N}{0}{Parametr $c_{+2}$ (při použití \texttt{-{}-bw-by-max-length})}
+}
+
+%\section{Výstupy programu}
+
+\section{Nástroj coco\_apply}
+
+Tento nástroj slouží pro aplikaci evolvovaného filtru na libovolný obrázek, volitelně i pro výpočet PSNR a vizualizace zapojení filtru.
+
+\subsection*{Povinné parametry}
+
+\cmdarglist{
+    \cmdarg{-{}-chromosome FILE, -c FILE}{
+        Soubor s uloženým chromozomem filtru ve formátu pro CGP Viewer.
+    }
+    \cmdarg{-{}-input FILE, -i FILE}{
+        Vstupní obrázek filtru. Pokud není uveden nebo se uvede \texttt{-}, použije se standardní vstup.
+    }
+    \cmdarg{-{}-output FILE, -o FILE}{
+        Výstupní obrázek filtru. Pokud není uveden nebo se uvede \texttt{-}, použije se standardní výstup.
+    }
+}
+
+\subsection*{Volitelné parametry}
+
+\cmdarglist{
+    \cmdarg{-{}-calc-psnr REFIMG, -p REFIMG}{
+        Na chybový výstup vypíše PSNR výstupního obrázku a referenčního obrázku.
+    }
+    \cmdarg{-{}-print-ascii, -a}{
+        Na chybový výstup vypíše zapojení filtru ve formě ASCII Artu.
+    }
+    \cmdarg{-{}-output FILE, -o FILE}{
+        Výstupní obrázek filtru.
+    }
+}
+
+\section{Nástroj coco\_predhist}
+
+Tento nástroj slouží pro tvorbu histogramů vybíraných prediktorů. Na standardní výstup vypíše počet použití každého devítiokolí ve formátu CSV. Volitelně vytvoří i 2D histogram jako obrázek.
+
+\subsection*{Povinné parametry}
+
+\cmdarglist{
+    \cmdarg{-{}-width X, -x X}{
+        Šířka obrázku používaného při evoluci.
+    }
+    \cmdarg{-{}-height Y, -y Y}{
+        Výška obrázku používaného při evoluci.
+    }
+    \cmdarg{-{}-generations N, -g N}{
+        Počet generací, pro které se vytvoří histogram.
+    }
+    \cmdarg{LOGFILE}{
+        Za přepínači se uvedou jména jednoho či více souborů s výpisem použitých prediktorů, který se vygeneruje při evoluci pomocí parametru \texttt{-{}-log-pred-file}.
+    }
+}
+
+\subsection*{Volitelné parametry}
+
+\cmdarglist{
+    \cmdarg{-{}-output-image FILE, -o FILE}{
+        Vytvoří 2D histogram a uloží jej jako obrázek PNG do souboru \texttt{FILE}.
+    }
+}
+
+\section{Nástroj coco\_predvis}
+
+Tento nástroj slouží pro tvorbu vizualizaci všech použitých prediktorů. Na standardní výstup vypíše číslo generace a počet obsažených devítiokolí pro každý použitý prediktor. Volitelně vizualizuje použité pixely v každém prediktoru. Takto byly vygenerovány histogramy na obrázku \ref{obrPredhist}.
+
+\subsection*{Povinné parametry}
+
+\cmdarglist{
+    \cmdarg{-{}-log FILE, -l FILE}{
+        Soubor s výpisem použitých prediktorů, který se vygeneruje při evoluci pomocí parametru \texttt{-{}-log-pred-file}.
+    }
+}
+
+\subsection*{Povinné parametry pro vizualizaci}
+
+\cmdarglist{
+    \cmdarg{-{}-image FILE, -i FILE}{
+        Podkladový obrázek pro vizualizaci prediktorů. Typicky jde o obrázek používaný při evoluci.
+    }
+    \cmdarg{-{}-outdir FILE, -o FILE}{
+        Složka, do které se uloží vizualizované prediktory. Soubory jsou pojmenovávány podle čísla generace. Pokud složka neexistuje, vytvoří se.
+    }
+}
+
+\subsection*{Volitelné parametry pro vizualizaci}
+
+\cmdarglist{
+    \cmdargdef{-{}-color RRGGBB, -o RRGGBB}{červená (\texttt{FF0000})}{
+        Barva bodů, které při vizualizaci označují použitá devítiokolí. Zadává se v hexadecimálním \uv{HTML} formátu.
+    }
+}
 
 \chapter{Výsledky experimentů}
 \label{apxResults}
 
-\section{Úprava velikosti prediktoru podle celkového počtu případů fitness}
-\label{apxExpAbs}
+Následující grafy zobrazují kvalitu získaných filtrů pomocí standardního CGP, koevoluce prediktorů fitness různé velikosti a koevoluce se souběžným učením (sloupce \uv{R} pro $\mathit{FP_{REL}}$ a \uv{A} pro $\mathit{FP_{ABS}}$). Hodnota PSNR je průměr pro 12 testovacích obrázků (viz obrázek~\ref{obrTestovaci}). Čas běhu programu je určen jako součet procesorového času všech vláken. Pro každou intenzitu šumu (resp. pro detektor hran) a pro každý algoritmus a nastavení bylo provedeno 100 nezávislých běhů.
 
-Následující grafy se týkají varianty souběžného učení, kdy je přírůstek nebo úbytek velikosti prediktoru relativní k~celkovému počtu případů fitness. Používají se pravidla uvedená v~tabulce \ref{tabBaldwinRulesAbs}. Experimentovalo se s~různými hodnotami koeficientů $c_0$, $c_{-1}$, $c_{+1}$ a $c_{+2}$, konkrétně od $-0.10$ po $+0.10$ s~krokem po $0.01$. Trénovací obrázek byl poškozen šumem typu sůl a pepř o~intenzitě 15\,\%.
+\section{Šum typu sůl a pepř}
 
-{
-\captionsetup{aboveskip=0pt}
-
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=0.475\textwidth]{fig/plot/tuningabs-zeroinc-30kg-psnr.pdf}
-    \includegraphics[width=0.475\textwidth]{fig/plot/tuningabs-zeroinc-30kg-utime.pdf}
-    \caption{Vliv parametru $c_{0}$ (pravidlo $\left|v\right| \leq v_\mathit{zero}: \mathit{UsedGenes} \leftarrow \mathit{UsedGenes} + \left(N \cdot c_0\right)$}
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper5-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper5-100kg-usertime.pdf}
+    \caption{5\% šum typu sůl a pepř}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=0.475\textwidth]{fig/plot/tuningabs-decrinc-30kg-psnr.pdf}
-    \includegraphics[width=0.475\textwidth]{fig/plot/tuningabs-decrinc-30kg-utime.pdf}
-    \caption{Vliv parametru $c_{-1}$ (pravidlo $v < 0: \mathit{UsedGenes} \leftarrow \mathit{UsedGenes} + \left(N \cdot c_{-1}\right)$}
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper10-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper10-100kg-usertime.pdf}
+    \caption{10\% šum typu sůl a pepř}
 \end{figure}
 
-\begin{figure}[h]
+%\clearpage
+
+\begin{figure}[H]
     \centering
-    \includegraphics[width=0.475\textwidth]{fig/plot/tuningabs-slowinc-30kg-psnr.pdf}
-    \includegraphics[width=0.475\textwidth]{fig/plot/tuningabs-slowinc-30kg-utime.pdf}
-    \caption{Vliv parametru $c_{+1}$ (pravidlo $0 < v~\leq v_\mathit{slow}: \mathit{UsedGenes} \leftarrow \mathit{UsedGenes} + \left(N \cdot c_{+1}\right)$}
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper15-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper15-100kg-usertime.pdf}
+    \caption{15\% šum typu sůl a pepř}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=0.475\textwidth]{fig/plot/tuningabs-fastinc-30kg-psnr.pdf}
-    \includegraphics[width=0.475\textwidth]{fig/plot/tuningabs-fastinc-30kg-utime.pdf}
-    \caption{Vliv parametru $c_{+2}$ (pravidlo $v > v_\mathit{slow}: \mathit{UsedGenes} \leftarrow \mathit{UsedGenes} + \left(N \cdot c_{+2}\right)$}
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper20-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper20-100kg-usertime.pdf}
+    \caption{20\% šum typu sůl a pepř}
 \end{figure}
 
-}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper25-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper25-100kg-usertime.pdf}
+    \caption{25\% šum typu sůl a pepř}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper30-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper30-100kg-usertime.pdf}
+    \caption{30\% šum typu sůl a pepř}
+\end{figure}
+
+%\clearpage
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper35-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper35-100kg-usertime.pdf}
+    \caption{35\% šum typu sůl a pepř}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper40-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper40-100kg-usertime.pdf}
+    \caption{40\% šum typu sůl a pepř}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper45-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper45-100kg-usertime.pdf}
+    \caption{45\% šum typu sůl a pepř}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper50-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper50-100kg-usertime.pdf}
+    \caption{50\% šum typu sůl a pepř}
+\end{figure}
+
+%\clearpage
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper55-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper55-100kg-usertime.pdf}
+    \caption{55\% šum typu sůl a pepř}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper60-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper60-100kg-usertime.pdf}
+    \caption{60\% šum typu sůl a pepř}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper70-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper70-100kg-usertime.pdf}
+    \caption{70\% šum typu sůl a pepř}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper75-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper75-100kg-usertime.pdf}
+    \caption{75\% šum typu sůl a pepř}
+\end{figure}
+
+%\clearpage
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper80-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/saltpepper80-100kg-usertime.pdf}
+    \caption{80\% šum typu sůl a pepř}
+\end{figure}
+
+
+%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{Výstřelový šum}
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse5-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse5-100kg-usertime.pdf}
+    \caption{5\% výstřelový (náhodný) šum}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse10-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse10-100kg-usertime.pdf}
+    \caption{10\% výstřelový (náhodný) šum}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse15-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse15-100kg-usertime.pdf}
+    \caption{15\% výstřelový (náhodný) šum}
+\end{figure}
+
+%\clearpage
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse20-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse20-100kg-usertime.pdf}
+    \caption{20\% výstřelový (náhodný) šum}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse25-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse25-100kg-usertime.pdf}
+    \caption{25\% výstřelový (náhodný) šum}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse30-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse30-100kg-usertime.pdf}
+    \caption{30\% výstřelový (náhodný) šum}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse35-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse35-100kg-usertime.pdf}
+    \caption{35\% výstřelový (náhodný) šum}
+\end{figure}
+
+%\clearpage
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse40-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse40-100kg-usertime.pdf}
+    \caption{40\% výstřelový (náhodný) šum}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse45-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse45-100kg-usertime.pdf}
+    \caption{45\% výstřelový (náhodný) šum}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse50-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse50-100kg-usertime.pdf}
+    \caption{50\% výstřelový (náhodný) šum}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse55-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse55-100kg-usertime.pdf}
+    \caption{55\% výstřelový (náhodný) šum}
+\end{figure}
+
+%\clearpage
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse60-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse60-100kg-usertime.pdf}
+    \caption{60\% výstřelový (náhodný) šum}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse70-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse70-100kg-usertime.pdf}
+    \caption{70\% výstřelový (náhodný) šum}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse75-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse75-100kg-usertime.pdf}
+    \caption{75\% výstřelový (náhodný) šum}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse80-100kg-psnrtest.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/impulse80-100kg-usertime.pdf}
+    \caption{80\% výstřelový (náhodný) šum}
+\end{figure}
+
+%\clearpage
+
+
+%%%%%%%%%%%%%%%%%%
+
+
+\section{Detektor hran}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/sobelsobel1b-100kg-psnr.pdf}
+    \hskip0.5cm
+    \includegraphics[width=0.475\textwidth]{fig/plot/compare/sobelsobel1b-100kg-usertime.pdf}
+    \caption{Detektor hran}
+\end{figure}
