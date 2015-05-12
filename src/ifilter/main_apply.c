@@ -63,6 +63,8 @@ const char* help =
     "          Input image filename (stdin by default)\n"
     "    --output FILE, -o FILE\n"
     "          Output image filename (stdout by default)\n"
+    "\n"
+    "Optional:\n"
     "    --calc-psnr FILE, -p FILE\n"
     "          Print PSNR with reference image and print it to stderr\n"
     "    --print-ascii, -a\n"

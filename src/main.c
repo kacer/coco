@@ -74,16 +74,16 @@ static config_t config = {
         .zero_epsilon = 0.001,
         .slow_threshold = 0.1,
 
-        .zero_coef = 0.96,
-        .decrease_coef = 0.98,
-        .increase_slow_coef = 1.06,
-        .increase_fast_coef = 1.01,
+        .zero_coef = 0.9,
+        .decrease_coef = 0.96,
+        .increase_slow_coef = 1.07,
+        .increase_fast_coef = 1.0,
 
     },
 
-    .bw_zero_increment_percent = -0.07,
-    .bw_decrease_increment_percent = -0.03,
-    .bw_increase_slow_increment_percent = 0.03,
+    .bw_zero_increment_percent = -0.01,
+    .bw_decrease_increment_percent = -0.07,
+    .bw_increase_slow_increment_percent = 0.01,
     .bw_increase_fast_increment_percent = 0,
 
     .log_interval = 10000,
