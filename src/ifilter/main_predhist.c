@@ -76,6 +76,25 @@ const char* help =
 /******************************************************************************/
 
 
+void get_stats(long *histogram, int length, long *min, long *min_nonzero, long *max) {
+    *min = LONG_MAX;
+    *min_nonzero = LONG_MAX;
+    *max = 0;
+
+    for (int i = 0; i < length; i++) {
+        if (histogram[i] > *max) {
+            *max = histogram[i];
+        }
+        if (histogram[i] < *min) {
+            *min = histogram[i];
+        }
+        if (histogram[i] && histogram[i] < *min_nonzero) {
+            *min_nonzero = histogram[i];
+        }
+    }
+}
+
+
 int main(int argc, char *argv[])
 {
     static struct option long_options[] = {
@@ -93,13 +112,13 @@ int main(int argc, char *argv[])
     img_image_t output_image = NULL;
     char output_filename[MAX_FILENAME_LENGTH];
     bool render = false;
-    long *histogram;
-    bool *included;
     int image_size;
     int image_width = -1;
     int image_height = -1;
     int max_generations = -1;
     int option_index = -1;
+    int file_count = 0;
+    int first_file_arg;
 
     /*
         Parse command line
@@ -148,7 +167,10 @@ int main(int argc, char *argv[])
         Check args
      */
 
-    if (optind == argc) {
+    file_count = argc - optind;
+    first_file_arg = optind;
+
+    if (!file_count) {
         fprintf(stderr, "No log files given.\n");
         return 1;
     }
@@ -177,16 +199,25 @@ int main(int argc, char *argv[])
     }
 
     image_size = image_height * image_width;
-    histogram = (long*) calloc(image_size, sizeof(long));
-    included = (bool*) malloc(image_size * sizeof(bool));
+    long *histogram = (long*) calloc(image_size, sizeof(long));
+    bool *included = (bool*) malloc(image_size * sizeof(bool));
+    long *file_histogram[file_count];
+
+    long max_count;
+    long min_count;
+    long min_nonzero_count;
+
+    for (int i = 0; i < file_count; i++) {
+        file_histogram[i] = (long*) calloc(image_size, sizeof(long));
+    }
 
     /*
         Iterate over log files
      */
 
-    while (optind < argc) {
+    for (int file_index = 0; file_index < file_count; file_index++) {
 
-        char *filename = argv[optind++];
+        char *filename = argv[first_file_arg + file_index];
         FILE *log_file = fopen(filename, "rt");
         bool first_entry = true;
         int last_generation = 0;
@@ -195,21 +226,29 @@ int main(int argc, char *argv[])
         int count, generation, length;
         int delta_generation;
 
-        fprintf(stderr, "%s\n", filename);
+        fprintf(stderr, "%s: ", filename);
 
         if (!log_file) {
-            fprintf(stderr, "Cannot open %s\n", filename);
+            fprintf(stderr, "Cannot open\n");
             return 1;
         }
 
         do {
 
             count = fscanf(log_file, "Generation %d: Predictor phenotype length %d [ ", &generation, &length);
-            if (count < 2) break;
+            if (count == EOF) {
+                break;
+            }
+            if (count < 2) {
+                fprintf(stderr, "Invalid log file? Cannot fscanf start of line (loaded %d values)\n", count);
+                break;
+            }
 
             if (generation > max_generations) {
                 generation = max_generations;
             }
+
+            //fprintf(stderr, "\r%s: Generation %6d, length %6d", filename, generation, length);
 
             delta_generation = generation - last_generation;
 
@@ -217,6 +256,7 @@ int main(int argc, char *argv[])
                 for (int i = 0; i < image_size; i++) {
                     if (included[i]) {
                         histogram[i] += delta_generation;
+                        file_histogram[file_index][i] += delta_generation;
                     }
                 }
             } else {
@@ -235,7 +275,7 @@ int main(int argc, char *argv[])
                 if (count == 1) {
                     included[index] = true;
                 } else {
-                    fprintf(stderr, "Invalid log file.\n");
+                    fprintf(stderr, "Invalid log file? Cannot fscanf pixel %d (loaded %d values)\n", i, count);
                     return 1;
                 }
             }
@@ -257,35 +297,36 @@ int main(int argc, char *argv[])
             for (int i = 0; i < image_size; i++) {
                 if (included[i]) {
                     histogram[i] += delta_generation;
+                    file_histogram[file_index][i] += delta_generation;
                 }
             }
         }
+
+        get_stats(file_histogram[file_index], image_size, &min_count, &min_nonzero_count, &max_count);
+        fprintf(stderr, "min %ld / %ld, max %ld\n", min_count, min_nonzero_count, max_count);
     }
+
 
     /**
      * Dump results
      */
 
-    long max_count = 0;
-    long min_count = LONG_MAX;
+    get_stats(histogram, image_size, &min_count, &min_nonzero_count, &max_count);
+    fprintf(stderr, "TOTAL: min %ld / %ld, max %ld\n", min_count, min_nonzero_count, max_count);
 
-    if (render) {
-        for (int i = 0; i < image_size; i++) {
-            if (histogram[i] > max_count) {
-                max_count = histogram[i];
-            }
-            if (histogram[i] < min_count) {
-                min_count = histogram[i];
-            }
-        }
+    printf("index,total");
+    for (int i = 0; i < file_count; i++) {
+        printf(",\"%s\"", argv[first_file_arg + i]);
     }
+    printf("\n");
 
-    fprintf(stderr, "min count: %ld\n", min_count);
-    fprintf(stderr, "max count: %ld\n", max_count);
-
-    printf("index,usage\n");
     for (int i = 0; i < image_size; i++) {
-        printf("%d,%ld\n", i, histogram[i]);
+        printf("%d,%ld", i, histogram[i]);
+        for (int fi = 0; fi < file_count; fi++) {
+            printf(",%ld", file_histogram[fi][i]);
+        }
+        printf("\n");
+
         if (render) {
             char shade = (histogram[i] / (double)max_count) * 255;
             output_image->data[i] = shade;
