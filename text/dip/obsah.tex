@@ -23,23 +23,23 @@ První zmínky o~evolučních algoritmech se v~literatuře objevují od 50. let 
 Evoluční algoritmy jsou stoachastické optimalizační metody inspirované přírodou, konkrétně Darwinovou teorií evoluce. Ačkoliv pojmy používané v~evolučních algoritmech vycházejí z~biologie, jejich význam není vždy přesně stejný. Mezi základní pojmy patří:
 
 \begin{itemize}
-    \item\emph{Gen} je základním stavebním blokem kandidátního řešení, je omezen předem danou abecedou (binární čísla, písmena apod.),
-    \item\emph{Alela} je konkrétní varianta genu,
-    \item\emph{Chromozom} nebo \emph{jedinec} reprezentuje jedno řešení ve stavovém prostoru,
-    \item\emph{Genotyp} je posloupnost genů kódující řešení,
-    \item\emph{Fenotyp} je kandidátní řešení odvozené z~genotypu,
-    \item\emph{Populace} je konečná množina kandidátních řešení,
-    \item\emph{Fitness} udává \uv{kvalitu} jedince s~ohledem na řešený problém,
-    \item\emph{Fitness funkce} přiřazuje každému jedinci právě jedno reálné číslo -- hodnotu fitness,
+    \item\emph{Gen} je základním stavebním blokem kandidátního řešení, je omezen předem danou abecedou (binární čísla, písmena apod.).
+    \item\emph{Alela} je konkrétní varianta genu.
+    \item\emph{Chromozom} nebo \emph{jedinec} reprezentuje jedno řešení ve stavovém prostoru.
+    \item\emph{Genotyp} je posloupnost genů kódující řešení.
+    \item\emph{Fenotyp} je kandidátní řešení odvozené z~genotypu.
+    \item\emph{Populace} je konečná množina kandidátních řešení.
+    \item\emph{Fitness} udává \uv{kvalitu} jedince s~ohledem na řešený problém.
+    \item\emph{Fitness funkce} přiřazuje každému jedinci právě jedno reálné číslo -- hodnotu fitness.
     \item\emph{Diverzita} udává rozmanitost populace, tj. nakolik se od sebe chromozomy v~populaci navzájem liší.
     %\item\emph{Rodiče} jsou podmnožina populace, ze které budou vytvořeni \emph{potomci}.
 \end{itemize}
 
-Typickým rysem evolučních algoritmů je to, že pracují s~populací několika kandidátních řešení, od kterých odvozují nová řešení pomocí speciálních biologií inspirovaných operátorů. Jednoduchý evoluční algoritmus znázorňuje schéma~\ref{obrEA} a lze zapsat takto:
+Typickým rysem evolučních algoritmů je to, že pracují s~populací několika kandidátních řešení, od kterých odvozují nová řešení pomocí speciálních biologií inspirovaných operátorů. Jednoduchý evoluční algoritmus znázorňuje schéma na obrázku~\ref{obrEA} a lze zapsat takto:
 
 \begin{enumerate}
     \item Náhodně vygeneruj populaci o~dané velikosti.
-    \item Opakuj dokud není splněna ukončovací podmínka:
+    \item Opakuj, dokud není splněna ukončovací podmínka:
     \begin{enumerate}
         \item urči fitness jedinců v~populaci,
         \item z~populace vyber rodiče a vytvoř potomky,
@@ -50,7 +50,7 @@ Typickým rysem evolučních algoritmů je to, že pracují s~populací několik
 
 \begin{figure}[htb]
     \centering\includegraphics[width=0.85\textwidth]{fig/ea.pdf}
-    \caption{Schéma evolučního algoritmu.}
+    \caption{Schéma evolučního algoritmu}
     \label{obrEA}
 \end{figure}
 
@@ -116,7 +116,7 @@ Jiným přístupem k~výběru rodičů je \emph{turnajová selekce}. Do turnajov
         \centering
             \includegraphics[width=0.27\textwidth]{fig/turnajb.pdf}
     }
-    \caption{Mechanismy selekce v~genetickém algoritmu.}
+    \caption{Mechanismy selekce v~genetickém algoritmu}
     \label{obrSelekce}
 \end{figure}
 
@@ -142,7 +142,7 @@ Křížení je považováno za hlavní operátor genetického algoritmu. Během 
         \centering
             \includegraphics[width=0.2\textwidth]{fig/crossoverU.pdf}
         }
-    \caption{Tři základní mechanismy křížení v~genetickém algoritmu.}
+    \caption{Tři základní mechanismy křížení v~genetickém algoritmu}
     \label{obrKrizeni}
 \end{figure}
 
@@ -161,7 +161,7 @@ V~CGP se programy kódují jako orientované acyklické grafy, reprezentované d
 \begin{figure}[htb]
     \centering\includegraphics[width=0.6\textwidth]{fig/cgp.pdf} \\
     {\scriptsize{}Chromozom: \{1, 2, A; 0, 0, A; 2, 3, B; 3, 4, B; 1, 6, B; 0, 6, A; 1, 7, B; 6, 8, B; 6, 10\}}
-    \caption{Program v~kartézském genetickém programování. Uzly 5, 7 a 9 jsou neaktivní.}
+    \caption{Program v~kartézském genetickém programování. Uzly 5, 7 a 9 jsou neaktivní}
     \label{obrCGP}
 \end{figure}
 
@@ -220,13 +220,13 @@ Většina hardwarových i softwarových implementací obrazových filtrů pracuj
 
 \begin{figure}[htb]
     \centering\includegraphics[width=0.66\textwidth]{fig/filter2b.pdf}
-    \caption{Princip filtrace obrazu.}
+    \caption{Princip filtrace obrazu}
     \label{obrIFokoli}
 \end{figure}
 
 Obrazové filtry lze rozdělit na lineární a nelineární. U~lineárních platí princip superpozice a lze je charakterizovat pomocí impulzní odezvy. Výsledný obraz je dán konvolucí vstupního obrazu a impulzní odezvy -- na konvoluci lze nahlížet jako na vážený součet zvoleného okolí pixelu. Nevýhodou lineárních filtrů je ztráta detailů. V~jejich případě není výsledný obraz dán konvolucí, ale nějakou nelineární funkcí, například mediánem hodnot okolních pixelů.
 
-Existují různé typy šumů, pro které jsou vhodné různé typy obrazových filtrů. Poměrně častý je impulzní šum, který vzniká kvůli nefunkčním pixelům v~kameře, chybným paměťovým buňkám nebo chybám při přenosu dat. Poškozené body mají buď mají vždy minimální nebo maximální možnou hodnotu (šum typu sůl a pepř) nebo mají náhodnou hodnotu (výstřelový šum). Pro impulzní šum je vhodný nelineární mediánový filtr, ale při intenzivnějším šumu je kvalita nedostatečná a také dochází ke ztrátě detailů, jak je vidět na obrázcích~\ref{obrMedian}.
+Existují různé typy šumů, pro které jsou vhodné různé typy obrazových filtrů. Poměrně častý je impulzní šum, který vzniká kvůli nefunkčním pixelům v~kameře, chybným paměťovým buňkám nebo chybám při přenosu dat. Poškozené body mají buď mají vždy minimální nebo maximální možnou hodnotu (šum typu sůl a pepř) nebo mají náhodnou hodnotu. Pro impulzní šum je vhodný nelineární mediánový filtr, ale při intenzivnějším šumu je kvalita nedostatečná a také dochází ke ztrátě detailů, jak je vidět na obrázcích~\ref{obrMedian}.
 
 \begin{figure}[htb]
     \centering
@@ -245,7 +245,7 @@ Existují různé typy šumů, pro které jsou vhodné různé typy obrazových 
         \includegraphics[width=0.21\textwidth]{fig/lena_gray_256_saltpepper_25_median2.png}
         \hskip0.75cm
     }
-    \caption{Výstup mediánového filtru pro obrázek s~25\% šumem typu sůl a pepř.}
+    \caption{Výstup mediánového filtru pro obrázek s~25\% šumem typu sůl a pepř}
     \label{obrMedian}
 \end{figure}
 
@@ -268,7 +268,7 @@ Obrazové filtry se uplatňují i v~jiných úlohách než filtrování šumu. J
         \includegraphics[width=0.21\textwidth]{fig/cameraman_256_canny.png}
         \hskip0.75cm
     }
-    \caption{Výstup některých detektorů hran.}
+    \caption{Výstup některých detektorů hran}
     \label{obrDetektor}
 \end{figure}
 
@@ -315,7 +315,7 @@ Koevoluční výpočet za účelem snížení výpočetní náročnosti CGP byl 
 \begin{figure}[htb]
     \vskip 0.25\baselineskip
     \centering\includegraphics[width=0.9\textwidth]{fig/coev3full.pdf}
-    \caption{Schéma koevoluce CGP a prediktorů fitness~\cite{SikuEuroGP}.}
+    \caption{Schéma koevoluce CGP a prediktorů fitness~\cite{SikuEuroGP}}
     \label{obrKoevoluce}
 \end{figure}
 
@@ -422,7 +422,7 @@ Přítomnost nebo nepřítomnost schopnosti učení závisí i na dynamice okoln
 
 \begin{figure}[htb]
     \centering\includegraphics[width=0.5\textwidth]{fig/baldwinPlasticity.pdf}
-    \caption{Baldwinův efekt -- nejprve jsou upřednostňování plastičtější jedinci, později převáží cena učení a plasticita klesá~\cite{EllefsenBalancing}.}
+    \caption{Baldwinův efekt -- nejprve jsou upřednostňování plastičtější jedinci, později převáží cena učení a plasticita klesá~\cite{EllefsenBalancing}}
     \label{obrBaldwin}
 \end{figure}
 
@@ -432,7 +432,7 @@ První výpočetní model Baldwinova efektu představili Geoffrey Hinton a Steve
 
 \begin{figure}[htb]
     \centering\includegraphics[width=0.68\textwidth]{fig/baldwin1.pdf}
-    \caption{Fitness funkce z~experimentu Hintona a Nowlana~\cite{HintonNowlan}.}
+    \caption{Fitness funkce z~experimentu Hintona a Nowlana~\cite{HintonNowlan}}
     \label{obrHintonNowlan}
 \end{figure}
 
@@ -462,7 +462,7 @@ Tato kapitola se nejprve v~části~\ref{secDesignIF} zabývá návrhem kódován
 Obrazové filtry jsou vyvíjeny pomocí kartézského genetického programování, popsaného v~kapitole~\ref{secCGP}. Chromozom tvoří vektor celých čísel kódující acyklický orientovaný graf. Jednotlivé funkční bloky jsou tvořeny trojicí genů -- první z~nich označuje prováděnou funkci, druhý a třetí gen pak určují, kam jsou připojeny jeho vstupy. Seznam funkcí, které mohou výpočetní uzly realizovat je v~tabulce~\ref{tabCGPFunctions}. Programy mají devět primárních vstupů a jeden primární výstup. Na vstupy jsou přiváděny hodnoty pixelů z~devítiokolí právě zpracovávaného pixelu, výstup udává novou hodnotu pixelu, jak je popsáno v~kapitole~\ref{secIF}. V~devítiokolích pixelů na okraji obrázku se na pozicích mimo obrázek používá hodnota nejbližšího okrajového pixelu.
 
 \begin{table}[htb]
-    \caption{Seznam funkcí výpočetních uzlů. Převzato z~článku~\cite{SikuPPSN}.}
+    \caption{Seznam funkcí výpočetních uzlů. Převzato z~článku~\cite{SikuPPSN}}
     \renewcommand{\arraystretch}{1.2}
     \begin{minipage}[t]{.5\textwidth}
         \small\centering\begin{tabular}{cll}
@@ -561,7 +561,7 @@ Evoluce je stejně jako v~případě bez koevoluce ukončena po dosažení stano
     \vskip\baselineskip
     \centering
     \includegraphics[width=0.75\textwidth]{fig/program}
-    \caption{Vývojový diagram koevoluce obrazových filtrů a prediktorů fitness.}
+    \caption{Vývojový diagram koevoluce obrazových filtrů a prediktorů fitness}
     \label{obrProgramCoev}
 \end{figure}
 
@@ -581,7 +581,7 @@ Plasticita je dosažena tím, že fenotyp netvoří všechny ukazatele obsažen�
 
 \begin{figure}[htb]
     \centering\includegraphics[width=0.9\textwidth]{fig/phenotype2.pdf}
-    \caption{Postup konstrukce fenotypu prediktoru. Šipka označuje právě přečtený gen.}
+    \caption{Postup konstrukce fenotypu prediktoru. Šipka označuje právě přečtený gen}
     \label{obrFenotyp}
 \end{figure}
 
@@ -622,7 +622,7 @@ Hraniční rychlost, při které je rychlost evoluce ještě považována za nul
 Všechna pravidla použitá v~algoritmu shrnuje tabulka~\ref{tabBaldwinRules}. Pokud je splněna podmínka některého z~pravidel, další pravidla v~pořadí se již nevyhodnocují.
 
 \begin{table}[htb]
-    \caption{Zvolená pravidla pro změnu velikosti prediktoru.}
+    \caption{Zvolená pravidla pro změnu velikosti prediktoru}
     \small\centering
     \renewcommand{\arraystretch}{1.2}
     \subtable[Relativně k~současné velikosti prediktoru]{
@@ -732,7 +732,7 @@ Ukončovací podmínky se kontrolují ve vlákně evoluce filtrů. Druhému vlá
 \begin{figure}[htb]
     \centering
     \includegraphics[width=0.75\textwidth]{fig/openmp}
-    \caption{Rozdělení běhu programu na vlákna při použití koevoluce. U~standardního CGP se program na začátku nedělí do dvou paralelních sekcí.}
+    \caption{Rozdělení běhu programu na vlákna při použití koevoluce. U~standardního CGP se program na začátku nedělí do dvou paralelních sekcí}
     \label{obrParalelizace}
 \end{figure}
 
@@ -842,7 +842,7 @@ O~něco složitější je výpočet přibližné fitness pomocí prediktoru. Pro
         \centering
         \includegraphics[width=0.85\textwidth]{fig/simdlayout-vect}
     }
-    \caption{Uspořádání vstupních dat v~paměti pro sekvenční a vektorové zpracování. Žlutě je označen střed devítiokolí, modře požadovaný výstup filtru.}
+    \caption{Uspořádání vstupních dat v~paměti pro sekvenční a vektorové zpracování. Žlutě je označen střed devítiokolí, modře požadovaný výstup filtru}
     \label{obrDevitiokoli}
 \end{figure}
 
@@ -855,7 +855,7 @@ Běh evoluce a její výsledky jsou pro pozdější statistické zpracování za
 \begin{figure}[b]
     \centering
     \includegraphics[width=0.75\textwidth]{fig/loggerevent}
-    \caption{Způsob obsluhy událostí vzniklých během evoluce (např. nalezení lepšího kandidátního řešení) za účelem sběru statistických dat.}
+    \caption{Způsob obsluhy událostí vzniklých během evoluce (např. nalezení lepšího kandidátního řešení) za účelem sběru statistických dat}
     \label{obrLoggersHandling}
 \end{figure}
 
@@ -864,7 +864,7 @@ Implementace jednotlivých obslužných modulů událostí je inspirovaná objek
 \begin{figure}[htb]
     \centering
     \includegraphics[width=\textwidth]{fig/loggertypes}
-    \caption{Datové typy modulů obsluhující události a jejich hierarchie.}
+    \caption{Datové typy modulů obsluhující události a jejich hierarchie}
     \label{obrLoggersTypes}
 \end{figure}
 
@@ -912,21 +912,20 @@ Všechny výpočty byly prováděny na superpočítači Anselm, který provozuje
 \section{Testovací problémy}
 \label{secExpProblems}
 
-Pro srovnání navrženého algoritmu se standardním (ko)evolučním CGP byly vybrány tři úlohy z~oblasti zpracování obrazu.
-
-V~prvním případě je cílem nalézt vhodný obrazový filtr pro rekonstrukci obrázků poškozených šumem typu sůl a pepř. U~tohoto šumu jsou poškozené pixely buď bílé nebo černé -- mají minimální nebo maximální možnou hodnotu. Příčinou mohou být vadné body ve snímači v~kameře, nefunkční paměťové buňky, k~poškození může dojít také během přenosu dat. Z~konvenčních filtrů je možné použít mediánový, během filtrování ale dochází ke ztrátě detailů a výsledky při vyšší intenzitě šumu nejsou uspokojivé. Druhým typem šumu použitém během experimentování je výstřelový šum. V~tomto případě mají poškozené pixely zcela náhodnou hodnotu. U~tohoto typu šumu lze také použít mediánový filtr, se stejnými omezeními. V~obou případech je šum charakterizován svou intenzitou -- poměrným počtem poškozených pixelů. Pro evoluci filtrů byl použit obrázek~\ref{obrTrenovaciLena}.
+Pro srovnání navrženého algoritmu se standardním (ko)evolučním CGP byly vybrány úlohy z~oblasti zpracování obrazu. V~prvním případě je cílem nalézt vhodný obrazový filtr pro rekonstrukci obrázků poškozených šumem typu sůl a pepř. U~tohoto šumu jsou poškozené pixely buď bílé nebo černé -- mají minimální nebo maximální možnou hodnotu. Příčinou mohou být vadné body ve snímači v~kameře, nefunkční paměťové buňky, k~poškození může dojít také během přenosu dat. Z~konvenčních filtrů je možné použít mediánový, během filtrování ale dochází ke ztrátě detailů a výsledky při vyšší intenzitě šumu nejsou uspokojivé. Druhým typem šumu použitém během experimentování je náhodný impulzní šum, kdy mají poškozené pixely zcela náhodnou hodnotu. U~tohoto typu šumu lze také použít mediánový filtr, se stejnými omezeními. V~obou případech je šum charakterizován svou intenzitou -- poměrným počtem poškozených pixelů. Pro evoluci filtrů byl použit obrázek~\ref{obrTrenovaciLena}.
 
 Poslední testovací úloha spočívá v~nalezení filtru, který provádí detekci hran v~obraze. Výstupem detektoru je jednobitový černobílý obrázek, ve kterém jsou hrany označeny bílou barvou. Mezi konvenční filtry patří Sobelův nebo Cannyho detektor hran. V~tomto případě byly filtry trénovány na obrázku~\ref{obrTrenovaciPan}.
 
 \begin{figure}[htb]
     \centering
-    \subfigure[Šum sůl a pepř a výstřelový šum]{
+    \subfigure[Šum typu sůl a pepř a náhodný impulzní šum]{
         \hskip1cm
         \centering
             \includegraphics[width=0.3\textwidth]{fig/testimages/lena_gray.png}
         \label{obrTrenovaciLena}
         \hskip1cm
     }
+    \hfill
     \subfigure[Detekce hran]{
         \hskip1cm
         \centering
@@ -934,7 +933,7 @@ Poslední testovací úloha spočívá v~nalezení filtru, který provádí dete
         \label{obrTrenovaciPan}
         \hskip1cm
     }
-    \caption{Obrázky používané pro evoluci filtrů.}
+    \caption{Obrázky používané pro evoluci filtrů}
     \label{obrTrenovaci}
 \end{figure}
 
@@ -1046,7 +1045,7 @@ Jak bylo zmíněno v~kapitole~\ref{secDesignAdaptation}, ke změně velikosti pr
         \hskip0.5cm
         \includegraphics[width=0.475\textwidth]{fig/plot/tuning-interval-30kg-utime.pdf}
     }
-    \caption{Vliv nastavení maximálního možného počtu generací mezi dvěma úpravami velikosti prediktoru.}
+    \caption{Vliv nastavení maximálního možného počtu generací mezi dvěma úpravami velikosti prediktoru}
     \label{plotInterval-30kg}
 \end{figure}
 
@@ -1061,7 +1060,7 @@ Rychlost evoluce $v$, podle které se určuje, jakým způsobem se upraví velik
     \item vážený průměr posledních 7 změn (\emph{mean7w}).
 \end{itemize}
 
-Dosažené výsledky po 30 tisících generacích jsou na grafech~\ref{plotBwalg-30kg}. Ukazuje se, že u~všech zkoumaných variant je kvalita filtrů srovnatelná. Také potřebný čas běhu je podobný, s~výjimkou varianty \emph{mean7w}, u~které je evoluce v~průměru 2,2krát pomalejší než u~\emph{last}.
+Dosažené výsledky po 30 tisících generacích a 100 nezávislých běhů jsou na grafech~\ref{plotBwalg-30kg}. Ukazuje se, že u~všech zkoumaných variant je kvalita filtrů srovnatelná. Také potřebný čas běhu je podobný, s~výjimkou varianty \emph{mean7w}, u~které je evoluce v~průměru 2,2krát pomalejší než u~\emph{last}.
 
 \begin{figure}[htb]
     \centering
@@ -1071,7 +1070,7 @@ Dosažené výsledky po 30 tisících generacích jsou na grafech~\ref{plotBwalg
         \hskip0.5cm
         \includegraphics[width=0.475\textwidth]{fig/plot/bwalg-30kg-utime.pdf}
     }
-    \caption{Vliv různých způsobů výpočtu rychlosti evoluce $v$.}
+    \caption{Vliv různých způsobů výpočtu rychlosti evoluce $v$}
     \label{plotBwalg-30kg}
 \end{figure}
 
@@ -1079,7 +1078,7 @@ Dosažené výsledky po 30 tisících generacích jsou na grafech~\ref{plotBwalg
 
 Při tvorbě nových prediktorů fitness je nejjednodušší vytvořit jejich genom zcela náhodně. Takto ale může vzniknout relativně velké množství duplicitních genů, což znamená kratší fenotyp a horší schopnost predikce fitness. Genotyp lze ale také inicializovat pomocí permutace všech možných hodnot, kde žádné duplicity nevznikají. Objevit se mohou až v~dalším vývoji prediktoru buď křížením nebo mutacemi. Obě varianty byly testovány u~filtrů pro šum typu sůl a pepř o~intenzitě od 5 do 80 procent (s~krokem po pěti procentech). Evoluce byla ukončena po 100 tisících generacích. Na obrázku~\ref{plotRndPerm-100kg} jsou grafy kvality získaných filtrů a doby běhu evoluce.
 
-Ukazuje se, že při použití permutace ($\mathit{init}_\mathit{perm}$) je evoluce o~něco rychlejší než náhodná inicializace ($\mathit{init}_\mathit{rand}$), ale výsledné filtry jsou obecně méně kvalitní. S~rostoucí intenzitou šumu časový rozdíl klesá a od intenzity 55\% je už $\mathit{init}_\mathit{perm}$ pomalejší. V~případě $\mathit{init}_\mathit{perm}$ je u~procesorového času také více odlehlých hodnot. Některé běhy byly i několikanásobně pomalejší, než byl průměr (např. u~5\% šumu nejpomalejší běh spotřeboval 141 minut, přičemž průměr je 18,5 minut). Zdá se tedy, že náhodná inicializace prediktorů a je výhodnější z~pohledu kvality filtrů, i když evoluce trvá o~něco déle.
+Ukazuje se, že při použití permutace ($\mathit{init}_\mathit{perm}$) je evoluce o~něco rychlejší než náhodná inicializace ($\mathit{init}_\mathit{rand}$), ale výsledné filtry jsou obecně méně kvalitní. S~rostoucí intenzitou šumu časový rozdíl klesá a od intenzity 55\% je už $\mathit{init}_\mathit{perm}$ pomalejší. V~případě $\mathit{init}_\mathit{perm}$ je u~procesorového času také více odlehlých hodnot. Některé běhy byly i několikanásobně pomalejší, než byl průměr (např. u~5\% šumu nejpomalejší běh spotřeboval 141 minut, přičemž průměr je 18,5 minut). Zdá se tedy, že náhodná inicializace prediktorů je výhodnější z~pohledu kvality filtrů, i když evoluce trvá o~něco déle.
 
 \begin{figure}[tbp]
     \centering
@@ -1090,13 +1089,14 @@ Ukazuje se, že při použití permutace ($\mathit{init}_\mathit{perm}$) je evol
     \subfigure{
         \includegraphics[width=\textwidth]{fig/plot/rndperm-100kg-utime.pdf}
     }
-    \caption{Vliv způsobu inicializace prediktorů fitness. Výsledky po 100~000 generacích u~šumu typu sůl a pepř různé intenzity.}
+    \setlength{\captionmargin}{0pt}
+    \caption{Vliv způsobu inicializace prediktorů fitness pro různé intenzity šumu typu sůl a pepř}
     \label{plotRndPerm-100kg}
 \end{figure}
 
 \subsection{Změna velikosti prediktoru podle celkového počtu případů fitness}
 
-Experimentovalo se také s~druhou sadou pravidel, uvedených v~tabulce~\ref{tabBaldwinRulesAbs}, kdy je změna velikosti prediktoru vypočtena z~celkového počtu případů fitness. Byly testovány hodnoty od $-0.10$ po $+0.10$ s~krokem po $0.01$ pro koeficienty $c_0$, $c_{-1}$, $c_{+1}$ a $c_{+2}$. Ve všech případech platí, že různé hodnoty nemají vliv na kvalitu filtrů, ale jen na rychlost programu. Obecně platí, že při každé změně se prediktor zvětší či zmenší o~větší počet případů fitness než v~případě dosud popisované relativní změny a lze zde proto pozorovat zvýšení potřebného času u~všech koeficientů. Potřebný čas stoupá až od určité hodnoty koeficientu, konkrétně:
+Experimentoval jsem také s~druhou sadou pravidel, uvedených v~tabulce~\ref{tabBaldwinRulesAbs}, kdy je změna velikosti prediktoru vypočtena z~celkového počtu případů fitness. Byly testovány hodnoty od $-0.10$ po $+0.10$ s~krokem po $0.01$ pro koeficienty $c_0$, $c_{-1}$, $c_{+1}$ a $c_{+2}$. Ve všech případech platí, že různé hodnoty nemají vliv na kvalitu filtrů, ale jen na rychlost programu. Obecně platí, že při každé změně se prediktor zvětší či zmenší o~větší počet případů fitness než v~případě dosud popisované relativní změny a lze zde proto pozorovat zvýšení potřebného času u~všech koeficientů. Potřebný čas stoupá až od určité hodnoty koeficientu, konkrétně:
 
 \begin{itemize}
     \item u~$c_0$ od hodnoty $0$,
@@ -1111,7 +1111,7 @@ U~nižších hodnot se rychlost algoritmu neliší tak výrazně. U~parametru $c
 Grafy kvality nalezených filtrů a potřebného času pro různé hodnoty uvedených koeficientů jsou na obrázku~\ref{plotAbsCoef}.
 
 \begin{figure}[p]
-    \captionsetup{aboveskip=0pt}
+    %\captionsetup{aboveskip=0pt}
     \centering
     \subfigure[Vliv parametru $c_{0}$ (pravidlo $\left|v\right| \leq v_\mathit{zero}: \mathit{UsedGenes} \leftarrow \mathit{UsedGenes} + N \cdot c_0$)]{
         \centering
@@ -1141,7 +1141,7 @@ Grafy kvality nalezených filtrů a potřebného času pro různé hodnoty uvede
         \includegraphics[width=0.475\textwidth]{fig/plot/tuningabs-fastinc-30kg-utime.pdf}
     }
 
-    \caption{Vliv koeficientů změny velikosti prediktorů podle celkového počtu případů fitness.}
+    \caption{Vliv koeficientů změny velikosti prediktorů v~případě, že je velikost změny určena podle celkového počtu případů fitness}
     \label{plotAbsCoef}
 \end{figure}
 
@@ -1175,7 +1175,7 @@ Protože délka prediktoru má zásadní vliv na rychlost běhu programu, je vý
         \centering
             \includegraphics[width=0.475\textwidth]{fig/plot/initial-size/initial-size-small-sobel-100kg.pdf}
     }
-    \caption{Vývoj velikosti prediktorů fitness při různé počáteční velikosti.}
+    \caption{Vývoj velikosti prediktorů fitness při různé počáteční velikosti}
     \label{plotInitialSize}
 \end{figure}
 
@@ -1186,7 +1186,7 @@ Průběh vývoje fitness a velikosti prediktoru jednoho konkrétního běhu pro 
 \begin{figure}[htb]
     \centering
     \includegraphics[width=0.9\textwidth]{fig/plot/run-fitpred1.pdf}
-    \caption{Průběh predikované a skutečné fitness a velikosti prediktoru pro jeden konkrétní běh s~15\% šumem typu sůl a pepř.}
+    \caption{Průběh predikované a skutečné fitness a velikosti prediktoru pro jeden konkrétní běh s~15\% šumem typu sůl a pepř}
     \label{plotFitPred}
 \end{figure}
 
@@ -1203,15 +1203,6 @@ Experimenty byly zaměřené i na to, jak často se které pravidlo změny velik
 \end{itemize}
 
 Toto pořadí platí v~celém průběhu evoluce. Pokud se použije počáteční velikost prediktorů 50\,\%, celkový počet úprav je nižší, v~průměru jich bylo 600. Pořadí pravidel je stejné, s~výjimkou prvních 10 tisíc generací, kdy se nejvíce používají koeficienty $c_{+2}$ a $c_{+1}$.
-
-%Kolikrát se uplatnil každý koeficient v různých fázích evoluce je zobrazeno na grafu na obrázku~\ref{plotRuleCount}.
-
-%\begin{figure}[htb]
-%    \centering
-%    \includegraphics[width=0.475\textwidth]{fig/plot/rulecount-small-i3.pdf}
-%    \caption{Počet použití jednotlivých koeficientů změny velikosti prediktoru v průběhu evoluce. Průměrné hodnoty za 100 běhů.}
-%    \label{plotRuleCount}
-%\end{figure}
 
 \section{Četnost výskytu pixelů v~prediktorech}
 \label{secExpPredhist}
@@ -1271,7 +1262,7 @@ Rovnoměrný výběr devítiokolí v~prediktorech je způsoben především tím
         \margin
     }
 
-    \caption{Četnost výskytu pixelů v~aktivních prediktorech fitness při návrhu různých filtrů. Nalevo je obrázek, který byl na vstupu filtru, napravo 2D histogram výskytu pixelů. Čím je pixel v histogramu světlejší, tím častěji byl použit v~aktivních prediktorech. Jde o~souhrn ze 100 nezávislých běhů.}
+    \caption{Četnost výskytu pixelů v~aktivních prediktorech fitness při návrhu různých filtrů. Nalevo je obrázek, který byl na vstupu filtru, napravo 2D histogram výskytu pixelů pro 100 nezávislých běhů. Čím je pixel v~histogramu světlejší, tím častěji byl použit v~aktivních prediktorech}
     \label{obrPredhist}
 \end{figure}
 
@@ -1287,7 +1278,7 @@ Navržený algoritmus se souběžným učením a adaptivními prediktory fitness
     \item $\mathit{FP_{ABS}}$: souběžné učení se změnou velikosti podle celkového počtu případů fitness.
 \end{itemize}
 
-Konkrétní hodnoty parametrů pro souběžné učení jsou uvedeny v~tabulce~\ref{tabParams}. Ve všech případech byla použita stejná implementace CGP i koevoluce. Stejně jako v~předchozích experimentech byla porovnávána kvalita nalezených obrazových filtrů a délku běhu evoluce. Experimenty byly provedeny na úloze návrhu obrazových filtrů pro obrázky poškozené šumy typu sůl a pepř a výstřelovým šumem o~intenzitách 5 až 80\,\% s~krokem po 5\,\% a na úloze návrhu detektoru hran v~obrazu.
+Konkrétní hodnoty parametrů pro souběžné učení jsou uvedeny v~tabulce~\ref{tabParams}. Ve všech případech byla použita stejná implementace CGP i koevoluce. Stejně jako v~předchozích experimentech byla porovnávána kvalita nalezených obrazových filtrů a délku běhu evoluce. Experimenty byly provedeny na úloze návrhu obrazových filtrů pro obrázky poškozené šumy typu sůl a pepř a náhodným impulzním šumem o~intenzitách 5 až 80\,\% s~krokem po 5\,\% a na úloze návrhu detektoru hran v~obrazu.
 
 Evoluce byla ukončena po 100 tisících generací. Kvalita filtrů byla porovnávána pomocí sady 12 obrázků uvedených na obrázku~\ref{obrTestovaci}. Tyto obrázky jsou běžně používané komunitou zabývající se zpracováním obrazu. Jako kritérium kvality filtrů byla použita funkce PSNR.
 
@@ -1382,14 +1373,14 @@ Evoluce byla ukončena po 100 tisících generací. Kvalita filtrů byla porovn�
     \includegraphics[width=\size]{fig/testimages/walkbridge.png}\hfill
     \includegraphics[width=\size]{fig/testimages/woman_blonde.png}\hfill
     \includegraphics[width=\size]{fig/testimages/woman_darkhair.png}
-    \caption{Obrázky používané pro testování kvality filtrů.}
+    \caption{Obrázky používané pro testování kvality filtrů}
     \label{obrTestovaci}
 \end{figure}
 
 \begin{figure}[hbt]
     \centering
     \includegraphics[width=0.9\textwidth]{fig/plot/compare/lineplot-psnr-sp-40.pdf}
-    \caption{Hodnoty PSNR získané pomocí 12 testovacích obrázků pro $\mathit{FP_{FIX}}$ s~různou velikostí prediktoru, $\mathit{CGP_{STD}}$, $\mathit{FP_{REL}}$ a $\mathit{FP_{ABS}}$ pro různé intenzity šumu typu sůl a pepř. Plnou čarou je vyznačen průměr ze 100 nezávislých běhů, čárkovanou medián.}
+    \caption{Hodnoty PSNR získané pomocí 12 testovacích obrázků pro $\mathit{FP_{FIX}}$ s~různou velikostí prediktoru, $\mathit{CGP_{STD}}$, $\mathit{FP_{REL}}$ a $\mathit{FP_{ABS}}$ pro různé intenzity šumu typu sůl a pepř. Plnou čarou je vyznačen průměr ze 100 nezávislých běhů, čárkovanou medián}
     \label{plotComparisonSP40}
 \end{figure}
 
@@ -1399,11 +1390,8 @@ Co se týče rychlosti, spotřebovává $\mathit{FP_{REL}}$ a $\mathit{FP_{ABS}}
 
 Průměrný čas potřebný pro jeden běh $\mathit{CGP_{STD}}$, $\mathit{FP_{REL}}$ a $\mathit{FP_{ABS}}$ pro všechny intenzity šumu je uveden v~tabulce~\ref{tabUtime}. V~průměru je zrychlení oproti $\mathit{CGP_{STD}}$ 8,6násobné v~případě $\mathit{FP_{REL}}$ a 6,4násobné v~případě $\mathit{FP_{ABS}}$ při srovnatelné kvalitě výsledných filtrů.
 
-%\fixme{Jak je vidět na příkladu 10\% výstřelového šumu na obrázku~\ref{fig:ImpulseBoxplot}, je kvalita filtrů nalezená pomocí $\mathit{FP_{ADAPT}}$ srovnatelná s~filtry získanými $\mathit{CGP_{STD}}$ a $\mathit{FP_{FIX}}$ s~pre\-dik\-tory o~velikosti 10\,\% a více. Co se týče potřebného času, je v~tomto případě $\mathit{FP_{ADAPT}}$ v~průměru 6,26krát rychlejší než $\mathit{CGP_{STD}}$. Také je srovnatelně rychlý jako při použití $\mathit{FP_{FIX}}$ s~3--5\% pre\-dik\-to\-rem, kdy ale mají výsledné filtry nižší kvalitu než u~$\mathit{FP_{ADAPT}}$.
-% Podobné výsledky byly dosaženy i pro jiné in\-ten\-zity šumu. Konkrétní hodnoty jsou uvedeny v~tabulce~\ref{table:results}. Ve všech případech je kvalita filtrů získaných pomocí $\mathit{FP_{ADAPT}}$ srovnatelná při kratší nebo přinejhorším podobné době běhu. V~průměru bylo dosaženo 8,39násobného zrychlení oproti $\mathit{CGP_{STD}}$.}
-
 \begin{table}[hp]
-    \caption{Srovnání rychlosti $\mathit{CGP_{STD}}$, $\mathit{FP_{REL}}$ a $\mathit{FP_{ABS}}$. Uvedené hodnoty jsou průměr procesorového času (součtu všech vláken) v~minutách pro 100 běhů.}
+    \caption{Srovnání rychlosti $\mathit{CGP_{STD}}$, $\mathit{FP_{REL}}$ a $\mathit{FP_{ABS}}$. Uvedené hodnoty jsou průměr procesorového času (součtu všech vláken) v~minutách ze 100 nezávislých běhů}
     \label{tabUtime}
     \renewcommand{\arraystretch}{1.2}
     \centering
@@ -1440,7 +1428,7 @@ Průměrný čas potřebný pro jeden běh $\mathit{CGP_{STD}}$, $\mathit{FP_{RE
     }
     \vskip\baselineskip
     \addtocounter{subtable}{-1}
-    \subtable[Výstřelový šum]{
+    \subtable[Náhodný impulzní šum]{
         \begin{tabular*}{\linewidth}{@{\extracolsep{\fill}} l*{8}{r}}
             \toprule
             Intenzita & 5\,\% & 10\,\% & 15\,\% & 20\,\% & 25\,\% & 30\,\% & 35\,\% & 40\,\% \\
@@ -1476,7 +1464,7 @@ Průměrný čas potřebný pro jeden běh $\mathit{CGP_{STD}}$, $\mathit{FP_{RE
 \section{Nalezené filtry}
 \label{secExpFilters}
 
-Výstup a zapojení nejlepšího evolvovaného filtru pro 25\% šum typu sůl a pepř je na obrázku~\ref{obrFilterSP}. Pro srovnání je zobrazen i výstup mediánového filtru s~oknem $3\times3$. Oproti mediánovému filtru si evolvovaný filtr lépe poradil se shluky poškozených pixelů a zachovalo se více detailů. Také hodnota PSNR je vyšší, pro evolvovaný filtr činí 29,46 dB, kdežto u~mediánového filtru to je pouze 24,61 dB. Ve filtru je použita pouze část možných funkcí bloků, nejčastěji se vyskytuje sčítání vstupů. Ve několika případech jde o~součet primárního vstupu a konstanty 255, což v~případě 8bitových číslech bez znaménka odpovídá odečtení jedničky. Tato operace se na různých místech filtru provádí pro každý použitý primární vstup. Sníží se tak dynamický rozsah šumu -- v~případě černého pixelu (s~hodnotou 0) je výsledkem hodnota 255, v~případě bílého (255) je výsledkem 254. Podobný efekt má funkce $255 - i_1$, která je součástí množiny použitelných funkcí a ve filtru je také dvakrát použita.% (na obrázku je označená jako INV).
+Výstup a zapojení nejlepšího evolvovaného filtru pro 25\% šum typu sůl a pepř je na obrázku~\ref{obrFilterSP}. Pro srovnání je zobrazen i výstup mediánového filtru s~oknem $3\times3$. Oproti mediánovému filtru si evolvovaný filtr lépe poradil se shluky poškozených pixelů a zachovalo se více detailů. Také hodnota PSNR je vyšší, pro evolvovaný filtr činí 29,46 dB, kdežto u~mediánového filtru to je pouze 24,61 dB. Ve filtru je použita pouze část možných funkcí bloků, nejčastěji se vyskytuje sčítání vstupů. V~několika případech jde o~součet primárního vstupu a konstanty 255, což v~případě 8bitových číslech bez znaménka odpovídá odečtení jedničky. Tato operace se na různých místech filtru provádí pro každý použitý primární vstup. Sníží se tak dynamický rozsah šumu -- v~případě černého pixelu (s~hodnotou 0) je výsledkem hodnota 255, v~případě bílého (255) je výsledkem 254. %Podobný efekt má funkce $255 - i_1$, která je součástí množiny použitelných funkcí a ve filtru je také dvakrát použita.% (na obrázku je označená jako INV).
 
 \begin{figure}[hbt]
     \centering
@@ -1494,11 +1482,11 @@ Výstup a zapojení nejlepšího evolvovaného filtru pro 25\% šum typu sůl a 
     \subfigure[Zapojení evolvovaného filtru]{
         \includegraphics[width=0.9\textwidth]{fig/filters/sp25/filter}
     }
-    \caption{Srovnání mediánového a evolvovaného filtru pro 25\% šum typu sůl a pepř.}
+    \caption{Srovnání mediánového a evolvovaného filtru pro 25\% šum typu sůl a pepř}
     \label{obrFilterSP}
 \end{figure}
 
-Na obrázku~\ref{obrFilterImp} je obdobné srovnání pro nejlepší nalezený filtr pro 10\% výstřelový šum. U~tohoto šumu mají poškozené pixely náhodnou hodnotu a je proto obtížnější jej odstranit. Zatímco u~šumu sůl a pepř jsou pixely, které nemají čistě bílou nebo černou barvu jednoznačně poškozené, u~výstřelového šumu to neplatí. V~tomto případě je PSNR evolvovaného filtru 29,91 dB, což je jen o~trochu více než u~mediánového filtru, kde to je 28,96 dB. Nicméně opět platí, že i když evolvovaný filtr neodstraní veškerý šum, lépe zachovává detaily. Oproti filtru pro šum typu sůl a pepř je zcela jiná skladba použitých funkcí, používají se pouze funkce minimum a maximum. Také jsou zde použity téměř všechny primární vstupy, tj. body z~devítiokolí zpracovávaného pixelu.
+Na obrázku~\ref{obrFilterImp} je obdobné srovnání pro nejlepší nalezený filtr pro 10\% náhodný šum. U~tohoto šumu mají poškozené pixely náhodnou hodnotu a je proto obtížnější jej odstranit. Zatímco u~šumu sůl a pepř jsou pixely, které nemají čistě bílou nebo černou barvu jednoznačně poškozené, u~náhodného impulzního šumu to neplatí. V~tomto případě je PSNR evolvovaného filtru 29,91 dB, což je jen o~trochu více než u~mediánového filtru, kde to je 28,96 dB. Nicméně opět platí, že i když evolvovaný filtr neodstraní veškerý šum, lépe zachovává detaily. Oproti filtru pro šum typu sůl a pepř je zcela jiná skladba použitých funkcí, používají se pouze funkce minimum a maximum. Také jsou zde použity téměř všechny primární vstupy, tj. body z~devítiokolí zpracovávaného pixelu.
 
 \begin{figure}[htb]
     \centering
@@ -1516,7 +1504,7 @@ Na obrázku~\ref{obrFilterImp} je obdobné srovnání pro nejlepší nalezený f
     \subfigure[Zapojení evolvovaného filtru]{
         \includegraphics[width=0.9\textwidth]{fig/filters/impulse10/filter}
     }
-    \caption{Srovnání mediánového a evolvovaného filtru pro 10\% výstřelový šum.}
+    \caption{Srovnání mediánového a evolvovaného filtru pro 10\% náhodný šum}
     \label{obrFilterImp}
 \end{figure}
 
@@ -1539,7 +1527,7 @@ Schéma a výstup nejlepšího nalezeného filtru pro detekci je na obrázku~\re
     \subfigure[Zapojení evolvovaného detektoru]{
         \includegraphics[width=0.9\textwidth]{fig/filters/sobel/filter}
     }
-    \caption{Srovnání Sobelova a evolvovaného detektoru hran.}
+    \caption{Srovnání Sobelova a evolvovaného detektoru hran}
     \label{obrFilterSobel}
 \end{figure}
 
@@ -1590,15 +1578,16 @@ Schéma a výstup nejlepšího nalezeného filtru pro detekci je na obrázku~\re
 
 \chapter{Závěr}
 \label{chConclusions}
+\enlargethispage{4\baselineskip} % strange hack to get rid of blank page before bibliography
 
-Tato diplomové práce se zabývá problematikou evolučních algoritmů, evolučního návrhu obrazových filtrů a vztahem mezi učením a evolucí. Jejím hlavním cílem bylo navrhnout a experimentálně otestovat systém pro tvorbu obrazových filtrů využívající souběžné učení v~koevoluci s~prediktory fitness. Použití souběžného učení by mělo pomoci překonat hlavní nevýhodu koevolučního algoritmu, což je nutnost experimentálně nalézt nejvýhodnější velikost prediktoru fitness pro řešenou úlohu. Při použití učení se sleduje vývoj fitness nejlepšího jedince v~populaci filtrů a podle něj se pomocí jednoduchých pravidel upravuje velikost prediktoru fitness. To je možné díky použití plastického  kódování, kdy lze ze stejného genotypu prediktoru odvodit různé fenotypy.
+Tato diplomová práce se zabývá problematikou evolučních algoritmů, evolučního návrhu obrazových filtrů a vztahem mezi učením a evolucí. Jejím hlavním cílem bylo navrhnout a experimentálně otestovat systém pro tvorbu obrazových filtrů využívající souběžné učení v~koevoluci s~prediktory fitness. Pomocí souběžného učení lze překonat hlavní nevýhodu koevoluce, což je nutnost experimentálně hledat nejvýhodnější velikost prediktoru pro řešenou úlohu. Při použití učení je sledována fitness nejlepšího jedince v~populaci kandidátních řešení a podle velikosti a směru jejích změn se pomocí jednoduchých pravidel upravuje velikost prediktoru. To je možné díky plastickému kódování, kdy lze ze stejného genotypu prediktoru odvodit různé fenotypy .
 
-Navržený systém byl implementován v~jazyce C s~důrazem na co nejvyšší rychlost, proto byla použita paralelizace pomocí OpenMP a akcelerace pomocí vektorových instrukcí z~rodiny SSE2 a AVX2. Díky rychlé implementaci bylo možné provést větší množství experimentů zaměřené na studium vlivu jednotlivých parametrů souběžného učení, jeho chování a na srovnání navrženého algoritmu se standardním a koevolučním CGP.
+Navržený systém byl implementován v~jazyce C s~důrazem na co nejvyšší rychlost, proto byla použita paralelizace pomocí OpenMP a vektorizace pomocí instrukcí SSE2 a AVX2. Díky rychlé implementaci bylo možné provést větší množství experimentů zaměřených na studium vlastností a chování souběžného učení a na porovnání navrženého algoritmu se standardním a s~koevolučním CGP. Porovnání proběhlo na 33 úlohách: na návrhu obrazových filtrů pro šum typu sůl a pepř a náhodný impulzní šum a na návrhu detektoru~hran.
 
-Experimenty se zabývaly jak zkoumáním vlastností navrženého algoritmu, tak také porovnáním získaných výsledků s~výsledky standardního a koevolučního CGP. Porovnání probíhalo na úloze návrhu filtrů pro šum typu sůl a pepř a impulzní šum o~různé intenzitě a na úloze návrhu detektoru hran v~obrazu.
+Z~dosažených výsledků vyplývá, že souběžné učení dokáže vhodně adaptovat velikost prediktoru na řešenou úlohu. Zároveň tato velikost není náhodná, protože bez ohledu na počáteční nastavení pro stejnou úlohu algoritmus konverguje vždy ke stejně velkým prediktorům. Například pro 5\% šum typu sůl a pepř je konečná velikost okolo 25\,\% celkového počtu pixelů, pro 50\% šumu jsou to přibližně 3 procenta.
 
-Z~dosažených výsledků vyplývá, že souběžné učení je schopno nalézt vhodnou velikost prediktoru pro řešenou úlohu. Zároveň tato velikost není náhodná, protože bez ohledu na počáteční nastavení pro stejnou úlohu algoritmus konverguje vždy ke stejně velikým prediktorům. Npaříklad pro 5\% šum typu sůl a pepř je konečná velikost okolo 25\,\% celkového počtu pixelů, pro 50\% šumu jsou to přibližně 3 procenta.
+Ve srovnávacích experimentech se ukázalo, že kvalita výsledných obrazových filtrů je srovnatelná s~filtry získanými pomocí standardního CGP i pomocí koevolučního CGP s~vhodnou experimentálně určenou fixní velikostí prediktorů. Navržený algoritmus je oproti standardnímu CGP v~průměru 8,6krát rychlejší a srovnatelně rychlý s~koevolučním CGP s~pevnou velikostí prediktorů, přičemž není třeba experimentovat s~vhodnou velikostí pro právě řešenou úlohu. Je tedy umožněno aplikovat koevoluci prediktorů fitness k~řešení nové, dříve neznámé, úlohy bez nutnosti experimentálního hledání vhodné velikosti prediktoru.
 
-Ve srovnávacích experimentech se ukázalo, že kvalita výsledných obrazových filtrů je srovnatelná s~filtry získanými standardním CGP i s~filtry získanými koevolučním CGP s~vhodně zvolenou fixní velikostí prediktorů. Navržený algoritmus je oproti standardnímu CGP v~průměru 8,6krát rychlejší. Zároveň srovnatelně rychlý s~koevolučním CGP s~pevnou velikostí prediktorů, přičemž není třeba experimentovat s~vhodnou velikostí pro právě řešenou úlohu.
+Při práci na tomto tématu jsem si zopakoval a upevnil principy evolučních algoritmů a obrazových filtrů. Při implementaci jsem si poprvé vyzkoušel práci s~pokročilými instrukčními sadami, paralelizaci pomocí OpenMP a simulaci polymorfismu a dědičnosti v~jazyce C. Také jsem si zkusil práci se superpočítačem Anselm a s~MetaCentrem. Nové pro mě bylo i statistické zpracování poměrně velkého množství výstupních dat (jen záznamy průběhu evoluce měly asi 29~GB), kde jsem využil jak existující nástroje, tak vlastní skripty.
 
 Tato práce byla publikována na studentské konferenci Excel@FIT 2015, kde byla jako jedna z~12 nejzajímavějších vybrána k~ústní prezentaci.

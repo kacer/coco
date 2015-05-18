@@ -20,6 +20,15 @@
     #3
 }
 
+\newcommand\filelist[1]{
+    \begin{description}#1\end{description}
+}
+
+\newcommand\file[2]{
+    \item[\texttt{#1}] \hfill \\
+    #2
+}
+
 \chapter{Uživatelská příručka}
 \label{apxManual}
 
@@ -89,9 +98,23 @@ Povinné parametry jsou pouze dva, a sice:
     \item \texttt{-{}-original FILE} nebo \texttt{-i FILE}
 \end{itemize}
 
-Jména souborů se zdrojovým (poškozeným) a cílovým (nepoškozeným) obrázkem. V~případě detekce hran se u~parametru \texttt{-{}-noisy} uvede zdrojový obrázek a u~\texttt{-{}-original} obrázek s~vyznačenými hranami.
+Jména souborů se zdrojovým (poškozeným) a cílovým (nepoškozeným) obrázkem. V~případě detekce hran se u~parametru \texttt{-{}-noisy} uvede zdrojový obrázek a u~\texttt{-{}-original} obrázek s~vyznačenými hranami. Ostatní parametry jsou volitelné, pokud nejsou uvedeny, použije se výchozí hodnota. Mezi standardním CGP, koevolucí a koevolucí se souběžným učením se přepíná pomocí parametru \texttt{-{}-algorithm} nebo \texttt{-a}.
 
-Ostatní parametry jsou volitelné, pokud nejsou uvedeny, použije se výchozí hodnota.
+Evoluce se ukončí po dosažení stanoveného počtu generací nebo požadované kvality filtru. Při přijetí signálu SIGINT, SIGTERM nebo SIGXCPU se program korektně ukončí a vytvoří se i všechny výstupní soubory.
+
+\subsection*{Příklady spuštění}
+
+\cmdarglist{
+    \cmdarg{./coco -n noisy.png -i original.png -a cgp -S 100 -I 3 -g 10000}{
+        Spustí standardní CGP, evoluce je ukončena po 10~000 generacích.
+    }
+    \cmdarg{./coco -n noisy.png -i original.png -a coev -S 50 -g 10000}{
+        Spustí koevoluci s 50\% prediktory fitness. Evoluce je ukončena po 10~000 generacích.
+    }
+    \cmdarg{./coco -n noisy.png -i original.png -a colearn -S 100 -I 3 -g 10000}{
+        Spustí koevoluci se souběžným učením. Na počátku mají prediktory velikost 3\,\%. Evoluce je ukončena po 10~000 generacích.
+    }
+}
 
 \subsection*{Parametry evoluce}
 
@@ -107,6 +130,10 @@ Ostatní parametry jsou volitelné, pokud nejsou uvedeny, použije se výchozí 
 
     \cmdargdef{-{}-random-seed N, -r N}{dle \texttt{gettimeofday()}}{
         Inicializační hodnota generátoru pseudonáhodných čísel.
+    }
+
+    \cmdargdef{-{}-max-generations N, -g N}{50~000}{
+        Evoluce se ukončí po dosažení zvoleného počtu generací CGP.
     }
 
     \cmdarg{-{}-target-psnr N, -t N}{
@@ -210,11 +237,86 @@ Ostatní parametry jsou volitelné, pokud nejsou uvedeny, použije se výchozí 
     \cmdargdef{-{}-bw-fast-inc N}{0}{Parametr $c_{+2}$ (při použití \texttt{-{}-bw-by-max-length})}
 }
 
-%\section{Výstupy programu}
+\section{Výstupy programu}
+
+Pokud se uvede parametr \texttt{-{}-log-dir DIR}, je vytvořena složka \texttt{DIR}, ve které se po ukončení evoluce nacházejí tyto soubory:
+
+\filelist{
+    \file{best\_circuit.c}{
+        Nejlepší nalezený filtr jako zdrojový kód v jazyce C.
+    }
+    \file{best\_circuit.chr}{
+        Nejlepší nalezený filtr ve formátu pro CGP Viewer.
+    }
+    \file{best\_circuit.txt}{
+        Nejlepší nalezený filtr v textové podobě (mj. obsahuje filtr ve formátu CGP Vieweru a ASCII Artu).
+    }
+    \file{cgp\_history.csv}{
+        Záznam průběhu evoluce vhodný pro strojové zpracování. Nový řádek se zapíše při každé změně rodiče v populaci filtrů a v intervalech dle parametru \texttt{-{}-log-interval}. Soubor obsahuje tyto sloupce:
+        \begin{itemize}
+            \item\emph{generation}: číslo generace,
+            \item\emph{predicted\_fitness}: predikovaná fitness nejlepšího filtru v populaci ($f_\mathit{predicted}$),
+            \item\emph{real\_fitness}: skutečná fitness nejlepšího filtru v populaci ($f_\mathit{exact}$),
+            \item\emph{inaccuracy (pred/real)}: nepřesnost predikce $I$ (viz část \ref{secDesignAdaptation}),
+            \item\emph{best\_fitness\_ever}: fitness dosud nejlepšího nalezeného filtru,
+            \item\emph{active\_predictor\_fitness}: fitness aktivního prediktoru,
+            \item\emph{pred\_length}: počet použitých genů prediktoru (hodnota \emph{UsedGenes}),
+            \item\emph{pred\_used\_length}: velikost fenotypu prediktoru,
+            \item\emph{cgp\_evals}: počet CGP evaluací,
+            \item\emph{velocity}: rychlost evoluce $v$,
+            \item\emph{delta\_generation}: počet generací od poslední změny fitness nejlepšího filtru,
+            \item\emph{delta\_fitness}: velikost změny fitness nejlepšího filtru,
+            \item\emph{delta\_velocity}: rozdíl současné a předchozí rychlosti evoluce ($v - v_\mathit{prev}$)
+            \item\emph{wallclock}: uběhlý čas (v minutách),
+            \item\emph{usertime}: spotřebovaný procesorový čas (v minutách),
+            \item\emph{pred\_generation}: číslo generace prediktorů.
+        \end{itemize}
+    }
+    \file{config.log}{
+        Kompletní konfigurace programu.
+    }
+    \file{img\_best.png}{
+        Výstup nejlepšího nalezeného filtru.
+    }
+    \file{img\_noisy.png}{
+        Použitý zdrojový (zašuměný) obrázek.
+    }
+    \file{img\_original.png}{
+        Použitý cílový (původní) obrázek.
+    }
+    \file{progress.log}{
+        Záznam průběhu evoluce v textové podobě. Stejný záznam se vypisuje na standardní výstup programu.
+    }
+    \file{summary.log}{
+        Krátké textové shrnutí výsledků evoluce. Vypadá například takto:
+
+        {\footnotesize\ttfamily{}Final summary:
+
+        Generation: 30000 \\
+        Best fitness: 49.30966296 \\
+        PSNR: 16.93 \\
+        CGP evaluations: 1270038112
+
+        Time in user mode: 3m8.050000s \\
+        Wall clock: 3m26.836038s}
+
+    }
+}
+
+Použije-li se parametr \texttt{-{}-log-pred-file FILE}, bude soubor \texttt{FILE} na každém řádku obsahovat číslo generace CGP, kdy se daný prediktor začal používat, jeho délku a indexy použitých případů fitness. Příklad:
+
+\begin{lstlisting}[language=]
+Generation 0: Predictor phenotype length 4 [ 57341 16110 55958 61163 ]
+Generation 1: Predictor phenotype length 5 [ 25693 2860 6516 4163 40272 ]
+Generation 155: Predictor phenotype length 12 [ 41093 61202 40966 39558 46992 7314 9857 19569 1033 63920 48820 46560 ]
+\end{lstlisting}
 
 \section{Nástroj coco\_apply}
 
-Tento nástroj slouží pro aplikaci evolvovaného filtru na libovolný obrázek, volitelně i pro výpočet PSNR a vizualizace zapojení filtru.
+Tento nástroj slouží pro aplikaci evolvovaného filtru na libovolný obrázek, volitelně i pro výpočet PSNR a vizualizace zapojení filtru. Příklad použití:
+
+\vskip0.5\baselineskip
+\textbf{\texttt{./coco\_apply -{}-chromosome filter.chr -{}-input lena.png > filtered.png}}
 
 \subsection*{Povinné parametry}
 
@@ -246,7 +348,10 @@ Tento nástroj slouží pro aplikaci evolvovaného filtru na libovolný obrázek
 
 \section{Nástroj coco\_predhist}
 
-Tento nástroj slouží pro tvorbu histogramů vybíraných prediktorů. Na standardní výstup vypíše počet použití každého devítiokolí ve formátu CSV. Volitelně vytvoří i 2D histogram jako obrázek.
+Tento nástroj slouží pro tvorbu histogramů vybíraných prediktorů. Na standardní výstup vypíše počet použití každého devítiokolí ve formátu CSV. Volitelně vytvoří i 2D histogram jako obrázek. Příklad použití:
+
+\vskip0.5\baselineskip
+\textbf{\texttt{./coco\_predhist -{}-width 256 -{}-height 256 -{}-generations 100000 LOGFILE}}
 
 \subsection*{Povinné parametry}
 
@@ -261,7 +366,7 @@ Tento nástroj slouží pro tvorbu histogramů vybíraných prediktorů. Na stan
         Počet generací, pro které se vytvoří histogram.
     }
     \cmdarg{LOGFILE}{
-        Za přepínači se uvedou jména jednoho či více souborů s výpisem použitých prediktorů, který se vygeneruje při evoluci pomocí parametru \texttt{-{}-log-pred-file}.
+        Za přepínači se uvedou jména jednoho či více souborů s výpisem použitých prediktorů, který se vygeneruje při evoluci při uvedení parametru \texttt{-{}-log-pred-file}.
     }
 }
 
@@ -275,13 +380,16 @@ Tento nástroj slouží pro tvorbu histogramů vybíraných prediktorů. Na stan
 
 \section{Nástroj coco\_predvis}
 
-Tento nástroj slouží pro tvorbu vizualizaci všech použitých prediktorů. Na standardní výstup vypíše číslo generace a počet obsažených devítiokolí pro každý použitý prediktor. Volitelně vizualizuje použité pixely v každém prediktoru. Takto byly vygenerovány histogramy na obrázku \ref{obrPredhist}.
+Tento nástroj slouží pro tvorbu vizualizaci všech použitých prediktorů. Na standardní výstup vypíše číslo generace a počet obsažených devítiokolí pro každý použitý prediktor. Volitelně vizualizuje použité pixely v každém prediktoru. Takto byly vygenerovány histogramy na obrázku \ref{obrPredhist}. Příklad použití:
+
+\vskip0.5\baselineskip
+\textbf{\texttt{./coco\_predvis -{}-log predictors.log -{}-image lena.png -{}-outdir predvis}}
 
 \subsection*{Povinné parametry}
 
 \cmdarglist{
     \cmdarg{-{}-log FILE, -l FILE}{
-        Soubor s výpisem použitých prediktorů, který se vygeneruje při evoluci pomocí parametru \texttt{-{}-log-pred-file}.
+        Soubor s výpisem použitých prediktorů, který se vygeneruje při evoluci při uvedení parametru \texttt{-{}-log-pred-file}.
     }
 }
 
